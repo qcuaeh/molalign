@@ -2,11 +2,11 @@ program test_dict_part1
    use dict_mod
    implicit none
 
-   integer, parameter :: NUM_TEST_PAIRS = 200
-   integer, parameter :: NUM_TEST_CASES = 100
    integer, parameter :: MAX_KEY_LENGTH = 16
-   integer, parameter :: MAX_KEY_VALUE = 100
-   real, parameter :: DICT_SIZE_FACTOR = 1.0
+   integer, parameter :: MAX_KEY_VALUE = 1000
+
+   integer :: NUM_TEST_CASES  ! Will be set from command line or default
+   character(len=32) :: arg
 
    type test_pair
       integer, allocatable :: key(:)
@@ -14,31 +14,44 @@ program test_dict_part1
    end type test_pair
 
    type(dict) :: d
-   type(test_pair) :: first_set(NUM_TEST_PAIRS), second_set(NUM_TEST_PAIRS)
-   type(test_pair) :: shuffled_first_set(NUM_TEST_PAIRS)
+   type(test_pair), allocatable :: first_set(:), second_set(:)
+   type(test_pair), allocatable :: shuffled_first_set(:)
    integer :: i, test_count, success_count, total_success, total_tests
-   integer :: expected_dict_size
+   integer :: expected_dict_occupation
    real :: random_value
+
+   ! Get number of test cases from command line or use default
+   if (command_argument_count() > 0) then
+      call get_command_argument(1, arg)
+      read(arg, *) NUM_TEST_CASES
+   else
+      NUM_TEST_CASES = 100  ! Default value
+   end if
+
+   ! Allocate arrays based on number of test cases
+   allocate(first_set(NUM_TEST_CASES))
+   allocate(second_set(NUM_TEST_CASES))
+   allocate(shuffled_first_set(NUM_TEST_CASES))
 
    ! Initialize random number generator
    call random_seed()
 
    ! Generate first set of key-value pairs
-   call generate_unique_set(first_set, NUM_TEST_PAIRS)
+   call generate_unique_set(first_set, NUM_TEST_CASES)
 
    ! Generate second set of key-value pairs
-   call generate_unique_set(second_set, NUM_TEST_PAIRS)
+   call generate_unique_set(second_set, NUM_TEST_CASES)
 
    ! Ensure second set is distinct from first set
-   do i = 1, NUM_TEST_PAIRS
-      do while (is_equivalent_to_any(first_set, NUM_TEST_PAIRS, second_set(i)%key))
+   do i = 1, NUM_TEST_CASES
+      do while (is_equivalent_to_any(first_set, NUM_TEST_CASES, second_set(i)%key))
          deallocate(second_set(i)%key)
          call generate_key_value_pair(second_set(i))
       end do
    end do
 
    ! Create shuffled version of first set
-   do i = 1, NUM_TEST_PAIRS
+   do i = 1, NUM_TEST_CASES
       allocate(shuffled_first_set(i)%key(size(first_set(i)%key)))
       shuffled_first_set(i)%key = first_set(i)%key
       call shuffle_array(shuffled_first_set(i)%key)
@@ -46,12 +59,13 @@ program test_dict_part1
    end do
 
    ! Create dictionary
-   d = create_dict(int(NUM_TEST_PAIRS * DICT_SIZE_FACTOR))
-   print '(A,I0)', "Actual dictionary size: ", d%size
+   call d%init(MAX_KEY_LENGTH, MAX_KEY_VALUE, NUM_TEST_CASES)
+   print '(A,I0)', "Dictionary size: ", d%size
+   print '(A,I0)', "Number of test cases: ", NUM_TEST_CASES
 
    total_success = 0
    total_tests = 0
-   expected_dict_size = 0
+   expected_dict_occupation = 0
 
    ! Test 1: Add and existence of keys (first set)
    print *, "Test 1: Add and existence of keys (first set)"
@@ -62,7 +76,14 @@ program test_dict_part1
       ! Uncomment the following line to print generated keys
       ! print *, "Adding key:", shuffled_first_set(i)%key
       call d%add(shuffled_first_set(i)%key, shuffled_first_set(i)%value)
-      expected_dict_size = expected_dict_size + 1
+      expected_dict_occupation = expected_dict_occupation + 1
+
+      ! Check dictionary occupation
+      if (d%num_occupied /= expected_dict_occupation) then
+         print '(A,I0,A,I0)', "Error: Dictionary occupation mismatch after add. Expected: ", &
+            expected_dict_occupation, " Actual: ", d%num_occupied
+      end if
+
       if (d%has(first_set(i)%key)) then
          success_count = success_count + 1
       end if
@@ -112,6 +133,13 @@ program test_dict_part1
       ! Uncomment the following line to print generated keys
       ! print *, "Overwriting value for key:", first_set(i)%key
       call d%add(first_set(i)%key, first_set(i)%value * 2)
+
+      ! Check dictionary occupation has not changed during overwrite
+      if (d%num_occupied /= expected_dict_occupation) then
+         print '(A,I0,A,I0)', "Error: Dictionary occupation changed during overwrite. Expected: ", &
+            expected_dict_occupation, " Actual: ", d%num_occupied
+      end if
+
       if (d%get(first_set(i)%key) == first_set(i)%value * 2) then
          success_count = success_count + 1
       end if
@@ -125,7 +153,7 @@ program test_dict_part1
    call d%reset()
    test_count = 2
    success_count = 0
-   if (sum(d%occupations) == 0) then
+   if (d%num_occupied == 0) then
       success_count = success_count + 1
       print *, "Test 5.1: PASS (Dictionary count reset to 0)"
    else
@@ -143,6 +171,16 @@ program test_dict_part1
 
    ! Final score
    print '(A,I0,A,I0,A)', "Final Score: ", total_success, "/", total_tests, " tests passed"
+
+   ! Clean up
+   do i = 1, NUM_TEST_CASES
+      if (allocated(first_set(i)%key)) deallocate(first_set(i)%key)
+      if (allocated(second_set(i)%key)) deallocate(second_set(i)%key)
+      if (allocated(shuffled_first_set(i)%key)) deallocate(shuffled_first_set(i)%key)
+   end do
+   deallocate(first_set)
+   deallocate(second_set)
+   deallocate(shuffled_first_set)
 
 contains
 
