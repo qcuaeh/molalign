@@ -20,8 +20,8 @@ use kinds
 use bounds
 use partition
 use permutation
-use lapdense
-use lapsparse
+use lap_dense
+use lap_sparse
 
 implicit none
 

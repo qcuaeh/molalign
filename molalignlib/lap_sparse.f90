@@ -1,4 +1,4 @@
-module lapsparse
+module lap_sparse
 use iso_fortran_env, only: int64
 use kinds
 use stdio

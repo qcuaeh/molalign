@@ -20,28 +20,28 @@ implicit none
 
 contains
 
-function intersection(list1, list2, hash_size)
+function intersection(list1, list2, numval)
 ! Find the intersection of two lists
-   integer, intent(in) :: hash_size
+   integer, intent(in) :: numval
    integer, intent(in) :: list1(:), list2(:)
    ! Local variables
    integer :: i, n
-   logical, allocatable :: hash_table(:)
+   logical, allocatable :: membership(:)
    integer, allocatable :: intersection(:)
 
-   allocate (hash_table(hash_size))
+   allocate (membership(numval))
 
-   hash_table = .false.
+   membership = .false.
 
-   ! Add elements in list1 to hash table
+   ! Add elements in list1 to membership table
    do i = 1, size(list1)
-      hash_table(list1(i)) = .true.
+      membership(list1(i)) = .true.
    end do
 
    ! Count intersection elements
    n = 0
    do i = 1, size(list2)
-      if (hash_table(list2(i))) then
+      if (membership(list2(i))) then
          n = n + 1
       end if
    end do
@@ -51,7 +51,7 @@ function intersection(list1, list2, hash_size)
    ! Store intersection elements
    n = 0
    do i = 1, size(list2)
-      if (hash_table(list2(i))) then
+      if (membership(list2(i))) then
          n = n + 1
          intersection(n) = list2(i)
       end if

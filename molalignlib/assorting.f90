@@ -17,7 +17,7 @@
 module assorting
 use stdio
 use kinds
-use hashtable
+use hash_table
 use partition
 use permutation
 use molecule
@@ -77,17 +77,18 @@ subroutine levelup_crossmnatypes(atoms0, atoms1, types0, types1, subtypes0, subt
    type(partition_type), intent(out) :: subtypes0, subtypes1
    ! Local variables
    integer :: h, i, index_i
-   integer :: total_atoms, max_part_size
-   type(hashtable_type) :: subtypedict
+   integer :: total_atoms, num_types, max_part_size
+   type(dict_type) :: subtypedict
    type(pointertopart_type), dimension(:), allocatable :: subtypelist0, subtypelist1
    integer, allocatable :: neighborhood(:)
 
    total_atoms = size(atoms0) + size(atoms1)
    max_part_size = max(types0%max_part_size, types1%max_part_size)
+   num_types = max(types0%size, types1%size)
 
    call subtypes0%init(total_atoms)
    call subtypes1%init(total_atoms)
-   call subtypedict%init(max_part_size)
+   call subtypedict%init(maxcoord, num_types, max_part_size)
 
    allocate (subtypelist0(subtypedict%size))
    allocate (subtypelist1(subtypedict%size))
@@ -135,8 +136,8 @@ subroutine compute_crossmnatypes2(mol0, mol1)
       mnatypes1 = mnasubtypes1
    end do
 
-   call mnatypes0%print_parts()
-   call mnatypes1%print_parts()
+!   call mnatypes0%print_parts()
+!   call mnatypes1%print_parts()
 
 !   call mol0%set_mnatypes(mnatypes0)
 !   call mol1%set_mnatypes(mnatypes1)
@@ -150,12 +151,12 @@ subroutine levelup_mnatypes(atoms, types, subtypes)
    type(partition_type), intent(out) :: subtypes
    ! Local variables
    integer :: h, i, index_i
-   type(hashtable_type) :: subtypedict
+   type(dict_type) :: subtypedict
    type(pointertopart_type), allocatable :: subtypelist(:)
    integer, allocatable :: neighborhood(:)
 
    call subtypes%init(size(atoms))
-   call subtypedict%init(types%max_part_size)
+   call subtypedict%init(maxcoord, types%size, types%max_part_size)
    allocate (subtypelist(subtypedict%size))
 
    do h = 1, types%size

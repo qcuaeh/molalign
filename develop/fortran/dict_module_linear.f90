@@ -13,10 +13,10 @@ module dict_mod
       integer, allocatable :: values(:)
       logical, allocatable :: occupied(:)
       integer :: size
-      integer :: least_size
-      integer :: num_occupied = 0
       integer :: max_key_len
       integer :: max_key_val
+      integer :: num_occupied
+      integer :: max_occupied
    contains
       procedure :: init => dict_init
       procedure :: add => dict_add
@@ -27,14 +27,14 @@ module dict_mod
 
 contains
 
-   subroutine dict_init(this, max_key_len, max_key_val, least_size)
+   subroutine dict_init(this, max_key_len, max_key_val, dict_size)
       class(dict), intent(inout) :: this
-      integer, intent(in) :: least_size
+      integer, intent(in) :: dict_size
       integer, intent(in) :: max_key_len
       integer, intent(in) :: max_key_val
       
-      this%size = int(least_size / MAX_LOAD_FACTOR)
-      this%least_size = least_size
+      this%size = int(dict_size / MAX_LOAD_FACTOR)
+      this%max_occupied = dict_size
       this%max_key_len = max_key_len
       this%max_key_val = max_key_val
       
@@ -72,7 +72,7 @@ contains
          index = modulo(index, this%size) + 1
       end do
 
-      if (this%num_occupied >= this%least_size) then
+      if (this%num_occupied >= this%max_occupied) then
          error stop "Dictionary capacity exceeded"
       end if
 

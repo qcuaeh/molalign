@@ -4,7 +4,7 @@ flags.f90
 bounds.f90
 pointers.f90
 strutils.f90
-hashtable.f90
+hash_table.f90
 partition.f90
 permutation.f90
 setutils.f90
@@ -15,8 +15,8 @@ eigen-jacobi.f90
 randlib.f90
 random-randlib.f90
 #random-builtin.f90
-lapdense.f90
-lapsparse.f90
+lap_dense.f90
+lap_sparse.f90
 chemdata.f90
 chemutils.f90
 rotation.f90
