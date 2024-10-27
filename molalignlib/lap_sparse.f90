@@ -16,7 +16,7 @@ integer, parameter :: maxnei = 20
 
 contains
 
-subroutine minperm_nearest(n, p, q, perm, dist)
+subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
 
 ! Adapted from GMIN: A program for finding global minima
 ! Copyright (C) 1999-2006 David J. Wales
@@ -43,15 +43,16 @@ subroutine minperm_nearest(n, p, q, perm, dist)
 !     n  : System size
 !     p,q: Coordinate vectors (n particles)
 
-   integer :: n
-   real(rk) p(3, n), q(3, n)
+   integer, intent(in) :: n
+   integer, intent(in) :: e1(n), e2(n)
+   real(rk), intent(in) :: r1(3, *), r2(3, *)
 
 !   Output
 !     perm: Permutation so that p(i) <--> q(perm(i))
 !     dist: Minimum attainable distance
 !   We have
-   integer :: perm(n)
-   real(rk) dist
+   integer, intent(out) :: perm(n)
+   real(rk), intent(out) :: dist
    
 !   Internal variables
 !   cc, kk, first:
@@ -94,7 +95,7 @@ subroutine minperm_nearest(n, p, q, perm, dist)
       do i = 1, n
          k = first(i)
          do j = 1, n
-            cc(k) = scale * sum((p(:, i) - q(:, j))**2)
+            cc(k) = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
             kk(k) = j
             k = k + 1
          end do
@@ -111,7 +112,7 @@ subroutine minperm_nearest(n, p, q, perm, dist)
       do i = 1, n
          k = first(i) - 1
          do j = 1, m
-            d = scale * sum((p(:, i) - q(:, j))**2)
+            d = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
             cc(k+j) = d
             kk(k+j) = j
             l = j
@@ -129,7 +130,7 @@ subroutine minperm_nearest(n, p, q, perm, dist)
             end if
 11       end do
          do j = m+1, n
-            d = scale * sum((p(:, i) - q(:, j))**2)
+            d = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
             if (d < cc(k+1)) then
                cc(k+1) = d
                kk(k+1) = j
@@ -176,7 +177,7 @@ subroutine minperm_nearest(n, p, q, perm, dist)
 !      do i = 1, n
 !         k = first(i) - 1
 !         do j = 1, n
-!            d = scale * sum((p(:, i) - q(:, j))**2)
+!            d = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
 !            if (d > cc(k+m)) cycle
 !            do l = m, 2, -1
 !               if (d > cc(k+l-1)) exit
@@ -220,7 +221,7 @@ subroutine minperm_nearest(n, p, q, perm, dist)
 
 end subroutine
 
-subroutine minperm_pruned(n, p, q, mask, perm, dist)
+subroutine minperm_pruned(n, e1, e2, r1, r2, mask, perm, dist)
 
 ! Adapted from GMIN: A program for finding global minima
 ! Copyright (C) 1999-2006 David J. Wales
@@ -247,16 +248,17 @@ subroutine minperm_pruned(n, p, q, mask, perm, dist)
 !     n  : System size
 !     p,q: Coordinate vectors (n particles)
 
-   integer :: n
-   real(rk) p(3, n), q(3, n)
-   logical mask(n, n)
+   integer, intent(in) :: n
+   integer, intent(in) :: e1(n), e2(n)
+   real(rk), intent(in) :: r1(3, *), r2(3, *)
+   logical, intent(in) :: mask(n, n)
 
 !   Output
 !     perm: Permutation so that p(i) <--> q(perm(i))
 !     dist: Minimum attainable distance
 !   We have
-   integer :: perm(n)
-   real(rk) dist
+   integer, intent(out) :: perm(n)
+   real(rk), intent(out) :: dist
    
 !   Internal variables
 !   cc, kk, first:
@@ -284,13 +286,13 @@ subroutine minperm_pruned(n, p, q, mask, perm, dist)
       first(i+1) = first(i) + count(mask(:, i))
    end do
 
-!  Compute the maskd cost matrix...
+!  Compute the pruned cost matrix...
 
    do i = 1, n
       k = first(i)
       do j = 1, n
          if (mask(j, i)) then
-            cc(k) = scale * sum((p(:, i) - q(:, j))**2)
+            cc(k) = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
             kk(k) = j
             k = k + 1
          end if

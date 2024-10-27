@@ -28,64 +28,64 @@ public leastrotquat
 
 contains
 
-real(rk) function squaredist(natom, weights, coords0, coords1, mapping)
+real(rk) function squaredist(natom, weights, coords1, coords2, mapping)
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: mapping
    real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords0, coords1
+   real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
-   squaredist = sum(weights(1:natom)*sum((coords0(:, 1:natom) - coords1(:, mapping(1:natom)))**2, dim=1))
+   squaredist = sum(weights(1:natom)*sum((coords1(:, 1:natom) - coords2(:, mapping(1:natom)))**2, dim=1))
 
 end function
 
-real(rk) function leastsquaredist(natom, weights, coords0, coords1, mapping) result(squaredist)
+real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping) result(squaredist)
 ! Purpose: Calculate least square distance from eigenvalues
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: mapping
    real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords0, coords1
+   real(rk), dimension(:, :), intent(in) :: coords1, coords2
    real(rk) :: resmat(4, 4)
 
-   call kearsley(natom, weights, coords0, coords1, mapping, resmat)
+   call kearsley(natom, weights, coords1, coords2, mapping, resmat)
    ! eigenvalue can be negative due to numerical errors
    squaredist = max(leasteigval(resmat), 0._rk)
 
 end function
 
-!real(rk) function leastsquaredist(natom, weights, coords0, coords1, mapping) result(dist)
+!real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping) result(dist)
 !! Purpose: Calculate least square distance from aligned coordinates
 !   integer, intent(in) :: natom
 !   integer, dimension(:), intent(in) :: mapping
 !   real(rk), dimension(:), intent(in) :: weights
-!   real(rk), dimension(:, :), intent(in) :: coords0, coords1
+!   real(rk), dimension(:, :), intent(in) :: coords1, coords2
 !   real(rk) :: resmat(4, 4), eigval(4)
 !
-!   call kearsley(natom, weights, coords0, coords1, mapping, resmat)
+!   call kearsley(natom, weights, coords1, coords2, mapping, resmat)
 !   call syevec4(resmat, eigval)
-!   dist = squaredist(natom, weights, coords0, rotated(natom, coords1, resmat(:, 1)), mapping)
+!   dist = squaredist(natom, weights, coords1, rotated(natom, coords2, resmat(:, 1)), mapping)
 !
 !end function
 
-function leastrotquat(natom, weights, coords0, coords1, mapping) result(rotquat)
+function leastrotquat(natom, weights, coords1, coords2, mapping) result(rotquat)
 ! Purpose: Calculate rotation quaternion which minimzes the square distance
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: mapping
    real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords0, coords1
+   real(rk), dimension(:, :), intent(in) :: coords1, coords2
    real(rk) :: rotquat(4), resmat(4, 4)
 
-   call kearsley(natom, weights, coords0, coords1, mapping, resmat)
+   call kearsley(natom, weights, coords1, coords2, mapping, resmat)
    rotquat = leasteigvec(resmat)
 
 end function
 
-subroutine kearsley(natom, weights, coords0, coords1, mapping, resmat)
+subroutine kearsley(natom, weights, coords1, coords2, mapping, resmat)
 ! Purpose: Find the best orientation by least squares minimization
 ! Reference: Acta Cryst. (1989). A45, 208-210
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: mapping
    real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords0, coords1
+   real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
    integer :: i
    real(rk) :: resmat(4, 4), p(3, natom), q(3, natom)
@@ -93,8 +93,8 @@ subroutine kearsley(natom, weights, coords0, coords1, mapping, resmat)
    resmat = 0
 
    do i = 1, natom
-      p(:, i) = coords0(:, i) + coords1(:, mapping(i))
-      q(:, i) = coords0(:, i) - coords1(:, mapping(i))
+      p(:, i) = coords1(:, i) + coords2(:, mapping(i))
+      q(:, i) = coords1(:, i) - coords2(:, mapping(i))
    end do
 
    ! Calculate upper matrix elements

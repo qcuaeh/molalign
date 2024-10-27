@@ -19,119 +19,119 @@ logical, parameter :: printInfo = .false.
 contains
 
 ! Find best correspondence between points of graphs
-subroutine minadjdiff (mol0, mol1, mapping)
-   type(molecule_type), intent(in) :: mol0, mol1
+subroutine minadjdiff (mol1, mol2, mapping)
+   type(molecule_type), intent(in) :: mol1, mol2
    integer, dimension(:), intent(inout) :: mapping
 
    ! Local variables
 
-   integer :: eltypemap0(mol0%natom)
+   integer :: eltypemap1(mol1%natom)
    integer :: h, i, moldiff
-   integer :: ntrack, track(mol0%natom)
-   integer :: unmapping(mol0%natom)
-   integer, dimension(mol0%natom) :: mnatypemap0, mnatypemap1
-   logical :: tracked(mol0%natom)
+   integer :: ntrack, track(mol1%natom)
+   integer :: unmapping(mol1%natom)
+   integer, dimension(mol1%natom) :: mnatypemap1, mnatypemap2
+   logical :: tracked(mol1%natom)
    real(rk) moldist
 
    integer :: natom
-   integer :: neltype0
-   integer :: nmnatype0, nmnatype1
+   integer :: neltype1
+   integer :: nmnatype1, nmnatype2
 
-   type(partition_type) :: eltypes0
-   type(partition_type) :: mnatypes0, mnatypes1
+   type(partition_type) :: eltypes1
+   type(partition_type) :: mnatypes1, mnatypes2
 
-   integer, allocatable, dimension(:) :: eltypepartsizes0
-   integer, allocatable, dimension(:) :: mnatypepartsizes0, mnatypepartsizes1
-   integer, allocatable, dimension(:) :: fragroots0, fragroots1
+   integer, allocatable, dimension(:) :: eltypepartsizes1
+   integer, allocatable, dimension(:) :: mnatypepartsizes1, mnatypepartsizes2
+   integer, allocatable, dimension(:) :: fragroots1, fragroots2
 
-   logical, dimension(:, :), allocatable :: adjmat0, adjmat1
-   real(rk), dimension(:, :), allocatable :: coords0, coords1
+   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
+   real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights
 
-   integer :: nadjs0(mol0%natom)
    integer :: nadjs1(mol1%natom)
-   integer :: adjlists0(maxcoord, mol0%natom)
+   integer :: nadjs2(mol2%natom)
    integer :: adjlists1(maxcoord, mol1%natom)
-   integer :: nadjmnatypes0(mol0%natom)
+   integer :: adjlists2(maxcoord, mol2%natom)
    integer :: nadjmnatypes1(mol1%natom)
-   integer :: adjmnatypepartlens0(maxcoord, mol0%natom)
+   integer :: nadjmnatypes2(mol2%natom)
    integer :: adjmnatypepartlens1(maxcoord, mol1%natom)
+   integer :: adjmnatypepartlens2(maxcoord, mol2%natom)
 
-   natom = mol0%get_natom()
+   natom = mol1%get_natom()
 
-   eltypes0 = mol0%gather_eltypes()
-   eltypemap0 = eltypes0%index_part_map
+   eltypes1 = mol1%gather_eltypes()
+   eltypemap1 = eltypes1%partition_map
 
-   neltype0 = eltypes0%size
-   allocate (eltypepartsizes0(neltype0))
-   do h = 1, neltype0
-      eltypepartsizes0(h) = eltypes0%parts(h)%size
+   neltype1 = eltypes1%size
+   allocate (eltypepartsizes1(neltype1))
+   do h = 1, neltype1
+      eltypepartsizes1(h) = eltypes1%parts(h)%size
    end do
 
-   mnatypes0 = mol0%gather_mnatypes()
    mnatypes1 = mol1%gather_mnatypes()
-   mnatypemap0 = mnatypes0%index_part_map
-   mnatypemap1 = mnatypes1%index_part_map
+   mnatypes2 = mol2%gather_mnatypes()
+   mnatypemap1 = mnatypes1%partition_map
+   mnatypemap2 = mnatypes2%partition_map
 
-   nmnatype0 = size(mnatypes0%parts)
    nmnatype1 = size(mnatypes1%parts)
-   allocate (mnatypepartsizes0(nmnatype0))
+   nmnatype2 = size(mnatypes2%parts)
    allocate (mnatypepartsizes1(nmnatype1))
-   do h = 1, nmnatype0
-      mnatypepartsizes0(h) = mnatypes0%parts(h)%size
-   end do
+   allocate (mnatypepartsizes2(nmnatype2))
    do h = 1, nmnatype1
       mnatypepartsizes1(h) = mnatypes1%parts(h)%size
    end do
+   do h = 1, nmnatype2
+      mnatypepartsizes2(h) = mnatypes2%parts(h)%size
+   end do
 
-!   adjlists0 = mol0%gather_adjlists()
 !   adjlists1 = mol1%gather_adjlists()
-   nadjs0 = mol0%gather_nadjs()
+!   adjlists2 = mol2%gather_adjlists()
    nadjs1 = mol1%gather_nadjs()
-   adjlists0 = mol0%gather_adjlists()
+   nadjs2 = mol2%gather_nadjs()
    adjlists1 = mol1%gather_adjlists()
+   adjlists2 = mol2%gather_adjlists()
 
-!   adjpartitions0 = mol0%gather_adjpartitions()
-!   adjpartitions1 = mol1%gather_adjpartitions()
-   nadjmnatypes0 = mol0%gather_nadjmnatypes()
+!   adjpartitions0 = mol1%gather_adjpartitions()
+!   adjpartitions1 = mol2%gather_adjpartitions()
    nadjmnatypes1 = mol1%gather_nadjmnatypes()
-   adjmnatypepartlens0 = mol0%gather_adjmnatypepartlens()
+   nadjmnatypes2 = mol2%gather_nadjmnatypes()
    adjmnatypepartlens1 = mol1%gather_adjmnatypepartlens()
+   adjmnatypepartlens2 = mol2%gather_adjmnatypepartlens()
 
-   coords0 = mol0%gather_coords()
    coords1 = mol1%gather_coords()
-   weights = mol0%gather_weights()
-   adjmat0 = mol0%gather_adjmatrix()
+   coords2 = mol2%gather_coords()
+   weights = mol1%gather_weights()
    adjmat1 = mol1%gather_adjmatrix()
-   fragroots0 = mol0%gather_molfragroots()
+   adjmat2 = mol2%gather_adjmatrix()
    fragroots1 = mol1%gather_molfragroots()
+   fragroots2 = mol2%gather_molfragroots()
 
    !  initialization
 
    ntrack = 0
    tracked(:) = .false.
    unmapping = inverse_permutation(mapping)
-   moldiff = adjacencydiff (natom, adjmat0, adjmat1, mapping)
-   moldist = squaredist (natom, weights, coords0, coords1, mapping)
+   moldiff = adjacencydiff (natom, adjmat1, adjmat2, mapping)
+   moldist = squaredist (natom, weights, coords1, coords2, mapping)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "moldiff:", moldiff
       print '(a,1x,f0.4)', "moldist:", moldist
    end if
 
-   do i = 1, size(fragroots0)
-      call recursive_backtrack (fragroots0(i), mapping, unmapping, tracked, moldiff, moldist, ntrack, track)
+   do i = 1, size(fragroots1)
+      call recursive_backtrack (fragroots1(i), mapping, unmapping, tracked, moldiff, moldist, ntrack, track)
 !        print *, ntrack
    end do
 
    if ( printInfo ) then
-      print '(a,1x,i0)', "countFrag:", size(fragroots0)
-      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat0, adjmat1, mapping), moldiff
-      print '(a,1x,f0.4,1x,f0.4)', "moldist:", squaredist (natom, weights, coords0, coords1, mapping), moldist
+      print '(a,1x,i0)', "countFrag:", size(fragroots1)
+      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, mapping), moldiff
+      print '(a,1x,f0.4,1x,f0.4)', "moldist:", squaredist (natom, weights, coords1, coords2, mapping), moldist
    end if
 
-!    if (adjacencydiff (natom, adjmat0, adjmat1, mapping) /= moldiff) then
-!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat0, adjmat1, mapping), moldiff
+!    if (adjacencydiff (natom, adjmat1, adjmat2, mapping) /= moldiff) then
+!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, mapping), moldiff
 !    end if
 
    contains    
@@ -146,21 +146,21 @@ subroutine minadjdiff (mol0, mol1, mapping)
       integer, intent(out) :: nmismatch1, mismatches1(natom)
       integer :: i, adj0(natom), adj1(natom)
 
-      adj0(:nadjs0(node)) = adjlists0(:nadjs0(node), node)
-      adj1(:nadjs1(mapping(node))) = adjlists1(:nadjs1(mapping(node)), mapping(node))
+      adj0(:nadjs1(node)) = adjlists1(:nadjs1(node), node)
+      adj1(:nadjs2(mapping(node))) = adjlists2(:nadjs2(mapping(node)), mapping(node))
       nmatch = 0
       nmismatch0 = 0
       nmismatch1 = 0
 
-      do i = 1, nadjs0(node)
-         if (findInd(mapping(adj0(i)), nadjs1(mapping(node)), adj1) /= 0) then
+      do i = 1, nadjs1(node)
+         if (findInd(mapping(adj0(i)), nadjs2(mapping(node)), adj1) /= 0) then
             call addInd(adj0(i), nmatch, matches)
          else
             call addInd(adj0(i), nmismatch0, mismatches0)
          end if
       end do
 
-      do i = 1, nadjs1(mapping(node))
+      do i = 1, nadjs2(mapping(node))
          if (findInd(adj1(i), nmatch, mapping(matches(:nmatch))) == 0) then
             call addInd(adj1(i), nmismatch1, mismatches1)
          end if
@@ -193,7 +193,7 @@ subroutine minadjdiff (mol0, mol1, mapping)
       track(ntrack) = node
       tracked(node) = .true.
 
-      ! classify neighbor atoms as matches or mismatched for coords0/coords1
+      ! classify neighbor atoms as matches or mismatched for coords1/coords2
       call nodematch (node, mapping, tracked, nmatch, matches, &
                   nmismatch0, mismatches0, nmismatch1, mismatches1)
 
@@ -225,7 +225,7 @@ subroutine minadjdiff (mol0, mol1, mapping)
          if (.not. tracked(mismatches0(i))) then
             do j = 1, nmismatch1
                if (.not. matched1(j)) then
-                  if (eltypemap0(mismatches0(i)) == eltypemap0(mismatches1(j))) then
+                  if (eltypemap1(mismatches0(i)) == eltypemap1(mismatches1(j))) then
 
                      ntrack_branch = ntrack
                      track_branch(:) = track(:)
@@ -243,13 +243,13 @@ subroutine minadjdiff (mol0, mol1, mapping)
 
                      ! Update ssd with swap
                      moldist_branch = moldist + weights(mismatches0(i))*( &
-                        - sum((coords1(:, mapping(mismatches0(i))) - coords0(:, mismatches0(i)))**2) &
-                        - sum((coords1(:, mismatches1(j)) - coords0(:, unmapping(mismatches1(j))))**2) &
-                        + sum((coords1(:, mismatches1(j)) - coords0(:, mismatches0(i)))**2) &
-                        + sum((coords1(:, mapping(mismatches0(i))) - coords0(:, unmapping(mismatches1(j))))**2))
+                        - sum((coords2(:, mapping(mismatches0(i))) - coords1(:, mismatches0(i)))**2) &
+                        - sum((coords2(:, mismatches1(j)) - coords1(:, unmapping(mismatches1(j))))**2) &
+                        + sum((coords2(:, mismatches1(j)) - coords1(:, mismatches0(i)))**2) &
+                        + sum((coords2(:, mapping(mismatches0(i))) - coords1(:, unmapping(mismatches1(j))))**2))
 
                      ! Update adjd with swap
-                     moldiff_branch = moldiff + adjacencydelta(nadjs0, adjlists0, adjmat1, &
+                     moldiff_branch = moldiff + adjacencydelta(nadjs1, adjlists1, adjmat2, &
                                    mapping, mismatches0(i), unmapping(mismatches1(j)))
 
                      ! backtrack swapped index
@@ -259,8 +259,8 @@ subroutine minadjdiff (mol0, mol1, mapping)
                      if ( &
                         moldiff_branch < moldiff &
                         .and. ( &
-                           mnatypemap0(mismatches0(i)) == mnatypemap0(unmapping(mismatches1(j))) &
-                           .and. mnatypemap1(mapping(mismatches0(i))) == mnatypemap1(mismatches1(j)) &
+                           mnatypemap1(mismatches0(i)) == mnatypemap1(unmapping(mismatches1(j))) &
+                           .and. mnatypemap2(mapping(mismatches0(i))) == mnatypemap2(mismatches1(j)) &
                         ) &
                      ) then
                         ntrack = ntrack_branch
@@ -295,100 +295,100 @@ subroutine minadjdiff (mol0, mol1, mapping)
 end subroutine
 
 ! Find best correspondence between points of graphs
-subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
-   type(molecule_type), intent(in) :: mol0, mol1
+subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
+   type(molecule_type), intent(in) :: mol1, mol2
    real(rk), intent(in) :: workcoords1(:, :)
    integer, intent(inout) :: mapping(:)
 
    ! Local variables
 
-   integer :: unmap(mol0%natom), track(mol0%natom)
-   integer, dimension(mol0%natom) :: eqvos, eqvidx
+   integer :: unmap(mol1%natom), track(mol1%natom)
+   integer, dimension(mol1%natom) :: eqvos, eqvidx
    integer :: permcount, h, i, n, diff, fragcount, ntrack
-   logical :: tracked(mol0%natom), held(mol0%natom)
+   logical :: tracked(mol1%natom), held(mol1%natom)
    real(rk) :: dist
 
    integer :: natom
-   integer :: neltype0
-   integer :: nmnatype0, nmnatype1
+   integer :: neltype1
+   integer :: nmnatype1, nmnatype2
 
-   type(partition_type) :: eltypes0
-   type(partition_type) :: mnatypes0, mnatypes1
+   type(partition_type) :: eltypes1
+   type(partition_type) :: mnatypes1, mnatypes2
 
-   integer, allocatable, dimension(:) :: eltypepartsizes0
-   integer, allocatable, dimension(:) :: mnatypepartsizes0, mnatypepartsizes1
-   integer, allocatable, dimension(:) :: fragroots0, fragroots1
+   integer, allocatable, dimension(:) :: eltypepartsizes1
+   integer, allocatable, dimension(:) :: mnatypepartsizes1, mnatypepartsizes2
+   integer, allocatable, dimension(:) :: fragroots1, fragroots2
 
-   logical, dimension(:, :), allocatable :: adjmat0, adjmat1
-   real(rk), dimension(:, :), allocatable :: coords0, coords1
+   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
+   real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights
 
-   integer :: nadjs0(mol0%natom)
    integer :: nadjs1(mol1%natom)
-   integer :: adjlists0(maxcoord, mol0%natom)
+   integer :: nadjs2(mol2%natom)
    integer :: adjlists1(maxcoord, mol1%natom)
-   integer :: nadjmnatypes0(mol0%natom)
+   integer :: adjlists2(maxcoord, mol2%natom)
    integer :: nadjmnatypes1(mol1%natom)
-   integer :: adjmnatypepartlens0(maxcoord, mol0%natom)
+   integer :: nadjmnatypes2(mol2%natom)
    integer :: adjmnatypepartlens1(maxcoord, mol1%natom)
+   integer :: adjmnatypepartlens2(maxcoord, mol2%natom)
 
-   natom = mol0%get_natom()
+   natom = mol1%get_natom()
 
-   eltypes0 = mol0%gather_eltypes()
+   eltypes1 = mol1%gather_eltypes()
 
-   neltype0 = eltypes0%size
-   allocate (eltypepartsizes0(neltype0))
-   do h = 1, neltype0
-      eltypepartsizes0(h) = eltypes0%parts(h)%size
+   neltype1 = eltypes1%size
+   allocate (eltypepartsizes1(neltype1))
+   do h = 1, neltype1
+      eltypepartsizes1(h) = eltypes1%parts(h)%size
    end do
 
-   mnatypes0 = mol0%gather_mnatypes()
    mnatypes1 = mol1%gather_mnatypes()
+   mnatypes2 = mol2%gather_mnatypes()
 
-   nmnatype0 = size(mnatypes0%parts)
    nmnatype1 = size(mnatypes1%parts)
-   allocate (mnatypepartsizes0(nmnatype0))
+   nmnatype2 = size(mnatypes2%parts)
    allocate (mnatypepartsizes1(nmnatype1))
-   do h = 1, nmnatype0
-      mnatypepartsizes0(h) = mnatypes0%parts(h)%size
-   end do
+   allocate (mnatypepartsizes2(nmnatype2))
    do h = 1, nmnatype1
       mnatypepartsizes1(h) = mnatypes1%parts(h)%size
    end do
+   do h = 1, nmnatype2
+      mnatypepartsizes2(h) = mnatypes2%parts(h)%size
+   end do
 
-!   adjlists0 = mol0%gather_adjlists()
 !   adjlists1 = mol1%gather_adjlists()
-   nadjs0 = mol0%gather_nadjs()
+!   adjlists2 = mol2%gather_adjlists()
    nadjs1 = mol1%gather_nadjs()
-   adjlists0 = mol0%gather_adjlists()
+   nadjs2 = mol2%gather_nadjs()
    adjlists1 = mol1%gather_adjlists()
+   adjlists2 = mol2%gather_adjlists()
 
-!   adjpartitions0 = mol0%gather_adjpartitions()
-!   adjpartitions1 = mol1%gather_adjpartitions()
-   nadjmnatypes0 = mol0%gather_nadjmnatypes()
+!   adjpartitions0 = mol1%gather_adjpartitions()
+!   adjpartitions1 = mol2%gather_adjpartitions()
    nadjmnatypes1 = mol1%gather_nadjmnatypes()
-   adjmnatypepartlens0 = mol0%gather_adjmnatypepartlens()
+   nadjmnatypes2 = mol2%gather_nadjmnatypes()
    adjmnatypepartlens1 = mol1%gather_adjmnatypepartlens()
+   adjmnatypepartlens2 = mol2%gather_adjmnatypepartlens()
 
-   coords0 = mol0%gather_coords()
    coords1 = mol1%gather_coords()
-   weights = mol0%gather_weights()
-   adjmat0 = mol0%gather_adjmatrix()
+   coords2 = mol2%gather_coords()
+   weights = mol1%gather_weights()
    adjmat1 = mol1%gather_adjmatrix()
-   fragroots0 = mol0%gather_molfragroots()
+   adjmat2 = mol2%gather_adjmatrix()
    fragroots1 = mol1%gather_molfragroots()
+   fragroots2 = mol2%gather_molfragroots()
 
    ! set equivalence group offsets
 
    eqvos(1) = 0
-   do h = 1, nmnatype0 - 1
-      eqvos(h+1) = eqvos(h) + mnatypepartsizes0(h)
+   do h = 1, nmnatype1 - 1
+      eqvos(h+1) = eqvos(h) + mnatypepartsizes1(h)
    end do
 
    ! set atoms equivalence indices
 
-   do h = 1, nmnatype0
-      eqvidx(eqvos(h)+1:eqvos(h)+mnatypepartsizes0(h)) = h
+   do h = 1, nmnatype1
+      eqvidx(eqvos(h)+1:eqvos(h)+mnatypepartsizes1(h)) = h
    end do
 
    ! initialization
@@ -410,13 +410,13 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
 !        end if
 !    end do
 
-   do i = 1, size(fragroots0)
-      call recursive_permut (fragroots0(i), mapping, tracked, held, ntrack, track)
+   do i = 1, size(fragroots1)
+      call recursive_permut (fragroots1(i), mapping, tracked, held, ntrack, track)
 !        print *, ntrack
    end do
 
 !   print '(a,i0)', "Natoms: ", natom
-!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords0, workcoords1, mapping)/sum(weights))
+!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords1, workcoords1, mapping)/sum(weights))
 !   print '(a,i0)', "permcount: ", permcount
 !   print '(a,i0)', "fragcount: ", fragcount
 
@@ -431,17 +431,17 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
       integer :: h, i, offset, first, last
 
       first = eqvos(eqvidx(nodea)) + 1
-      last = eqvos(eqvidx(nodea)) + mnatypepartsizes0(eqvidx(nodea))
+      last = eqvos(eqvidx(nodea)) + mnatypepartsizes1(eqvidx(nodea))
       held(first:last) = .true.
       offset = 0
-      do h = 1, nadjmnatypes0(nodea)
-         ! find not tracked adjlists0 in group
+      do h = 1, nadjmnatypes1(nodea)
+         ! find not tracked adjlists1 in group
          meqvnei = 0
-         do i = 1, adjmnatypepartlens0(h, nodea)
-            if (.not. held(adjlists0(offset+i, nodea))) then 
+         do i = 1, adjmnatypepartlens1(h, nodea)
+            if (.not. held(adjlists1(offset+i, nodea))) then 
                meqvnei = meqvnei + 1
-               equiva(meqvnei) = adjlists0(offset+meqvnei, nodea)
-               equivb(meqvnei) = adjlists0(offset+meqvnei, nodeb)
+               equiva(meqvnei) = adjlists1(offset+meqvnei, nodea)
+               equivb(meqvnei) = adjlists1(offset+meqvnei, nodeb)
             end if
          end do
          locked_c(:) = held(:)
@@ -452,7 +452,7 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
                   mapping, locked_c)
             end if
          end do
-         offset = offset + adjmnatypepartlens0(h, nodea)
+         offset = offset + adjmnatypepartlens1(h, nodea)
       end do
    end subroutine recursive_remap
 
@@ -471,8 +471,8 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
-         moldist = sqrt(leastsquaredist(natom, weights, coords0, workcoords1, mapping)/sum(weights))
-         moldiff = adjacencydiff(natom, adjmat0, adjmat1, mapping)
+         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords1, mapping)/sum(weights))
+         moldiff = adjacencydiff(natom, adjmat1, adjmat2, mapping)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist
       end if
@@ -484,19 +484,19 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
 
       ! reserves atoms with the same type as n
       first = eqvos(eqvidx(node)) + 1
-      last = eqvos(eqvidx(node)) + mnatypepartsizes0(eqvidx(node))
+      last = eqvos(eqvidx(node)) + mnatypepartsizes1(eqvidx(node))
       held(first:last) = .true.
 
       offset = 0
       ! run over groups of atoms with equivalent type
-      do h = 1, nadjmnatypes0(node)
-         ! find not tracked adjlists0 in group
+      do h = 1, nadjmnatypes1(node)
+         ! find not tracked adjlists1 in group
          meqvnei = 0
-         do i = 1, adjmnatypepartlens0(h, node)
-            if (.not. tracked(adjlists0(offset+i, node)) &
-               .and. .not. held(adjlists0(offset+i, node))) then
+         do i = 1, adjmnatypepartlens1(h, node)
+            if (.not. tracked(adjlists1(offset+i, node)) &
+               .and. .not. held(adjlists1(offset+i, node))) then
                meqvnei = meqvnei + 1
-               equiv(meqvnei) = adjlists0(offset+meqvnei, node)
+               equiv(meqvnei) = adjlists1(offset+meqvnei, node)
             end if
          end do
          ! check permutations
@@ -514,7 +514,7 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
             do i = 1, meqvnei
                mapping_min(equiv(i)) = mapping(equiv(perm_min(i)))
                moldist_min = moldist_min &
-                        + sum((workcoords1(:, mapping_min(equiv(i))) - coords0(:, equiv(i)))**2)
+                        + sum((workcoords1(:, mapping_min(equiv(i))) - coords1(:, equiv(i)))**2)
             end do
             do while ( more )
                call perm1_next3 (meqvnei, perm, more, rank)
@@ -526,7 +526,7 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
                do i = 1, meqvnei
                   mapping_p(equiv(i)) = mapping(equiv(perm(i)))
                   moldist_p = moldist_p &
-                         + sum((workcoords1(:, mapping_p(equiv(i))) - coords0(:, equiv(i)))**2) 
+                         + sum((workcoords1(:, mapping_p(equiv(i))) - coords1(:, equiv(i)))**2) 
                end do
                ! save min dist permut
                if ( moldist_p < moldist_min ) then
@@ -545,11 +545,11 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
 !
 !                        do j = 1, meqvnei
 !                            track4ind(4) = equiv(j)
-!                            call calc_dihedral (0, track4ind, coords0, calcd, dihed0(j))
+!                            call calc_dihedral (0, track4ind, coords1, calcd, dihed0(j))
 !                            track4ind_c(:) = mapping_min(track4ind(:))
 !                            call calc_dihedral (0, track4ind_c, workcoords1, calcd, dihed1(j))
 !                        end do
-!                        print '(a,3f10.3)', "coords0: ", dihed0(:meqvnei)
+!                        print '(a,3f10.3)', "coords1: ", dihed0(:meqvnei)
 !                        print '(a,3f10.3)', "workcoords1: ", dihed1(:meqvnei)
 !                    end if
 !                end if
@@ -568,7 +568,7 @@ subroutine eqvatomperm (mol0, mol1, workcoords1, mapping)
                                 locked_c, ntrack, track)
             end do
          end if
-         offset = offset + adjmnatypepartlens0(h, node)
+         offset = offset + adjmnatypepartlens1(h, node)
       end do
    end subroutine
 

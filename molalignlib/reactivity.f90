@@ -27,74 +27,71 @@ implicit none
 
 contains
 
-subroutine remove_reactive_bonds(mol0, mol1, mapping)
+subroutine remove_reactive_bonds(mol1, mol2, mapping)
 
-   type(molecule_type), intent(inout) :: mol0, mol1
+   type(molecule_type), intent(inout) :: mol1, mol2
    integer, dimension(:), intent(in) :: mapping
 
    integer :: i, j, k, j_, k_
-   integer :: natom0, natom1
-   type(partition_type) :: mnatypes0, mnatypes1
-   integer, allocatable, dimension(:) :: elnums0, elnums1
-   integer, allocatable, dimension(:) :: mnatypemap0, mnatypemap1
-   type(indexlist_type), allocatable, dimension(:) :: adjlists0, adjlists1
-   type(indexlist_type), allocatable, dimension(:) :: molfragparts0, molfragparts1
-   logical, allocatable, dimension(:, :) :: adjmat0, adjmat1
-   integer, allocatable, dimension(:) :: mnatypepartidcs0, mnatypepartidcs1
+   type(partition_type) :: mnatypes1, mnatypes2
+   integer, allocatable, dimension(:) :: elnums1, elnums2
+   integer, allocatable, dimension(:) :: mnatypemap1, mnatypemap2
+   type(atomlist_type), allocatable, dimension(:) :: adjlists1, adjlists2
+   type(atomlist_type), allocatable, dimension(:) :: molfragparts1, molfragparts2
+   logical, allocatable, dimension(:, :) :: adjmat1, adjmat2
+   integer, allocatable, dimension(:) :: mnatypepartidcs1, mnatypepartidcs2
    integer, allocatable, dimension(:) :: unmapping
    real(rk) :: rotquat(4)
 
    ! Align coordinates
 
-   rotquat = leastrotquat(mol0%natom, mol0%get_weights(), mol0%get_coords(), mol1%get_coords(), mapping)
-   call mol1%rotate_coords(rotquat)
+   rotquat = leastrotquat(mol1%natom, mol1%get_weights(), mol1%get_coords(), mol2%get_coords(), mapping)
+   call mol2%rotate_coords(rotquat)
 
-!   write (stderr, *) sqrt(squaredist(mol0%natom, mol0%get_weights(), mol0%get_coords(), mol1%get_coords(), mapping) &
-!         /sum(mol0%get_weights()))
+!   write (stderr, *) sqrt(squaredist(mol1%natom, mol1%get_weights(), mol1%get_coords(), mol2%get_coords(), mapping) &
+!         /sum(mol1%get_weights()))
 
    ! Initialization
 
-   natom0 = mol0%get_natom()
-   natom1 = mol1%get_natom()
-   adjmat0 = mol0%get_adjmatrix()
    adjmat1 = mol1%get_adjmatrix()
-   elnums0 = mol0%get_elnums()
+   adjmat2 = mol2%get_adjmatrix()
    elnums1 = mol1%get_elnums()
-   adjlists0 = mol0%get_adjlists()
+   elnums2 = mol2%get_elnums()
    adjlists1 = mol1%get_adjlists()
-   mnatypes0 = mol0%mnatypes
+   adjlists2 = mol2%get_adjlists()
    mnatypes1 = mol1%mnatypes
-   mnatypemap0 = mol0%mnatypes%index_part_map
-   mnatypemap1 = mol1%mnatypes%index_part_map
-   molfragparts0 = mol0%get_molfrags()
+   mnatypes2 = mol2%mnatypes
+   mnatypemap1 = mol1%mnatypes%partition_map
+   mnatypemap2 = mol2%mnatypes%partition_map
    molfragparts1 = mol1%get_molfrags()
+   molfragparts2 = mol2%get_molfrags()
    unmapping = inverse_permutation(mapping)
 
    ! Remove mismatched bonds
 
-   do i = 1, natom0
-      do j_ = 1, size(adjlists0(i)%indices)
-         j = adjlists0(i)%indices(j_)
-         if (.not. adjmat1(mapping(i), mapping(j))) then
-            mnatypepartidcs0 = mnatypes0%parts(mnatypemap0(j))%indices
-            do k_ = 1, size(mnatypepartidcs0)
-               k = mnatypepartidcs0(k_)
-               call mol0%remove_bond(i, k)
-               call mol1%remove_bond(mapping(i), mapping(k))
+   do i = 1, size(mol1%atoms)
+      do j_ = 1, size(adjlists1(i)%atomidcs)
+         j = adjlists1(i)%atomidcs(j_)
+         if (.not. adjmat2(mapping(i), mapping(j))) then
+            mnatypepartidcs1 = mnatypes1%parts(mnatypemap1(j))%indices
+            do k_ = 1, size(mnatypepartidcs1)
+               k = mnatypepartidcs1(k_)
+               call mol1%remove_bond(i, k)
+               call mol2%remove_bond(mapping(i), mapping(k))
             end do
          end if
       end do
    end do
 
-   do i = 1, natom1
-      do j_ = 1, size(adjlists1(i)%indices)
-         j = adjlists1(i)%indices(j_)
-         if (.not. adjmat0(unmapping(i), unmapping(j))) then
-            mnatypepartidcs1 = mnatypes1%parts(mnatypemap1(j))%indices
-            do k_ = 1, size(mnatypepartidcs1)
-               k = mnatypepartidcs1(k_)
-               call mol1%remove_bond(i, k)
-               call mol0%remove_bond(unmapping(i), unmapping(k))
+   do i = 1, size(mol2%atoms)
+      do j_ = 1, size(adjlists2(i)%atomidcs)
+         j = adjlists2(i)%atomidcs(j_)
+         if (.not. adjmat1(unmapping(i), unmapping(j))) then
+            mnatypepartidcs2 = mnatypes2%parts(mnatypemap2(j))%indices
+            do k_ = 1, size(mnatypepartidcs2)
+               k = mnatypepartidcs2(k_)
+               call mol2%remove_bond(i, k)
+               call mol1%remove_bond(unmapping(i), unmapping(k))
             end do
          end if
       end do
@@ -102,32 +99,32 @@ subroutine remove_reactive_bonds(mol0, mol1, mapping)
 
    ! Remove water bonds
 
-   do i = 1, size(molfragparts0)
-      if (all(sorted(elnums0(molfragparts0(i)%indices)) == [1, 1, 8])) then
-         do j_ = 1, size(molfragparts0(i)%indices)
-            j = molfragparts0(i)%indices(j_)
-            do k_ = 1, size(adjlists0(j)%indices)
-               k = adjlists0(j)%indices(k_)
-               call mol0%remove_bond(j, k)
-            end do
-         end do
-      end if
-   end do
-
    do i = 1, size(molfragparts1)
-      if (all(sorted(elnums1(molfragparts1(i)%indices)) == [1, 1, 8])) then
-         do j_ = 1, size(molfragparts1(i)%indices)
-            j = molfragparts1(i)%indices(j_)
-            do k_ = 1, size(adjlists1(j)%indices)
-               k = adjlists1(j)%indices(k_)
+      if (all(sorted(elnums1(molfragparts1(i)%atomidcs)) == [1, 1, 8])) then
+         do j_ = 1, size(molfragparts1(i)%atomidcs)
+            j = molfragparts1(i)%atomidcs(j_)
+            do k_ = 1, size(adjlists1(j)%atomidcs)
+               k = adjlists1(j)%atomidcs(k_)
                call mol1%remove_bond(j, k)
             end do
          end do
       end if
    end do
 
-   call find_molfrags(mol0)
+   do i = 1, size(molfragparts2)
+      if (all(sorted(elnums2(molfragparts2(i)%atomidcs)) == [1, 1, 8])) then
+         do j_ = 1, size(molfragparts2(i)%atomidcs)
+            j = molfragparts2(i)%atomidcs(j_)
+            do k_ = 1, size(adjlists2(j)%atomidcs)
+               k = adjlists2(j)%atomidcs(k_)
+               call mol2%remove_bond(j, k)
+            end do
+         end do
+      end if
+   end do
+
    call find_molfrags(mol1)
+   call find_molfrags(mol2)
 
 end subroutine
 

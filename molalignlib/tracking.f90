@@ -12,14 +12,14 @@ implicit none
 private
 public find_molfrags
 
-type(indexlist_type), allocatable :: adjlists(:)
+type(atomlist_type), allocatable :: adjlists(:)
 
 contains
 
 subroutine find_molfrags (mol)
    type(molecule_type), intent(inout) :: mol
    ! Local variables
-   integer :: n, nfrag
+   integer :: iatom, nfrag
    integer, allocatable :: fragidcs(:), fragsize(:)
    logical, allocatable :: tracked(:)
 
@@ -37,14 +37,14 @@ subroutine find_molfrags (mol)
    fragsize(:) = 0
 
    ! detect fragments and populate frag arrays
-   n = 1
-   do while (n <= size(mol%atoms))
-      if (tracked(n)) then
-         n = n + 1
+   iatom = 1
+   do while (iatom <= size(mol%atoms))
+      if (tracked(iatom)) then
+         iatom = iatom + 1
       else
          nfrag = nfrag + 1
-         call recrun(tracked, n, nfrag, fragidcs, fragsize)
-         n = 1
+         call recrun(tracked, iatom, nfrag, fragidcs, fragsize)
+         iatom = 1
       end if
    end do
 
@@ -53,24 +53,75 @@ subroutine find_molfrags (mol)
 
 end subroutine
 
-recursive subroutine recrun (tracked, n, nfrag, fragidcs, fragsize)
+recursive subroutine recrun (tracked, iatom, nfrag, fragidcs, fragsize)
 ! runs recursivelly over the structure and populates arrays
    logical, intent(inout) :: tracked(:)
-   integer, intent(in) :: n, nfrag
+   integer, intent(in) :: iatom, nfrag
    integer, intent(inout) :: fragidcs(:), fragsize(:)
    ! Local variables
    integer :: i
 
-   if (tracked(n)) return
+   if (tracked(iatom)) return
 
-   tracked(n) = .true.
-   fragidcs(n) = nfrag
+   tracked(iatom) = .true.
+   fragidcs(iatom) = nfrag
    fragsize(nfrag) = fragsize(nfrag) + 1
    
-   do i = 1, size(adjlists(n)%indices)
-      call recrun(tracked, adjlists(n)%indices(i), nfrag, fragidcs, fragsize)
+   do i = 1, size(adjlists(iatom)%atomidcs)
+      call recrun(tracked, adjlists(iatom)%atomidcs(i), nfrag, fragidcs, fragsize)
    end do
 
 end subroutine
+
+subroutine set_molfrags(self, nfrag, fragidcs)
+   class(molecule_type), intent(inout) :: self
+   integer, intent(in) :: nfrag
+   integer, intent(in) :: fragidcs(:)
+
+   self%molfrags = atompartition(nfrag, fragidcs)
+
+end subroutine
+
+function get_molfrags(self) result(molfrags)
+   class(molecule_type), intent(in) :: self
+   ! Local variables
+   integer :: i
+   type(atomlist_type), allocatable :: molfrags(:)
+
+   allocate (molfrags(size(self%molfrags)))
+
+   do i = 1, size(self%molfrags)
+      molfrags(i)%atomidcs = self%molfrags(i)%atomidcs
+   end do
+
+end function
+
+function get_molfragroots(self) result(fragroots)
+   class(molecule_type), intent(in) :: self
+   ! Result variable
+   integer, allocatable :: fragroots(:)
+   ! Local variables
+   integer :: h, i
+   integer :: iatom, root_atom
+   integer :: eltypepop_i, eltypepop_min
+   integer, allocatable :: atomeltypes(:)
+
+   allocate (fragroots(size(self%molfrags)))
+
+   atomeltypes = self%eltypes%partition_map
+   do h = 1, size(self%molfrags)
+      eltypepop_min = huge(eltypepop_min)
+      do i = 1, size(self%molfrags(h)%atomidcs)
+         iatom = self%molfrags(h)%atomidcs(i)
+         eltypepop_i = size(self%eltypes%parts(atomeltypes(iatom))%indices)
+         if (eltypepop_i < eltypepop_min) then
+            root_atom = iatom
+            eltypepop_min = eltypepop_i
+         end if
+         fragroots(h) = root_atom
+      end do
+   end do
+
+end function
 
 end module

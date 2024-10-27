@@ -60,7 +60,7 @@ program test_dict_part1
 
    ! Create dictionary
    call d%init(MAX_KEY_LENGTH, MAX_KEY_VALUE, NUM_TEST_CASES)
-   print '(A,I0)', "Dictionary size: ", d%size
+   print '(A,I0)', "Dictionary size: ", d%max_occupied
    print '(A,I0)', "Number of test cases: ", NUM_TEST_CASES
 
    total_success = 0

@@ -36,8 +36,9 @@ implicit none
 
 contains
 
-subroutine remap_atoms(mol0, mol1, maplist, countlist, nrec)
-   type(molecule_type), intent(in) :: mol0, mol1
+subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
+   type(molecule_type), intent(in) :: mol1, mol2
+   type(partition_type), intent(in) :: eltypes
    integer, intent(out) :: maplist(:, :)
    integer, intent(out) :: countlist(:)
    integer, intent(out) :: nrec
@@ -46,40 +47,37 @@ subroutine remap_atoms(mol0, mol1, maplist, countlist, nrec)
 
    integer :: natom
    real(rk), dimension(:), allocatable :: weights
-   real(rk), dimension(:, :), allocatable :: coords0, coords1
-   logical, dimension(:, :), allocatable :: adjmat0, adjmat1
-   type(indexlist_type), allocatable, dimension(:) :: adjlists0, adjlists1
-   type(partition_type) :: eltypes0, eltypes1
+   real(rk), dimension(:, :), allocatable :: coords1, coords2
+   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
+   type(atomlist_type), allocatable, dimension(:) :: adjlists1, adjlists2
 
    logical :: visited, overflow
    integer :: irec, krec, ntrial, nstep, steps
    integer :: adjd, recadjd(maxrec)
-   integer, dimension(mol0%natom) :: mapping, newmapping
+   integer, dimension(mol1%natom) :: mapping, newmapping
    real(rk) :: rmsd, totalrot
+   real(rk) :: workcoords1(3, mol2%natom)
    real(rk), dimension(4) :: rotquat, prodquat
    real(rk), dimension(maxrec) :: recrmsd, avgsteps, avgtotalrot, avgrealrot
-   logical :: prunemat(mol0%natom, mol1%natom)
-   real(rk) :: biasmat(mol0%natom, mol1%natom)
-   real(rk) :: workcoords1(3, mol1%natom)
+   type(logmatrix_type), dimension(:), allocatable :: prunemask
+   type(rematrix_type), dimension(:), allocatable :: mnadists
 
-   natom = mol0%get_natom()
-   weights = mol0%get_weights()
-   coords0 = mol0%get_coords()
+   natom = mol1%get_natom()
+   weights = mol1%get_weights()
    coords1 = mol1%get_coords()
-   eltypes0 = mol0%get_eltypes()
-   eltypes1 = mol1%get_eltypes()
-   adjlists0 = mol0%get_adjlists()
+   coords2 = mol2%get_coords()
    adjlists1 = mol1%get_adjlists()
-   adjmat0 = mol0%get_adjmatrix()
+   adjlists2 = mol2%get_adjlists()
    adjmat1 = mol1%get_adjmatrix()
+   adjmat2 = mol2%get_adjmatrix()
 
    ! Calculate prune matrix
 
-   call prune_procedure(eltypes0, eltypes1, coords0, coords1, prunemat)
+   call prune_procedure(eltypes, coords1, coords2, prunemask)
 
    ! Calculate bias matrix
 
-   call bias_procedure(eltypes0, eltypes1, adjlists0, adjlists1, biasmat)
+   call bias_procedure(eltypes, adjlists1, adjlists2, mnadists)
 
    ! Initialize loop variables
 
@@ -95,9 +93,9 @@ subroutine remap_atoms(mol0, mol1, maplist, countlist, nrec)
 
       ntrial = ntrial + 1
 
-      ! Work with a copy of coords1
+      ! Work with a copy of coords2
 
-      workcoords1 = coords1
+      workcoords1 = coords2
 
       ! Aply a random rotation to workcoords1
 
@@ -105,20 +103,20 @@ subroutine remap_atoms(mol0, mol1, maplist, countlist, nrec)
 
       ! Minimize the euclidean distance
 
-      call assign_atoms(eltypes0, eltypes1, coords0, workcoords1, prunemat, biasmat, mapping)
-      rotquat = leastrotquat(natom, weights, coords0, workcoords1, mapping)
+      call assign_atoms(eltypes, coords1, workcoords1, prunemask, mnadists, mapping)
+      rotquat = leastrotquat(natom, weights, coords1, workcoords1, mapping)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
       call rotate(natom, workcoords1, rotquat)
-!      print *, sqrt(leastsquaredist(natom, weights, coords0, coords1, mapping)/sum(weights))
+!      print *, sqrt(leastsquaredist(natom, weights, coords1, coords2, mapping)/sum(weights))
 !      stop
 
       steps = 1
 
       do while (iter_flag)
-         call assign_atoms(eltypes0, eltypes1, coords0, workcoords1, prunemat, biasmat, newmapping)
+         call assign_atoms(eltypes, coords1, workcoords1, prunemask, mnadists, newmapping)
          if (all(newmapping == mapping)) exit
-         rotquat = leastrotquat(natom, weights, coords0, workcoords1, newmapping)
+         rotquat = leastrotquat(natom, weights, coords1, workcoords1, newmapping)
          prodquat = quatmul(rotquat, prodquat)
          call rotate(natom, workcoords1, rotquat)
          totalrot = totalrot + rotangle(rotquat)
@@ -129,12 +127,12 @@ subroutine remap_atoms(mol0, mol1, maplist, countlist, nrec)
       nstep = nstep + steps
 
 !      if (back_flag) then
-!         call minadjdiff(mol0, mol1, mapping)
-!         call eqvatomperm(mol0, mol1, workcoords1, mapping)
+!         call minadjdiff(mol1, mol2, mapping)
+!         call eqvatomperm(mol1, mol2, workcoords1, mapping)
 !      end if
 
-      adjd = adjacencydiff(natom, adjmat0, adjmat1, mapping)
-      rmsd = sqrt(leastsquaredist(natom, weights, coords0, coords1, mapping)/sum(weights))
+      adjd = adjacencydiff(natom, adjmat1, adjmat2, mapping)
+      rmsd = sqrt(leastsquaredist(natom, weights, coords1, coords2, mapping)/sum(weights))
 
       ! Check for new best maplist
 
@@ -190,7 +188,7 @@ subroutine remap_atoms(mol0, mol1, maplist, countlist, nrec)
    ! Reorder back to default atom ordering
 
 !   do irec = 1, nrec
-!      maplist(:, irec) = mol1%atomorder(maplist(mol0%atomordermap, irec))
+!      maplist(:, irec) = mol2%atomorder(maplist(mol1%atomordermap, irec))
 !   end do
 
    ! Print stats if requested

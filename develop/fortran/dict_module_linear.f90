@@ -12,36 +12,36 @@ module dict_mod
       integer, allocatable :: key_lengths(:)
       integer, allocatable :: values(:)
       logical, allocatable :: occupied(:)
-      integer :: size
+      integer :: num_slots
+      integer :: num_occupied
       integer :: max_key_len
       integer :: max_key_val
-      integer :: num_occupied
       integer :: max_occupied
    contains
-      procedure :: init => dict_init
       procedure :: add => dict_add
       procedure :: get => dict_get
       procedure :: has => dict_has
+      procedure :: init => dict_init
       procedure :: reset => dict_reset
    end type dict
 
 contains
 
-   subroutine dict_init(this, max_key_len, max_key_val, dict_size)
+   subroutine dict_init(this, max_key_len, max_key_val, max_occupied)
       class(dict), intent(inout) :: this
-      integer, intent(in) :: dict_size
+      integer, intent(in) :: max_occupied
       integer, intent(in) :: max_key_len
       integer, intent(in) :: max_key_val
       
-      this%size = int(dict_size / MAX_LOAD_FACTOR)
-      this%max_occupied = dict_size
+      this%num_slots = int(max_occupied / MAX_LOAD_FACTOR)
+      this%max_occupied = max_occupied
       this%max_key_len = max_key_len
       this%max_key_val = max_key_val
       
-      allocate(this%keys(max_key_len, this%size))
-      allocate(this%key_lengths(this%size))
-      allocate(this%values(this%size))
-      allocate(this%occupied(this%size))
+      allocate(this%keys(max_key_len, this%num_slots))
+      allocate(this%key_lengths(this%num_slots))
+      allocate(this%values(this%num_slots))
+      allocate(this%occupied(this%num_slots))
       
       this%occupied = .false.
       this%num_occupied = 0
@@ -62,18 +62,18 @@ contains
       integer :: hash, index
 
       hash = compute_hash(key)
-      index = modulo(hash, this%size) + 1
+      index = modulo(hash, this%num_slots) + 1
 
       do while (this%occupied(index))
          if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
             this%values(index) = value
             return
          end if
-         index = modulo(index, this%size) + 1
+         index = modulo(index, this%num_slots) + 1
       end do
 
       if (this%num_occupied >= this%max_occupied) then
-         error stop "Dictionary capacity exceeded"
+         error stop "Dictionary is too full"
       end if
 
       this%keys(:size(key), index) = key
@@ -91,15 +91,15 @@ contains
       integer :: hash, index
 
       hash = compute_hash(key)
-      index = modulo(hash, this%size) + 1
+      index = modulo(hash, this%num_slots) + 1
 
       do while (this%occupied(index))
          if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
             value = this%values(index)
             return
          end if
-         index = modulo(index, this%size) + 1
-         if (index == modulo(hash, this%size) + 1) then
+         index = modulo(index, this%num_slots) + 1
+         if (index == modulo(hash, this%num_slots) + 1) then
             error stop "Key not found"
          end if
       end do
@@ -115,15 +115,15 @@ contains
       integer :: hash, index
 
       hash = compute_hash(key)
-      index = modulo(hash, this%size) + 1
+      index = modulo(hash, this%num_slots) + 1
 
       do while (this%occupied(index))
          if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
             exists = .true.
             return
          end if
-         index = modulo(index, this%size) + 1
-         if (index == modulo(hash, this%size) + 1) then
+         index = modulo(index, this%num_slots) + 1
+         if (index == modulo(hash, this%num_slots) + 1) then
             exists = .false.
             return
          end if

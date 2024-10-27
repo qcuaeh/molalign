@@ -1,34 +1,69 @@
 module partition
 use stdio
+use kinds
+use sorting
 
 implicit none
 
-type, public :: indexlist_type
-   integer, allocatable :: indices(:)
+type, public :: intlist_type
+   integer, allocatable :: i(:)
 end type
 
-type, public :: pointertopart_type
+type, public :: relist_type
+   real(rk), allocatable :: x(:)
+end type
+
+type, public :: nested_intlist_type
+   type(intlist_type), allocatable :: s(:)
+end type
+
+type, public :: nested_relist_type
+   type(relist_type), allocatable :: s(:)
+end type
+
+type :: logmatrix_type
+   logical, allocatable :: b(:, :)
+end type
+
+type :: rematrix_type
+   real(rk), allocatable :: x(:, :)
+end type
+
+type, public :: atomlist_type
+   integer, allocatable :: atomidcs(:)
+end type
+
+type, public :: partpointer_type
    type(part_type), pointer :: ptr => null()
 end type
 
-type, public :: part_type
-   integer :: size
+type, public :: subset_type
    integer :: index
-   integer, pointer :: total_size
-   integer, pointer :: max_part_size
-   integer, pointer :: index_part_map(:)
+   integer :: part_size
    integer, pointer :: indices(:)
    integer, pointer :: allocation(:)
+   integer, pointer :: total_num_elems
+   integer, pointer :: largest_subset_size
+   integer, pointer :: partition_map(:)
 contains
-   procedure :: add => part_add
+   procedure :: add => subset_add
+end type
+
+type, public :: part_type
+   integer :: index
+   type(subset_type) :: subset1
+   type(subset_type) :: subset2
 end type
 
 type, public :: partition_type
-   integer :: size
-   integer :: allocation_size
-   integer, pointer :: total_size
-   integer, pointer :: max_part_size
-   integer, pointer :: index_part_map(:)
+   integer :: partition_size
+   integer :: max_num_parts
+   integer :: max_num_elems
+   integer, pointer :: total_num_elems1
+   integer, pointer :: total_num_elems2
+   integer, pointer :: largest_subset_size
+   integer, pointer :: partition_map1(:)
+   integer, pointer :: partition_map2(:)
    type(part_type), pointer :: parts(:)
 contains
    procedure :: init => partition_init
@@ -37,25 +72,29 @@ contains
 end type
 
 interface operator (==)
-   module procedure equality
+   module procedure partition_equality
 end interface
 
 contains
 
-function equality(self, other)
+function partition_equality(self, other) result(equality)
    type(partition_type), intent(in) :: self, other
    ! Result variable
    logical :: equality
    ! Local variables
    integer :: h
 
-   if (self%size /= other%size) then
+   if (self%partition_size /= other%partition_size) then
       equality = .false.
       return
    end if
 
-   do h = 1, self%size
-      if (self%parts(h)%size /= other%parts(h)%size) then
+   do h = 1, self%partition_size
+      if (self%parts(h)%subset1%part_size /= other%parts(h)%subset1%part_size) then
+         equality = .false.
+         return
+      end if
+      if (self%parts(h)%subset2%part_size /= other%parts(h)%subset2%part_size) then
          equality = .false.
          return
       end if
@@ -65,35 +104,49 @@ function equality(self, other)
 
 end function
 
-subroutine partition_init(self, allocation_size)
+subroutine partition_init(self, max_num_parts, max_num_elems)
    class(partition_type), intent(inout) :: self
-   integer, intent(in) :: allocation_size
+   integer, intent(in) :: max_num_parts, max_num_elems
 
-   allocate (self%total_size)
-   allocate (self%max_part_size)
-   allocate (self%parts(allocation_size))
-   allocate (self%index_part_map(allocation_size))
+   allocate (self%total_num_elems1)
+   allocate (self%total_num_elems2)
+   allocate (self%largest_subset_size)
+   allocate (self%parts(max_num_parts))
+   allocate (self%partition_map1(max_num_elems))
+   allocate (self%partition_map2(max_num_elems))
 
-   self%size = 0
-   self%total_size = 0
-   self%max_part_size = 0
-   self%allocation_size = allocation_size
+   self%partition_size = 0
+   self%total_num_elems1 = 0
+   self%total_num_elems2 = 0
+   self%largest_subset_size = 0
+   self%max_num_parts = max_num_parts
+   self%max_num_elems = max_num_elems
 
 end subroutine
 
-subroutine part_add(self, element)
-   class(part_type), intent(inout) :: self
+subroutine subset_add(self, element)
+   class(subset_type), intent(inout) :: self
    integer, intent(in) :: element
 
-   self%size = self%size + 1
-   self%indices => self%allocation(:self%size)
-   self%indices(self%size) = element
-   self%index_part_map(element) = self%index
+   ! Increase part size
+   self%part_size = self%part_size + 1
 
-   self%total_size = self%total_size + 1
-   if (self%size > self%max_part_size) then
-      self%max_part_size = self%size
+   ! Increase total part size
+   self%total_num_elems = self%total_num_elems + 1
+
+   ! Update max part size
+   if (self%part_size > self%largest_subset_size) then
+      self%largest_subset_size = self%part_size
    end if
+
+   ! Update part pointer size
+   self%indices => self%allocation(:self%part_size)
+
+   ! Add element to part
+   self%indices(self%part_size) = element
+
+   ! Add index to part map
+   self%partition_map(element) = self%index
 
 end subroutine
 
@@ -102,18 +155,40 @@ function partition_get_new_part(self) result(part)
    ! Result variable
    type(part_type), pointer :: part
 
-   self%size = self%size + 1
+   ! Increase partition size
+   self%partition_size = self%partition_size + 1
 
-   self%parts(self%size)%size = 0
-   allocate (self%parts(self%size)%allocation(self%allocation_size))
-   self%parts(self%size)%indices => self%parts(self%size)%allocation(:0)
+   ! Initialize new part size
+   self%parts(self%partition_size)%subset1%part_size = 0
+   self%parts(self%partition_size)%subset2%part_size = 0
 
-   self%parts(self%size)%index = self%size
-   self%parts(self%size)%index_part_map => self%index_part_map
-   self%parts(self%size)%total_size => self%total_size
-   self%parts(self%size)%max_part_size => self%max_part_size
+   ! Create new part allocation
+   allocate (self%parts(self%partition_size)%subset1%allocation(self%max_num_elems))
+   allocate (self%parts(self%partition_size)%subset2%allocation(self%max_num_elems))
 
-   part => self%parts(self%size)
+   ! Point new part indices to part allocation with size 0
+   self%parts(self%partition_size)%subset1%indices => self%parts(self%partition_size)%subset1%allocation(:0)
+   self%parts(self%partition_size)%subset2%indices => self%parts(self%partition_size)%subset2%allocation(:0)
+
+   ! Set new part index to partition current num part
+   self%parts(self%partition_size)%index = self%partition_size
+   self%parts(self%partition_size)%subset1%index = self%partition_size
+   self%parts(self%partition_size)%subset2%index = self%partition_size
+
+   ! Point new part total size pointer to partition total sizes
+   self%parts(self%partition_size)%subset1%total_num_elems => self%total_num_elems1
+   self%parts(self%partition_size)%subset2%total_num_elems => self%total_num_elems2
+
+   ! Point new part max part size pointer to partition max part size
+   self%parts(self%partition_size)%subset1%largest_subset_size => self%largest_subset_size
+   self%parts(self%partition_size)%subset2%largest_subset_size => self%largest_subset_size
+
+   ! Point new part map pointer to partition maps
+   self%parts(self%partition_size)%subset1%partition_map => self%partition_map1
+   self%parts(self%partition_size)%subset2%partition_map => self%partition_map2
+
+   ! Return pointer to new part
+   part => self%parts(self%partition_size)
 
 end function
 
@@ -122,8 +197,12 @@ subroutine partition_print_parts(self)
    integer :: h
 
    write (stderr, *)
-   do h = 1, self%size
-      write (stderr, *) h, self%parts(h)%indices
+   do h = 1, self%partition_size
+      write (stderr, *) h, self%parts(h)%subset1%indices
+   end do
+   write (stderr, *)
+   do h = 1, self%partition_size
+      write (stderr, *) h, self%parts(h)%subset2%indices
    end do
 
 end subroutine

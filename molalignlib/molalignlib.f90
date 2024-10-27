@@ -40,61 +40,63 @@ contains
 
 ! Assign atoms0 and atoms1
 subroutine molecule_remap( &
-   mol0, &
    mol1, &
+   mol2, &
+   eltypes, &
    nrec, &
    maplist, &
    countlist)
 
-   type(molecule_type), intent(inout) :: mol0, mol1
+   type(molecule_type), intent(inout) :: mol1, mol2
+   type(partition_type), intent(in) :: eltypes
    integer, intent(out) :: nrec
    integer, dimension(:, :), intent(inout) :: maplist
    integer, dimension(:), intent(inout) :: countlist
 
-   real(rk) :: travec0(3), travec1(3)
-   real(rk), allocatable, dimension(:, :) :: coords0, coords1
+   real(rk) :: travec1(3), travec2(3)
+   real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
    ! Abort if molecules have different number of atoms
 
-   if (size(mol0%atoms) /= size(mol1%atoms)) then
+   if (size(mol1%atoms) /= size(mol2%atoms)) then
       write (stderr, '(a)') 'Error: These molecules are not isomers'
       stop
    end if
 
    ! Abort if molecules are not isomers
 
-!   if (any(mol0%gather_elnums() /= mol1%gather_elnums())) then
-!      write (stderr, '(a)') 'Error: These molecules are not isomers'
-!      stop
-!   end if
+   if (any(sorted(mol1%atoms%elnum) /= sorted(mol2%atoms%elnum))) then
+      write (stderr, '(a)') 'Error: These molecules are not isomers'
+      stop
+   end if
 
    ! Abort if there are conflicting atomic types
 
-   if (.not. mol0%eltypes == mol1%eltypes) then
+   if (any(sorted(eltypes%partition_map1) /= sorted(eltypes%partition_map2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
 
    ! Backup coordinates
 
-   coords0 = mol0%get_coords()
    coords1 = mol1%get_coords()
+   coords2 = mol2%get_coords()
 
    ! Mirror coordinates
 
    if (mirror_flag) then
-      call mol1%mirror_coords()
+      call mol2%mirror_coords()
    end if
 
    ! Calculate centroids
 
-   travec0 = -centroid(mol0)
    travec1 = -centroid(mol1)
+   travec2 = -centroid(mol2)
 
    ! Center coordinates at the centroids
 
-   call mol0%translate_coords(travec0)
    call mol1%translate_coords(travec1)
+   call mol2%translate_coords(travec2)
 
    ! Initialize random number generator
 
@@ -102,54 +104,54 @@ subroutine molecule_remap( &
 
    ! Optimize assignment to minimize the AdjD and RMSD
 
-   call remap_atoms(mol0, mol1, maplist, countlist, nrec)
+   call remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
    ! Remove bonds from reactive sites and reoptimize assignment
 
 !   if (reac_flag) then
-!      call remove_reactive_bonds(mol0, mol1, maplist(:, 1))
-!      call remap_atoms(mol0, mol1, maplist, countlist, nrec)
+!      call remove_reactive_bonds(mol1, mol2, maplist(:, 1))
+!      call remap_atoms(mol1, mol2, maplist, countlist, nrec)
 !   end if
 
    ! Restore coordinates
 
-   call mol0%set_coords(coords0)
    call mol1%set_coords(coords1)
+   call mol2%set_coords(coords2)
 
 end subroutine
 
 ! Align atoms
 subroutine remapped_molecule_align( &
-   mol0, &
    mol1, &
+   mol2, &
    mapping, &
-   travec0, &
    travec1, &
+   travec2, &
    rotquat)
 
-   type(molecule_type), intent(in) :: mol0, mol1
+   type(molecule_type), intent(in) :: mol1, mol2
    integer, intent(in) :: mapping(:)
-   real(rk), intent(out) :: travec0(3), travec1(3), rotquat(4)
+   real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    ! Local variables
    real(rk), allocatable :: weights(:)
-   real(rk), allocatable, dimension(:, :) :: coords0, coords1
+   real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
-   weights = mol0%get_weights()
-   coords0 = mol0%get_coords()
+   weights = mol1%get_weights()
    coords1 = mol1%get_coords()
+   coords2 = mol2%get_coords()
 
    ! Calculate centroids
 
-   travec0 = -centroid(mol0)
    travec1 = -centroid(mol1)
+   travec2 = -centroid(mol2)
 
    ! Calculate optimal rotation matrix
 
    rotquat = leastrotquat( &
-      mol0%natom, &
+      mol1%natom, &
       weights, &
-      translated(mol0%natom, coords0, travec0), &
       translated(mol1%natom, coords1, travec1), &
+      translated(mol2%natom, coords2, travec2), &
       mapping &
    )
 
@@ -157,83 +159,86 @@ end subroutine
 
 subroutine molecule_align( &
 ! Purpose: Align atoms0 and atoms1
-   mol0, &
    mol1, &
-   travec0, &
+   mol2, &
+   eltypes, &
    travec1, &
+   travec2, &
    rotquat)
 
-   type(molecule_type), intent(in) :: mol0, mol1
-   real(rk), intent(out) :: travec0(3), travec1(3), rotquat(4)
+   type(molecule_type), intent(in) :: mol1, mol2
+   type(partition_type), intent(in) :: eltypes
+   real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
 
    ! Abort if molecules have different number of atoms
 
-   if (size(mol0%atoms) /= size(mol1%atoms)) then
+   if (size(mol1%atoms) /= size(mol2%atoms)) then
       write (stderr, '(a)') 'Error: These molecules are not isomers'
       stop
    end if
 
    ! Abort if molecules are not isomers
 
-!   if (any(mol0%gather_elnums() /= mol1%gather_elnums())) then
+!   if (any(sorted(elnums%partition_map1) /= sorted(elnums%partition_map2))) then
 !      write (stderr, '(a)') '*Error: These molecules are not isomers'
 !      stop
 !   end if
 
    ! Abort if there are conflicting atomic types
 
-   if (.not. mol0%eltypes == mol1%eltypes) then
+   if (any(sorted(eltypes%partition_map1) /= sorted(eltypes%partition_map2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
 
    ! Abort if atoms are not ordered
 
-   if (any(mol0%get_elnums() /= mol1%get_elnums())) then
+   if (any(mol1%atoms%elnum /= mol2%atoms%elnum)) then
+!   if (any(elnums%partition_map1 /= elnums%partition_map2)) then
       write (stderr, '(a)') 'Error: The atoms are not in the same order'
       stop
    end if
 
    ! Abort if atomic types are not ordered
 
-   if (.not. mol0%eltypes == mol1%eltypes) then
+   if (any(eltypes%partition_map1 /= eltypes%partition_map2)) then
       write (stderr, '(a)') 'Error: Atomic types are not in the same order'
       stop
    end if
 
    ! Calculate centroids
 
-   travec0 = -centroid(mol0)
    travec1 = -centroid(mol1)
+   travec2 = -centroid(mol2)
 
    ! Calculate optimal rotation matrix
 
    rotquat = leastrotquat( &
-      mol0%natom, &
-      mol0%get_weights(), &
-      translated(mol0%natom, mol0%get_coords(), travec0), &
+      mol1%natom, &
+      mol1%get_weights(), &
       translated(mol1%natom, mol1%get_coords(), travec1), &
-      identity_permutation(mol0%natom) &
+      translated(mol2%natom, mol2%get_coords(), travec2), &
+      identity_permutation(mol1%natom) &
    )
 
 end subroutine
 
-function get_rmsd(mol0, mol1, mapping) result(rmsd)
-   type(molecule_type), intent(in) :: mol0, mol1
+function get_rmsd(mol1, mol2, mapping) result(rmsd)
+   type(molecule_type), intent(in) :: mol1, mol2
    integer :: mapping(:)
    real(rk) :: rmsd
 
-   rmsd = sqrt(squaredist(mol0%natom, mol0%get_weights(), mol0%get_coords(), &
-         mol1%get_coords(), mapping) / sum(mol0%get_weights()))
+   rmsd = sqrt(squaredist(mol1%natom, mol1%get_weights(), mol1%get_coords(), &
+         mol2%get_coords(), mapping) / sum(mol1%get_weights()))
 
 end function
 
-function get_adjd(mol0, mol1, mapping) result(adjd)
-   type(molecule_type), intent(in) :: mol0, mol1
+function get_adjd(mol1, mol2, mapping) result(adjd)
+   type(molecule_type), intent(in) :: mol1, mol2
    integer :: mapping(:)
    integer :: adjd
 
-   adjd = adjacencydiff(mol0%natom, mol0%get_adjmatrix(), mol1%get_adjmatrix(), mapping)
+   adjd = adjacencydiff(mol1%natom, mol1%get_adjmatrix(), mol2%get_adjmatrix(), mapping)
 
 end function
 

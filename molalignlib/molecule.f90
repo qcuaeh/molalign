@@ -20,7 +20,6 @@ type, public :: atom_type
    real(rk) :: weight
    real(rk) :: coords(3)
    integer, allocatable :: adjlist(:)
-   integer, allocatable :: adjmnatypepartlens(:)
 end type
 
 type, public :: bond_type
@@ -32,19 +31,14 @@ type, public :: molecule_type
    integer :: natom
    character(:), allocatable :: title
    type(atom_type), allocatable :: atoms(:)
-   type(partition_type) :: eltypes
-   type(partition_type) :: mnatypes
-   type(partition_type) :: molfrags
+!   type(partition_type) :: molfrags
 contains
    procedure :: set_elnums
    procedure :: set_labels
    procedure :: set_coords
    procedure :: set_weights
    procedure :: set_adjlists
-   procedure :: set_eltypes
-   procedure :: set_mnatypes
 !   procedure :: set_molfrags
-   procedure :: set_adjmnatypepartlens
    procedure :: get_natom
    procedure :: get_atoms
    procedure :: get_elnums
@@ -52,16 +46,10 @@ contains
    procedure :: get_title
    procedure :: get_bonds
    procedure :: get_adjlists
-   procedure :: get_adjpartitions
-   procedure :: get_eltypes
-   procedure :: get_mnatypes
-   procedure :: get_molfrags
+!   procedure :: get_molfrags
    procedure :: get_weights
    procedure :: get_coords
-   procedure :: get_molfragroots
    procedure :: get_adjmatrix
-   procedure :: get_nadjmnatypes
-   procedure :: get_adjmnatypepartlens
    procedure :: permutate_atoms
    procedure :: mirror_coords
    procedure :: translate_coords
@@ -182,89 +170,6 @@ function get_labels(self) result(labels)
 
 end function
 
-subroutine set_eltypes(self, eltypes)
-   class(molecule_type), intent(inout) :: self
-   type(partition_type), intent(in) :: eltypes
-
-   self%eltypes = eltypes
-
-end subroutine
-
-function get_eltypes(self) result(eltypes)
-   class(molecule_type), intent(in) :: self
-   type(partition_type) :: eltypes
-
-   eltypes = self%eltypes
-
-end function
-
-subroutine set_mnatypes(self, mnatypes)
-   class(molecule_type), intent(inout) :: self
-   type(partition_type), intent(in) :: mnatypes
-
-   self%mnatypes = mnatypes
-
-end subroutine
-
-function get_mnatypes(self) result(mnatypes)
-   class(molecule_type), intent(in) :: self
-   type(partition_type) :: mnatypes
-
-   mnatypes = self%mnatypes
-
-end function
-
-!subroutine set_molfrags(self, nfrag, fragidcs)
-!   class(molecule_type), intent(inout) :: self
-!   integer, intent(in) :: nfrag
-!   integer, intent(in) :: fragidcs(:)
-!
-!   self%molfrags = atompartition(nfrag, fragidcs)
-!
-!end subroutine
-
-function get_molfrags(self) result(parts)
-   class(molecule_type), intent(in) :: self
-   ! Local variables
-   integer :: i
-   type(indexlist_type), allocatable :: parts(:)
-
-   allocate (parts(size(self%molfrags%parts)))
-
-   do i = 1, size(self%molfrags%parts)
-      parts(i)%indices = self%molfrags%parts(i)%indices
-   end do
-
-end function
-
-function get_molfragroots(self) result(fragroots)
-   class(molecule_type), intent(in) :: self
-   ! Result variable
-   integer, allocatable :: fragroots(:)
-   ! Local variables
-   integer :: h, i
-   integer :: atomidx_i, atomidx_min
-   integer :: eltypepop_i, eltypepop_min
-   integer, allocatable :: atomeltypes(:)
-
-   allocate (fragroots(size(self%molfrags%parts)))
-
-   atomeltypes = self%eltypes%index_part_map
-   do h = 1, size(self%molfrags%parts)
-      eltypepop_min = huge(eltypepop_min)
-      do i = 1, size(self%molfrags%parts(h)%indices)
-         atomidx_i = self%molfrags%parts(h)%indices(i)
-         eltypepop_i = size(self%eltypes%parts(atomeltypes(atomidx_i))%indices)
-         if (eltypepop_i < eltypepop_min) then
-            atomidx_min = atomidx_i
-            eltypepop_min = eltypepop_i
-         end if
-         fragroots(h) = atomidx_min
-      end do
-   end do
-
-end function
-
 subroutine set_weights(self, weights)
    class(molecule_type), intent(inout) :: self
    real(rk), intent(in) :: weights(size(self%atoms))
@@ -325,34 +230,12 @@ function get_adjlists(self) result(adjlists)
    class(molecule_type), intent(in) :: self
    ! Local variables
    integer :: i
-   type(indexlist_type), allocatable :: adjlists(:)
+   type(atomlist_type), allocatable :: adjlists(:)
 
    allocate (adjlists(size(self%atoms)))
 
    do i = 1, size(self%atoms)
-      adjlists(i)%indices = self%atoms(i)%adjlist
-   end do
-
-end function
-
-function get_adjpartitions(self, partition) result(adjpartitions)
-   class(molecule_type), intent(in) :: self
-   type(partition_type), intent(in) :: partition
-   ! Result variable
-   type(partition_type), allocatable :: adjpartitions(:)
-   ! Local variables
-   integer :: h, i
-   type(atom_type) :: atom
-   integer, allocatable :: adjlistsubset(:)
-
-   do i = 1, size(self%atoms)
-      atom = self%atoms(i)
-      allocate (adjpartitions(i)%parts(size(partition%parts)))
-      do h = 1, size(partition%parts)
-         adjlistsubset = intersection(atom%adjlist, partition%parts(h)%indices, size(self%atoms))
-         allocate (adjpartitions(i)%parts(h)%indices(size(adjlistsubset)))
-         adjpartitions(i)%parts(h)%indices = adjlistsubset
-      end do
+      adjlists(i)%atomidcs = self%atoms(i)%adjlist
    end do
 
 end function
@@ -373,50 +256,6 @@ function get_adjmatrix(self) result(adjmat)
       do k = 1, size(atom%adjlist)
          adjmat(i, atom%adjlist(k)) = .true.
       end do
-   end do
-
-end function
-
-subroutine set_adjmnatypepartlens(self, nadjmnatypes, adjmnatypepartlens)
-   class(molecule_type), intent(inout) :: self
-   integer, intent(in) :: nadjmnatypes(:)
-   integer, intent(in) :: adjmnatypepartlens(:, :)
-   ! Local variables
-   integer :: i
-
-   do i = 1, size(self%atoms)
-      if (.not. allocated(self%atoms(i)%adjmnatypepartlens)) then
-         allocate (self%atoms(i)%adjmnatypepartlens(nadjmnatypes(i)))
-      end if
-      self%atoms(i)%adjmnatypepartlens = adjmnatypepartlens(:nadjmnatypes(i), i)
-   end do
-
-end subroutine
-
-function get_adjmnatypepartlens(self) result(adjmnatypepartlens)
-   class(molecule_type), intent(in) :: self
-   ! Local variables
-   integer :: i
-   integer, allocatable :: adjmnatypepartlens(:, :)
-
-   allocate (adjmnatypepartlens(maxcoord, size(self%atoms)))
-
-   do i = 1, size(self%atoms)
-      adjmnatypepartlens(:size(self%atoms(i)%adjmnatypepartlens), i) = self%atoms(i)%adjmnatypepartlens
-   end do
-
-end function
-
-function get_nadjmnatypes(self) result(nadjmnatypes)
-   class(molecule_type), intent(in) :: self
-   ! Local variables
-   integer :: i
-   integer, allocatable :: nadjmnatypes(:)
-
-   allocate (nadjmnatypes(size(self%atoms)))
-
-   do i = 1, size(self%atoms)
-      nadjmnatypes(i) = size(self%atoms(i)%adjmnatypepartlens)
    end do
 
 end function

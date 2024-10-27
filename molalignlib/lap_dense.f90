@@ -5,24 +5,26 @@ implicit none
 
 contains
 
-subroutine minperm_biased(coords0, coords1, biasmat, mapping)
-   real(rk), dimension(:, :), intent(in) :: coords0, coords1
-   real(rk), dimension(:, :), intent(in) :: biasmat
-   integer, dimension(:), intent(out) :: mapping
+subroutine minperm_biased(n, e1, e2, r1, r2, bias, perm, dist)
+   integer, intent(in) :: n
+   integer, intent(in) :: e1(n), e2(n)
+   real(rk), intent(in) :: r1(3, *), r2(3, *)
+   real(rk), intent(in) :: bias(n, n)
+   integer, intent(out) :: perm(n)
+   real(rk), intent(out) :: dist
    ! Local variables
    integer :: i, j
    real(rk), allocatable :: costs(:, :)
-   real(rk) :: dummy
 
-   allocate (costs(size(coords0, dim=2), size(coords1, dim=2)))
+   allocate (costs(n, n))
 
-   do i = 1, size(coords0, dim=2)
-      do j = 1, size(coords1, dim=2)
-         costs(i, j) = sum((coords0(:, i) - coords1(:, j))**2) + biasmat(j, i)
+   do i = 1, n
+      do j = 1, n
+         costs(j, i) = sum((r1(:, e1(i)) - r2(:, e2(j)))**2) + bias(j, i)
       end do
    end do
 
-   call assndx(1, costs, size(coords0, dim=2), size(coords1, dim=2), mapping, dummy)
+   call assndx(2, costs, n, n, perm, dist)
 
 end subroutine
 
