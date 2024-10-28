@@ -38,8 +38,8 @@ abstract interface
       use partition
       type(partition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
-      type(logmatrix_type), dimension(:), intent(in) :: prunemask
-      type(rematrix_type), dimension(:), intent(in) :: mnadists
+      type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+      type(realmatrix_type), dimension(:), intent(in) :: mnadists
       integer, dimension(:), intent(out) :: mapping
    end subroutine
 end interface
@@ -52,8 +52,8 @@ contains
 subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists, mapping)
    type(partition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(logmatrix_type), dimension(:), intent(in) :: prunemask
-   type(rematrix_type), dimension(:), intent(in) :: mnadists
+   type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+   type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: mapping
    ! Local variables
    integer :: h, subset1_size
@@ -61,7 +61,7 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists,
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
 
-   allocate (auxmap(eltypes%largest_subset_size))
+   allocate (auxmap(eltypes%largest_part_size))
 
    ! Fill distance matrix for each block
 
@@ -79,8 +79,8 @@ end subroutine
 subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, mapping)
    type(partition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(logmatrix_type), dimension(:), intent(in) :: prunemask
-   type(rematrix_type), dimension(:), intent(in) :: mnadists
+   type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+   type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: mapping
    ! Local variables
    integer :: h, subset1_size
@@ -88,7 +88,7 @@ subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, 
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
 
-   allocate (auxmap(eltypes%largest_subset_size))
+   allocate (auxmap(eltypes%largest_part_size))
 
    ! Optimize mapping for each block
    do h = 1, eltypes%partition_size
@@ -105,8 +105,8 @@ end subroutine
 subroutine assign_atoms_biased( eltypes, coords1, coords2, prunemask, mnadists, mapping)
    type(partition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(logmatrix_type), dimension(:), intent(in) :: prunemask
-   type(rematrix_type), dimension(:), intent(in) :: mnadists
+   type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+   type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: mapping
    ! Local variables
    integer :: h, subset1_size
@@ -114,7 +114,7 @@ subroutine assign_atoms_biased( eltypes, coords1, coords2, prunemask, mnadists, 
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
 
-   allocate (auxmap(eltypes%largest_subset_size))
+   allocate (auxmap(eltypes%largest_part_size))
 
    ! Optimize mapping for each block
    do h = 1, eltypes%partition_size

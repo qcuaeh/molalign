@@ -63,181 +63,48 @@ subroutine compute_eltypes(mol1, mol2, eltypes)
 
 end subroutine
 
-!! Level up MNA types
-!subroutine levelup_mnatypes(adjlists1, adjlists2, mnatypes, subtypes)
-!   type(list_type), dimension(:), intent(in) :: adjlists1, adjlists2
-!   type(partition_type), intent(in) :: mnatypes
-!   type(partition_type), intent(out) :: subtypes
-!   ! Local variables
-!   integer :: h, i
-!   integer :: max_num_types
-!   type(dict_type) :: subtypedict
-!   type(partpointer_type), allocatable :: subtypelist(:)
-!   integer, allocatable :: neighborhood(:)
-!
-!   max_num_types = size(adjlists1) + size(adjlists2)
-!   max_num_atoms = max(size(adjlists1), size(adjlists2))
-!   call subtypes%init(max_num_types, max_num_atoms)
-!
-!   call subtypedict%init(maxcoord, mnatypes%partition_size, mnatypes%largest_subset_size)
-!   allocate (subtypelist(subtypedict%num_slots))
-!
-!   do h = 1, mnatypes%partition_size
-!      do i = 1, mnatypes%parts(h)%subset1%part_size
-!         iatom = mnatypes%parts(h)%subset1%indices(i)
-!         neighborhood = mnatypes%partition_map1%s(adjlists1(iatom)%n)
-!         if (.not. subtypedict%has_index(neighborhood)) then
-!            subtypelist(subtypedict%get_new_index(neighborhood))%ptr => subtypes%get_new_part()
-!         end if
-!         call subtypelist(subtypedict%get_index(neighborhood))%ptr%subset1%add(iatom)
-!      end do
-!      do i = 1, mnatypes%parts(h)%subset2%part_size
-!         iatom = mnatypes%parts(h)%subset2%indices(i)
-!         neighborhood = mnatypes%partition_map2%s(adjlists2(iatom)%n)
-!         if (.not. subtypedict%has_index(neighborhood)) then
-!            subtypelist(subtypedict%get_new_index(neighborhood))%ptr => subtypes%get_new_part()
-!         end if
-!         call subtypelist(subtypedict%get_index(neighborhood))%ptr%subset2%add(iatom)
-!      end do
-!      call subtypedict%reset()
-!   end do
-!
-!end subroutine
-!
-!! Iteratively level up MNA types
-!subroutine compute_mnatypes(mol1, mol2, mnatypes)
-!   type(molecule_type), intent(in) :: mol1, mol2
-!   type(partition_type), intent(out) :: mnatypes
-!   ! Local variables
-!   type(partition_type) :: subtypes
-!   type(intlist_type), dimension(:), allocatable :: adjlists1, adjlists2
-!
-!   do i = 1, size(mol1%atoms)
-!      adjlists1(i)%n = mol1%atoms(i)%adjlist
-!   end do
-!
-!   do i = 1, size(mol2%atoms)
-!      adjlists2(i)%n = mol2%atoms(i)%adjlist
-!   end do
-!
-!   mnatypes = mol%eltypes
-!
-!   do
-!      ! Compute next level MNA subtypes
-!      call levelup_mnatypes(mol%atoms, mnatypes, subtypes)
-!      ! Exit the loop if subtypes are unchanged
-!      if (subtypes == mnatypes) exit
-!      mnatypes = subtypes
-!   end do
-!
-!   call mnatypes%print_parts()
-!
-!end subroutine
-
-! Compute next level cross MNA types between mol1 and mol2
-subroutine compute_crossmnatypes(adjlists1, adjlists2, nintype, intypes1, intypes2, &
-      ntype, types1, types2)
-   type(atomlist_type), dimension(:), intent(in) :: adjlists1, adjlists2
-   integer, intent(in) :: nintype
-   integer, dimension(:), intent(in) :: intypes1, intypes2
-   integer, intent(out) :: ntype
-   integer, dimension(:), intent(out) :: types1, types2
+! Level up MNA types
+subroutine levelup_mnatypes(atoms1, atoms2, mnatypes, subtypes)
+   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
+   type(partition_type), intent(in) :: mnatypes
+   type(partition_type), intent(out) :: subtypes
    ! Local variables
-   integer :: h, i, j
-   logical :: untyped(size(adjlists1))
-   integer :: archeatom(size(adjlists1))
+   integer :: h, i, iatom
+   integer :: max_num_types, max_num_atoms
+   type(dict_type) :: subtypedict
+   type(partpointer_type), allocatable :: subtypelist(:)
+   integer, allocatable :: neighborhood(:)
 
-   ntype = 0
-   untyped(:) = .true.
+   max_num_types = size(atoms1) + size(atoms2)
+   max_num_atoms = max(size(atoms1), size(atoms2))
+   call subtypes%init(max_num_types, max_num_atoms)
+   call subtypedict%init(maxcoord, mnatypes%partition_size, mnatypes%largest_part_size)
+   allocate (subtypelist(subtypedict%num_slots))
 
-   do i = 1, size(adjlists1)
-      if (untyped(i)) then
-         ntype = ntype + 1
-         types1(i) = ntype
-         archeatom(ntype) = i
-         do j = i + 1, size(adjlists1)
-            if (untyped(j)) then
-               if (intypes1(j) == intypes1(i)) then
-                  if (same_adjacency(nintype, intypes1, adjlists1(i)%atomidcs, intypes1, adjlists1(j)%atomidcs)) then
-                     types1(j) = ntype
-                     untyped(j) = .false.
-                  end if
-               end if
-            end if
-         end do
-      end if
-   end do
+   do h = 1, mnatypes%partition_size
 
-   untyped(:) = .true.
-
-   do h = 1, ntype
-      do i = 1, size(adjlists1)
-         if (untyped(i)) then
-            if (intypes2(i) == intypes1(archeatom(h))) then
-               if (same_adjacency(nintype, intypes1, adjlists1(archeatom(h))%atomidcs, intypes2, adjlists2(i)%atomidcs)) then
-                  types2(i) = h
-                  untyped(i) = .false.
-               end if
-            end if
+      do i = 1, mnatypes%parts(h)%subset1%part_size
+         iatom = mnatypes%parts(h)%subset1%indices(i)
+         neighborhood = mnatypes%partition_map1(atoms1(iatom)%adjlist)
+         if (subtypedict%miss_index_of(neighborhood)) then
+            subtypelist(subtypedict%get_new_index_for(neighborhood))%ptr => subtypes%get_new_part()
          end if
+         call subtypelist(subtypedict%get_index_of(neighborhood))%ptr%subset1%add(iatom)
       end do
-   end do
 
-   do i = 1, size(adjlists1)
-      if (untyped(i)) then
-         ntype = ntype + 1
-         types2(i) = ntype
-         do j = i + 1, size(adjlists1)
-            if (untyped(j)) then
-               if (intypes2(j) == intypes2(i)) then
-                  if (same_adjacency(nintype, intypes2, adjlists2(i)%atomidcs, intypes2, adjlists2(j)%atomidcs)) then
-                     types2(j) = ntype
-                     untyped(j) = .false.
-                  end if
-               end if
-            end if
-         end do
-      end if
+      do i = 1, mnatypes%parts(h)%subset2%part_size
+         iatom = mnatypes%parts(h)%subset2%indices(i)
+         neighborhood = mnatypes%partition_map2(atoms2(iatom)%adjlist)
+         if (subtypedict%miss_index_of(neighborhood)) then
+            subtypelist(subtypedict%get_new_index_for(neighborhood))%ptr => subtypes%get_new_part()
+         end if
+         call subtypelist(subtypedict%get_index_of(neighborhood))%ptr%subset2%add(iatom)
+      end do
+
+      call subtypedict%reset()
+
    end do
 
 end subroutine
-
-! Test if adjacent atoms to a pair of atoms in mol1 and mol2 are the same
-function same_adjacency(neltype, atomtype0, adjlist1, atomtype1, adjlist2) result(sameadj)
-   integer, intent(in) :: neltype
-   integer, dimension(:), intent(in) :: adjlist1, adjlist2
-   integer, dimension(:) :: atomtype0, atomtype1
-   ! Result variable
-   logical :: sameadj
-   ! Local variables
-   integer :: i1, i2
-   integer, dimension(neltype) :: n1, n2
-
-   sameadj = .true.
-
-   if (size(adjlist1) /= size(adjlist2)) then
-      sameadj = .false.
-      return
-   end if
-
-!  Find if adjacent atoms are the same
-
-   n1(:) = 0
-   n2(:) = 0
-
-   do i1 = 1, size(adjlist1)
-      n1(atomtype0(adjlist1(i1))) = n1(atomtype0(adjlist1(i1))) + 1
-   end do
-
-   do i2 = 1, size(adjlist2)
-      n2(atomtype1(adjlist2(i2))) = n2(atomtype1(adjlist2(i2))) + 1
-   end do
-
-   if (any(n1 /= n2)) then
-      sameadj = .false.
-      return
-   end if
-
-end function
 
 end module

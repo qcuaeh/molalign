@@ -19,18 +19,20 @@ use kinds
 use flags
 use bounds
 use sorting
-use partition
 use assorting
+use partition
+use molecule
 
 implicit none
 
 abstract interface
-   subroutine f_bias( eltypes, adjlists1, adjlists2, mnadists)
+   subroutine f_bias( atoms1, atoms2, eltypes, mnadists)
       use kinds
       use partition
+      use molecule
+      type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
       type(partition_type), intent(in) :: eltypes
-      type(atomlist_type), allocatable, dimension(:), intent(in) :: adjlists1, adjlists2
-      type(rematrix_type), dimension(:), allocatable, intent(out) :: mnadists
+      type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
    end subroutine
 end interface
 
@@ -39,13 +41,12 @@ procedure(f_bias), pointer :: bias_procedure
 
 contains
 
-subroutine bias_none( eltypes, adjlists1, adjlists2, mnadists)
+subroutine bias_none( atoms1, atoms2, eltypes, mnadists)
+   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
    type(partition_type), intent(in) :: eltypes
-   type(atomlist_type), allocatable, dimension(:), intent(in) :: adjlists1, adjlists2
-   type(rematrix_type), dimension(:), allocatable, intent(out) :: mnadists
+   type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
    ! Local variables
    integer :: h, i, j
-   integer :: iatom, jatom
    integer :: subset1_size, subset2_size
 
    allocate (mnadists(eltypes%partition_size))
@@ -62,30 +63,18 @@ subroutine bias_none( eltypes, adjlists1, adjlists2, mnadists)
 
 end subroutine
 
-subroutine bias_mna( eltypes, adjlists1, adjlists2, mnadists)
+subroutine bias_mna( atoms1, atoms2, eltypes, mnadists)
+   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
    type(partition_type), intent(in) :: eltypes
-   type(atomlist_type), allocatable, dimension(:), intent(in) :: adjlists1, adjlists2
-   type(rematrix_type), dimension(:), allocatable, intent(out) :: mnadists
+   type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
    ! Local variables
-   integer :: h, i, j
-   integer :: maxequiv
-   integer :: iatom, jatom
+   integer :: h, i, j, last_level
    integer :: subset1_size, subset2_size
    integer, allocatable :: equivmat(:, :)
+   type(intmatrix_type), dimension(:), allocatable :: last_common_levels
 
    ! Calculate MNA equivalence matrix
-   call compute_equivmat(eltypes, adjlists1, adjlists2, equivmat)
-
-   maxequiv = 0
-   do h = 1, eltypes%partition_size
-      do i = 1, eltypes%parts(h)%subset1%part_size
-         iatom = eltypes%parts(h)%subset1%indices(i)
-         do j = 1, eltypes%parts(h)%subset2%part_size
-            jatom = eltypes%parts(h)%subset2%indices(j)
-            maxequiv = max(maxequiv, equivmat(jatom, iatom))
-         end do
-      end do
-   end do
+   call compute_equivmat(atoms1, atoms2, eltypes, last_level, last_common_levels)
 
    allocate (mnadists(eltypes%partition_size))
    do h = 1, eltypes%partition_size
@@ -93,37 +82,35 @@ subroutine bias_mna( eltypes, adjlists1, adjlists2, mnadists)
       subset2_size = eltypes%parts(h)%subset2%part_size
       allocate (mnadists(h)%x(subset1_size, subset2_size))
       do i = 1, subset1_size
-         iatom = eltypes%parts(h)%subset1%indices(i)
          do j = 1, subset2_size
-            jatom = eltypes%parts(h)%subset2%indices(j)
-            mnadists(h)%x(j, i) = bias_scale**2*(maxequiv - equivmat(jatom, iatom))
+            mnadists(h)%x(j, i) = bias_scale**2*(last_level - last_common_levels(h)%n(j, i))
          end do
       end do
    end do
 
 end subroutine
 
-! Calculate the maximum common MNA level for all atom cross assignments
-subroutine compute_equivmat( eltypes, adjlists1, adjlists2, equivmat)
+! Iteratively compute MNA types
+subroutine compute_equivmat(atoms1, atoms2, eltypes, last_level, last_common_levels)
+   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
    type(partition_type), intent(in) :: eltypes
-   type(atomlist_type), allocatable, dimension(:), intent(in) :: adjlists1, adjlists2
-   integer, allocatable, dimension(:, :), intent(out) :: equivmat
+   integer, intent(out) :: last_level
+   type(intmatrix_type), dimension(:), allocatable, intent(out) :: last_common_levels
    ! Local variables
-   integer :: h, i, j
-   integer :: iatom, jatom
+   integer :: h, i, j, iatom, jatom
    integer :: subset1_size, subset2_size
-   integer :: ntype, nintype, level
-   integer, allocatable, dimension(:) :: types1, types2
-   integer, allocatable, dimension(:) :: intypes1, intypes2
+   type(partition_type) :: mnatypes, subtypes
 
-   allocate (equivmat(eltypes%total_num_elems1, eltypes%total_num_elems2))
-   allocate (types1(eltypes%total_num_elems1), types2(eltypes%total_num_elems2))
-   allocate (intypes1(eltypes%total_num_elems1), intypes2(eltypes%total_num_elems2))
+   allocate (last_common_levels(eltypes%partition_size))
+   do h = 1, eltypes%partition_size
+      subset1_size = eltypes%parts(h)%subset1%part_size
+      subset2_size = eltypes%parts(h)%subset2%part_size
+      allocate (last_common_levels(h)%n(subset1_size, subset2_size))
+   end do
 
-   level = 1
-   nintype = eltypes%partition_size
-   intypes1 = eltypes%partition_map1
-   intypes2 = eltypes%partition_map2
+   ! eltypes are our initial mnatypes
+   mnatypes = eltypes
+   last_level = 1
 
    do
 
@@ -132,23 +119,26 @@ subroutine compute_equivmat( eltypes, adjlists1, adjlists2, equivmat)
             iatom = eltypes%parts(h)%subset1%indices(i)
             do j = 1, eltypes%parts(h)%subset2%part_size
                jatom = eltypes%parts(h)%subset2%indices(j)
-               if (intypes1(iatom) == intypes2(jatom)) then
-                  equivmat(jatom, iatom) = level
+               if (mnatypes%partition_map1(iatom) == mnatypes%partition_map2(jatom)) then
+                  last_common_levels(h)%n(j, i) = last_level
                end if
             end do
          end do
       end do
 
-      call compute_crossmnatypes(adjlists1, adjlists2, nintype, intypes1, intypes2, ntype, types1, types2)
+      ! Compute next last_level MNA subtypes
+      call levelup_mnatypes(atoms1, atoms2, mnatypes, subtypes)
 
-      if (all(types1 == intypes1) .and. all(types2 == intypes2)) exit
+      ! Exit the loop if subtypes are unchanged
+      if (subtypes == mnatypes) exit
 
-      nintype = ntype
-      intypes1 = types1
-      intypes2 = types2
-      level = level + 1
+      ! Update mnatypes
+      mnatypes = subtypes
+      last_level = last_level + 1
 
    end do
+
+!   call mnatypes%print_parts()
 
 end subroutine
 

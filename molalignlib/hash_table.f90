@@ -7,7 +7,7 @@ private
 
 public :: dict_type
 
-real, parameter :: MAX_LOAD_FACTOR = 0.7
+real, parameter :: MAX_LOAD_FACTOR = 0.5
 
 type, public :: dict_type
    integer, allocatable :: keys(:,:)
@@ -19,9 +19,9 @@ type, public :: dict_type
    integer :: num_occupied
    integer :: max_occupied
 contains
-   procedure :: has_index
-   procedure :: get_index
-   procedure :: get_new_index
+   procedure :: miss_index_of
+   procedure :: get_index_of
+   procedure :: get_new_index_for
    procedure :: init => dict_init
    procedure :: reset => dict_reset
 end type dict_type
@@ -56,7 +56,7 @@ subroutine dict_reset(this)
 
 end subroutine dict_reset
 
-function get_new_index( this, key) result(index)
+function get_new_index_for( this, key) result(index)
    class(dict_type), intent(inout) :: this
    integer, intent(in) :: key(:)
    integer :: hash, index
@@ -66,14 +66,14 @@ function get_new_index( this, key) result(index)
 
    do while (this%occupied(index))
       if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
-         error stop "Dictionary is inmutable"
+         error stop "Key already in hash table"
          return
       end if
       index = modulo(index, this%num_slots) + 1
    end do
 
    if (this%num_occupied >= this%max_occupied) then
-      error stop "Dictionary is too full"
+      error stop "Hash table too full"
    end if
 
    this%keys(:size(key), index) = key
@@ -81,9 +81,9 @@ function get_new_index( this, key) result(index)
    this%occupied(index) = .true.
    this%num_occupied = this%num_occupied + 1
 
-end function get_new_index
+end function get_new_index_for
 
-function get_index( this, key) result(index)
+function get_index_of( this, key) result(index)
    class(dict_type), intent(in) :: this
    integer, intent(in) :: key(:)
    integer :: hash, index
@@ -103,32 +103,30 @@ function get_index( this, key) result(index)
 
    error stop "Key not found"
 
-end function get_index
+end function get_index_of
 
-function has_index( this, key) result(exists)
+function miss_index_of( this, key) result(missing)
    class(dict_type), intent(in) :: this
    integer, intent(in) :: key(:)
-   logical :: exists
+   logical :: missing
    integer :: hash, index
 
    hash = compute_hash(key)
    index = modulo(hash, this%num_slots) + 1
+   missing = .true.
 
    do while (this%occupied(index))
       if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
-         exists = .true.
+         missing = .false.
          return
       end if
       index = modulo(index, this%num_slots) + 1
       if (index == modulo(hash, this%num_slots) + 1) then
-         exists = .false.
          return
       end if
    end do
 
-   exists = .false.
-
-end function has_index
+end function miss_index_of
 
 function compute_hash(key) result(hash)
    integer, parameter :: HASH_CONSTANT = 1779033703

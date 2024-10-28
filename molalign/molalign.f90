@@ -220,7 +220,6 @@ end if
 ! Compute types
 
 call compute_eltypes(mol1, mol2, eltypes)
-!call compute_mnatypes(mol1, mol2, eltypes, mnatypes)
 
 if (remap_flag) then
 

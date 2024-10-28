@@ -49,7 +49,7 @@ contains
 !   procedure :: get_molfrags
    procedure :: get_weights
    procedure :: get_coords
-   procedure :: get_adjmatrix
+   procedure :: get_adjmat
    procedure :: permutate_atoms
    procedure :: mirror_coords
    procedure :: translate_coords
@@ -240,7 +240,7 @@ function get_adjlists(self) result(adjlists)
 
 end function
 
-function get_adjmatrix(self) result(adjmat)
+function get_adjmat(self) result(adjmat)
    class(molecule_type), intent(in) :: self
    ! Local variables
    integer :: i, k
@@ -267,7 +267,7 @@ function get_bonds(self) result(bonds)
    logical, allocatable :: adjmat(:, :)
    type(bond_type), allocatable :: bonds(:)
 
-   adjmat = self%get_adjmatrix()
+   adjmat = self%get_adjmat()
    allocate (bonds(count(adjmat)/2))
 
    nbond = 0

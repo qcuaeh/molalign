@@ -238,7 +238,7 @@ function get_adjd(mol1, mol2, mapping) result(adjd)
    integer :: mapping(:)
    integer :: adjd
 
-   adjd = adjacencydiff(mol1%natom, mol1%get_adjmatrix(), mol2%get_adjmatrix(), mapping)
+   adjd = adjacencydiff(mol1%natom, mol1%get_adjmat(), mol2%get_adjmat(), mapping)
 
 end function
 

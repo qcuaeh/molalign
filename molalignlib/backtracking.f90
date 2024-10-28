@@ -295,9 +295,9 @@ subroutine minadjdiff (mol1, mol2, mapping)
 end subroutine
 
 ! Find best correspondence between points of graphs
-subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
+subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
    type(molecule_type), intent(in) :: mol1, mol2
-   real(rk), intent(in) :: workcoords1(:, :)
+   real(rk), intent(in) :: workcoords(:, :)
    integer, intent(inout) :: mapping(:)
 
    ! Local variables
@@ -416,7 +416,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
    end do
 
 !   print '(a,i0)', "Natoms: ", natom
-!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords1, workcoords1, mapping)/sum(weights))
+!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords1, workcoords, mapping)/sum(weights))
 !   print '(a,i0)', "permcount: ", permcount
 !   print '(a,i0)', "fragcount: ", fragcount
 
@@ -471,7 +471,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
-         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords1, mapping)/sum(weights))
+         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, mapping)/sum(weights))
          moldiff = adjacencydiff(natom, adjmat1, adjmat2, mapping)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist
@@ -514,7 +514,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
             do i = 1, meqvnei
                mapping_min(equiv(i)) = mapping(equiv(perm_min(i)))
                moldist_min = moldist_min &
-                        + sum((workcoords1(:, mapping_min(equiv(i))) - coords1(:, equiv(i)))**2)
+                        + sum((workcoords(:, mapping_min(equiv(i))) - coords1(:, equiv(i)))**2)
             end do
             do while ( more )
                call perm1_next3 (meqvnei, perm, more, rank)
@@ -526,7 +526,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
                do i = 1, meqvnei
                   mapping_p(equiv(i)) = mapping(equiv(perm(i)))
                   moldist_p = moldist_p &
-                         + sum((workcoords1(:, mapping_p(equiv(i))) - coords1(:, equiv(i)))**2) 
+                         + sum((workcoords(:, mapping_p(equiv(i))) - coords1(:, equiv(i)))**2) 
                end do
                ! save min dist permut
                if ( moldist_p < moldist_min ) then
@@ -547,10 +547,10 @@ subroutine eqvatomperm (mol1, mol2, workcoords1, mapping)
 !                            track4ind(4) = equiv(j)
 !                            call calc_dihedral (0, track4ind, coords1, calcd, dihed0(j))
 !                            track4ind_c(:) = mapping_min(track4ind(:))
-!                            call calc_dihedral (0, track4ind_c, workcoords1, calcd, dihed1(j))
+!                            call calc_dihedral (0, track4ind_c, workcoords, calcd, dihed1(j))
 !                        end do
 !                        print '(a,3f10.3)', "coords1: ", dihed0(:meqvnei)
-!                        print '(a,3f10.3)', "workcoords1: ", dihed1(:meqvnei)
+!                        print '(a,3f10.3)', "workcoords: ", dihed1(:meqvnei)
 !                    end if
 !                end if
             ! remap connectivity of permuted branch path

@@ -53,8 +53,8 @@ subroutine remove_reactive_bonds(mol1, mol2, mapping)
 
    ! Initialization
 
-   adjmat1 = mol1%get_adjmatrix()
-   adjmat2 = mol2%get_adjmatrix()
+   adjmat1 = mol1%get_adjmat()
+   adjmat2 = mol2%get_adjmat()
    elnums1 = mol1%get_elnums()
    elnums2 = mol2%get_elnums()
    adjlists1 = mol1%get_adjlists()

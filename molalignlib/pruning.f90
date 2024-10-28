@@ -32,7 +32,7 @@ abstract interface
       use partition
       type(partition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
-      type(logmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
+      type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
    end subroutine
 end interface
 
@@ -41,10 +41,9 @@ contains
 subroutine prune_none( eltypes, coords1, coords2, prunemask)
    type(partition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(logmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
+   type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
    ! Local variables
    integer :: h, i, j
-   integer :: iatom, jatom
    integer :: subset1_size, subset2_size
 
    allocate (prunemask(eltypes%partition_size))
@@ -64,12 +63,12 @@ end subroutine
 subroutine prune_rd( eltypes, coords1, coords2, prunemask)
    type(partition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(logmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
+   type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
    ! Local variables
    integer :: h, i, j, k
    integer :: iatom, jatom
    integer :: subset1_size, subset2_size
-   type(nested_relist_type), allocatable, dimension(:) :: dists1, dists2
+   type(nested_reallist_type), allocatable, dimension(:) :: dists1, dists2
    logical :: pruned
 
    allocate (dists1(size(coords1, dim=2)))

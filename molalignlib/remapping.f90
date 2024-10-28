@@ -45,31 +45,31 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
    ! Local variables
 
-   integer :: natom
-   real(rk), dimension(:), allocatable :: weights
-   real(rk), dimension(:, :), allocatable :: coords1, coords2
-   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
-   type(atomlist_type), allocatable, dimension(:) :: adjlists1, adjlists2
-
    logical :: visited, overflow
    integer :: irec, krec, ntrial, nstep, steps
    integer :: adjd, recadjd(maxrec)
    integer, dimension(mol1%natom) :: mapping, newmapping
    real(rk) :: rmsd, totalrot
-   real(rk) :: workcoords1(3, mol2%natom)
+   real(rk) :: workcoords(3, mol2%natom)
    real(rk), dimension(4) :: rotquat, prodquat
    real(rk), dimension(maxrec) :: recrmsd, avgsteps, avgtotalrot, avgrealrot
-   type(logmatrix_type), dimension(:), allocatable :: prunemask
-   type(rematrix_type), dimension(:), allocatable :: mnadists
+   type(boolmatrix_type), dimension(:), allocatable :: prunemask
+   type(realmatrix_type), dimension(:), allocatable :: mnadists
 
-   natom = mol1%get_natom()
-   weights = mol1%get_weights()
+   integer :: natom1
+   type(atom_type), dimension(:), allocatable :: atoms1, atoms2
+   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
+   real(rk), dimension(:, :), allocatable :: coords1, coords2
+   real(rk), dimension(:), allocatable :: weights1
+
+   natom1 = mol1%natom
+   atoms1 = mol1%atoms
+   atoms2 = mol2%atoms
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   adjlists1 = mol1%get_adjlists()
-   adjlists2 = mol2%get_adjlists()
-   adjmat1 = mol1%get_adjmatrix()
-   adjmat2 = mol2%get_adjmatrix()
+   adjmat1 = mol1%get_adjmat()
+   adjmat2 = mol2%get_adjmat()
+   weights1 = mol1%get_weights()
 
    ! Calculate prune matrix
 
@@ -77,7 +77,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
    ! Calculate bias matrix
 
-   call bias_procedure(eltypes, adjlists1, adjlists2, mnadists)
+   call bias_procedure(atoms1, atoms2, eltypes, mnadists)
 
    ! Initialize loop variables
 
@@ -95,30 +95,30 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
       ! Work with a copy of coords2
 
-      workcoords1 = coords2
+      workcoords = coords2
 
-      ! Aply a random rotation to workcoords1
+      ! Aply a random rotation to workcoords
 
-      call rotate(natom, workcoords1, randrotquat())
+      call rotate(natom1, workcoords, randrotquat())
 
       ! Minimize the euclidean distance
 
-      call assign_atoms(eltypes, coords1, workcoords1, prunemask, mnadists, mapping)
-      rotquat = leastrotquat(natom, weights, coords1, workcoords1, mapping)
+      call assign_atoms(eltypes, coords1, workcoords, prunemask, mnadists, mapping)
+      rotquat = leastrotquat(natom1, weights1, coords1, workcoords, mapping)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
-      call rotate(natom, workcoords1, rotquat)
-!      print *, sqrt(leastsquaredist(natom, weights, coords1, coords2, mapping)/sum(weights))
+      call rotate(natom1, workcoords, rotquat)
+!      print *, sqrt(leastsquaredist(natom1, weights1, coords1, coords2, mapping)/sum(weights1))
 !      stop
 
       steps = 1
 
       do while (iter_flag)
-         call assign_atoms(eltypes, coords1, workcoords1, prunemask, mnadists, newmapping)
+         call assign_atoms(eltypes, coords1, workcoords, prunemask, mnadists, newmapping)
          if (all(newmapping == mapping)) exit
-         rotquat = leastrotquat(natom, weights, coords1, workcoords1, newmapping)
+         rotquat = leastrotquat(natom1, weights1, coords1, workcoords, newmapping)
          prodquat = quatmul(rotquat, prodquat)
-         call rotate(natom, workcoords1, rotquat)
+         call rotate(natom1, workcoords, rotquat)
          totalrot = totalrot + rotangle(rotquat)
          mapping = newmapping
          steps = steps + 1
@@ -128,11 +128,11 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
 !      if (back_flag) then
 !         call minadjdiff(mol1, mol2, mapping)
-!         call eqvatomperm(mol1, mol2, workcoords1, mapping)
+!         call eqvatomperm(mol1, mol2, workcoords, mapping)
 !      end if
 
-      adjd = adjacencydiff(natom, adjmat1, adjmat2, mapping)
-      rmsd = sqrt(leastsquaredist(natom, weights, coords1, coords2, mapping)/sum(weights))
+      adjd = adjacencydiff(natom1, adjmat1, adjmat2, mapping)
+      rmsd = sqrt(leastsquaredist(natom1, weights1, coords1, coords2, mapping)/sum(weights1))
 
       ! Check for new best maplist
 
