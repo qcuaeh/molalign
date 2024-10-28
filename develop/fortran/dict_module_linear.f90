@@ -99,9 +99,6 @@ contains
             return
          end if
          index = modulo(index, this%num_slots) + 1
-         if (index == modulo(hash, this%num_slots) + 1) then
-            error stop "Key not found"
-         end if
       end do
 
       error stop "Key not found"
@@ -117,19 +114,14 @@ contains
       hash = compute_hash(key)
       index = modulo(hash, this%num_slots) + 1
 
+      exists = .false.
       do while (this%occupied(index))
          if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
             exists = .true.
             return
          end if
          index = modulo(index, this%num_slots) + 1
-         if (index == modulo(hash, this%num_slots) + 1) then
-            exists = .false.
-            return
-         end if
       end do
-
-      exists = .false.
 
    end function dict_has
 

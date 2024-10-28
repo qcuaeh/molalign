@@ -68,7 +68,7 @@ type, public :: partition_type
    type(part_type), pointer :: parts(:)
 contains
    procedure :: init => partition_init
-   procedure :: get_new_part => partition_get_new_part
+   procedure :: new_part => partition_get_new_part
    procedure :: print_parts => partition_print_parts
 end type
 

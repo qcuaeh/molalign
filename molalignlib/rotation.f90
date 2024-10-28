@@ -29,8 +29,8 @@ public randrotquat
 
 contains
 
+! Apply rotation quaternion to atomic coordinates
 function quatrotmat(q) result(rotmat)
-! Purpose: Apply rotation quaternion to atomic coordinates
    real(rk), intent(in) :: q(4)
    real(rk) :: rotmat(3, 3)
 
@@ -48,8 +48,8 @@ function quatrotmat(q) result(rotmat)
 
 end function
 
+! Apply rotation quaternion to atomic coordinates
 subroutine rotate(natom, coords, q)
-! Purpose: Apply rotation quaternion to atomic coordinates
    integer, intent(in) :: natom
    real(rk), intent(in) :: q(4)
    real(rk), intent(inout) :: coords(3, natom)
@@ -62,8 +62,8 @@ subroutine rotate(natom, coords, q)
 
 end subroutine
 
+! Apply rotation quaternion to atomic coordinates
 function rotated(natom, coords, q) result(rotated_coords)
-! Purpose: Apply rotation quaternion to atomic coordinates
    integer, intent(in) :: natom
    real(rk), intent(in) :: q(4)
    real(rk), intent(in) :: coords(3, natom)
@@ -77,21 +77,10 @@ function rotated(natom, coords, q) result(rotated_coords)
 end function
 
 function quatmul(p, q) result(pq)
-
    real(rk), dimension(4), intent(in) :: p, q
    real(rk) :: pq(4)
-!   real(rk) :: matp(4, 4)
 
-! This matrix was wrongly defined in previous versions
-! (it was erroneously transposed), now it is correct
-!   matp(1, :) = [ p(1), -p(2), -p(3), -p(4) ]
-!   matp(2, :) = [ p(2),  p(1), -p(4),  p(3) ]
-!   matp(3, :) = [ p(3),  p(4),  p(1), -p(2) ]
-!   matp(4, :) = [ p(4), -p(3),  p(2),  p(1) ]
-!
-!   pq = matmul(matp, q)
-
-! Better to use direct quaternion multiplication
+   ! Quaternion multiplication
    pq(1) = p(1)*q(1) - p(2)*q(2) - p(3)*q(3) - p(4)*q(4)
    pq(2) = p(1)*q(2) + p(2)*q(1) + p(3)*q(4) - p(4)*q(3)
    pq(3) = p(1)*q(3) - p(2)*q(4) + p(3)*q(1) + p(4)*q(2)
@@ -103,23 +92,16 @@ function rotangle(q) result(angle)
    real(rk), dimension(4), intent(in) :: q
    real(rk) :: angle
 
-!    angle = 2*acos(q(1))
-!    angle = 2*asin(sqrt(sum(q(2:4)**2)))
    angle = 2*abs(atan(sqrt(sum(q(2:4)**2))/q(1)))
-!    angle = 2*atan2(sqrt(sum(q(2:4)**2)), q(1))
-
-!    print *, sum(q**2), &
-!        90./asin(1.)*2*acos(q(1)), &
-!        90./asin(1.)*2*asin(sqrt(sum(q(2:4)**2))), &
-!        90./asin(1.)*2*atan(sqrt(sum(q(2:4)**2))/q(1)), &
-!        90./asin(1.)*2*atan2(sqrt(sum(q(2:4)**2)), q(1))
 
 end function
 
 function randrotquat() result(rotquat)
-! Purpose: Generate a random unit quaternion.
-! Reference: Academic Press Graphics Gems Series archive Graphics
-!            Gems III archive. Pages: 129 - 132.
+! Description:
+!    This function generates a random unit quaternion.
+! References:
+!    Academic Press Graphics Gems Series archive Graphics
+!    Gems III archive. Pages: 129 - 132.
    real(rk) :: x(3)
    real(rk) :: rotquat(4)
    real(rk) :: pi, a1, a2, r1, r2, s1, s2, c1, c2
@@ -141,10 +123,8 @@ function randrotquat() result(rotquat)
    s2 = sin(a2)
    c2 = cos(a2)
 
-!   Quaternion (w, x, y, z), w must be first as required by quatrotmat
+   ! Unit quaternion (w, x, y, z)
    rotquat = [ c2*r2, s1*r1, c1*r1, s2*r2 ]
-
-!    print *, sum(rotquat**2)
 
 end function
 

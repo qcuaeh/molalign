@@ -19,9 +19,9 @@ type, public :: dict_type
    integer :: num_occupied
    integer :: max_occupied
 contains
-   procedure :: miss_index_of
-   procedure :: get_index_of
-   procedure :: get_new_index_for
+   procedure :: has_index
+   procedure :: get_index
+   procedure :: new_index
    procedure :: init => dict_init
    procedure :: reset => dict_reset
 end type dict_type
@@ -56,7 +56,7 @@ subroutine dict_reset(this)
 
 end subroutine dict_reset
 
-function get_new_index_for( this, key) result(index)
+function new_index( this, key) result(index)
    class(dict_type), intent(inout) :: this
    integer, intent(in) :: key(:)
    integer :: hash, index
@@ -81,9 +81,9 @@ function get_new_index_for( this, key) result(index)
    this%occupied(index) = .true.
    this%num_occupied = this%num_occupied + 1
 
-end function get_new_index_for
+end function new_index
 
-function get_index_of( this, key) result(index)
+function get_index( this, key) result(index)
    class(dict_type), intent(in) :: this
    integer, intent(in) :: key(:)
    integer :: hash, index
@@ -96,37 +96,31 @@ function get_index_of( this, key) result(index)
          return
       end if
       index = modulo(index, this%num_slots) + 1
-      if (index == modulo(hash, this%num_slots) + 1) then
-         error stop "Key not found"
-      end if
    end do
 
    error stop "Key not found"
 
-end function get_index_of
+end function get_index
 
-function miss_index_of( this, key) result(missing)
+function has_index( this, key)
    class(dict_type), intent(in) :: this
    integer, intent(in) :: key(:)
-   logical :: missing
+   logical :: has_index
    integer :: hash, index
 
    hash = compute_hash(key)
    index = modulo(hash, this%num_slots) + 1
-   missing = .true.
 
+   has_index = .false.
    do while (this%occupied(index))
       if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key), this%max_key_val)) then
-         missing = .false.
+         has_index = .true.
          return
       end if
       index = modulo(index, this%num_slots) + 1
-      if (index == modulo(hash, this%num_slots) + 1) then
-         return
-      end if
    end do
 
-end function miss_index_of
+end function has_index
 
 function compute_hash(key) result(hash)
    integer, parameter :: HASH_CONSTANT = 1779033703

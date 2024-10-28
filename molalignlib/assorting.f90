@@ -36,27 +36,27 @@ subroutine compute_eltypes(mol1, mol2, eltypes)
    type(partition_type), intent(out) :: eltypes
    ! Local variables
    integer :: i, elnum, max_num_atoms
-   type(partpointer_type), allocatable :: typelist(:)
+   type(partpointer_type), allocatable :: partlist(:)
 
-   allocate (typelist(nelem))
+   allocate (partlist(nelem))
 
    max_num_atoms = max(size(mol1%atoms), size(mol2%atoms))
    call eltypes%init(nelem, max_num_atoms)
 
    do i = 1, size(mol1%atoms)
       elnum = mol1%atoms(i)%elnum
-      if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%get_new_part()
+      if (.not. associated(partlist(elnum)%ptr)) then
+         partlist(elnum)%ptr => eltypes%new_part()
       end if
-      call typelist(elnum)%ptr%subset1%add(i)
+      call partlist(elnum)%ptr%subset1%add(i)
    end do
 
    do i = 1, size(mol2%atoms)
       elnum = mol2%atoms(i)%elnum
-      if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%get_new_part()
+      if (.not. associated(partlist(elnum)%ptr)) then
+         partlist(elnum)%ptr => eltypes%new_part()
       end if
-      call typelist(elnum)%ptr%subset2%add(i)
+      call partlist(elnum)%ptr%subset2%add(i)
    end do
 
 !   call eltypes%print_parts()
@@ -72,33 +72,33 @@ subroutine levelup_mnatypes(atoms1, atoms2, mnatypes, subtypes)
    integer :: h, i, iatom
    integer :: max_num_types, max_num_atoms
    type(dict_type) :: subtypedict
-   type(partpointer_type), allocatable :: subtypelist(:)
+   type(partpointer_type), allocatable :: partlist(:)
    integer, allocatable :: neighborhood(:)
 
    max_num_types = size(atoms1) + size(atoms2)
    max_num_atoms = max(size(atoms1), size(atoms2))
    call subtypes%init(max_num_types, max_num_atoms)
    call subtypedict%init(maxcoord, mnatypes%partition_size, mnatypes%largest_part_size)
-   allocate (subtypelist(subtypedict%num_slots))
+   allocate (partlist(subtypedict%num_slots))
 
    do h = 1, mnatypes%partition_size
 
       do i = 1, mnatypes%parts(h)%subset1%part_size
          iatom = mnatypes%parts(h)%subset1%indices(i)
          neighborhood = mnatypes%partition_map1(atoms1(iatom)%adjlist)
-         if (subtypedict%miss_index_of(neighborhood)) then
-            subtypelist(subtypedict%get_new_index_for(neighborhood))%ptr => subtypes%get_new_part()
+         if (.not. subtypedict%has_index(neighborhood)) then
+            partlist(subtypedict%new_index(neighborhood))%ptr => subtypes%new_part()
          end if
-         call subtypelist(subtypedict%get_index_of(neighborhood))%ptr%subset1%add(iatom)
+         call partlist(subtypedict%get_index(neighborhood))%ptr%subset1%add(iatom)
       end do
 
       do i = 1, mnatypes%parts(h)%subset2%part_size
          iatom = mnatypes%parts(h)%subset2%indices(i)
          neighborhood = mnatypes%partition_map2(atoms2(iatom)%adjlist)
-         if (subtypedict%miss_index_of(neighborhood)) then
-            subtypelist(subtypedict%get_new_index_for(neighborhood))%ptr => subtypes%get_new_part()
+         if (.not. subtypedict%has_index(neighborhood)) then
+            partlist(subtypedict%new_index(neighborhood))%ptr => subtypes%new_part()
          end if
-         call subtypelist(subtypedict%get_index_of(neighborhood))%ptr%subset2%add(iatom)
+         call partlist(subtypedict%get_index(neighborhood))%ptr%subset2%add(iatom)
       end do
 
       call subtypedict%reset()
