@@ -19,7 +19,6 @@ use stdio
 use molecule
 use flags
 use bounds
-use pointers
 use strutils
 use chemdata
 use chemutils
@@ -34,7 +33,6 @@ subroutine readxyz(unit, mol)
    character(ll) :: buffer
    character(wl) :: element
    integer, allocatable :: elnums(:), labels(:)
-   real(rk), allocatable :: weights(:)
    real(rk), allocatable :: coords(:, :)
 
    integer :: i
@@ -43,7 +41,6 @@ subroutine readxyz(unit, mol)
 
    allocate (elnums(mol%natom))
    allocate (labels(mol%natom))
-   allocate (weights(mol%natom))
    allocate (coords(3, mol%natom))
    allocate (mol%atoms(mol%natom))
 
@@ -53,12 +50,10 @@ subroutine readxyz(unit, mol)
    do i = 1, mol%natom
       read (unit, *, end=99) element, coords(:, i)
       call readlabel(element, elnums(i), labels(i))
-      weights(i) = weight_func(elnums(i))
    end do
 
    call mol%set_elnums(elnums)
    call mol%set_labels(labels)
-   call mol%set_weights(weights)
    call mol%set_coords(coords)
 
    return
@@ -77,7 +72,6 @@ subroutine readmol2(unit, mol)
    integer :: atom1, atom2, bondorder, nbond
    character(wl) :: element
    integer, allocatable :: elnums(:), labels(:)
-   real(rk), allocatable :: weights(:)
    real(rk), allocatable :: coords(:, :)
    integer, allocatable :: nadjs(:), adjlists(:, :)
 
@@ -92,7 +86,6 @@ subroutine readmol2(unit, mol)
 
    allocate (elnums(mol%natom))
    allocate (labels(mol%natom))
-   allocate (weights(mol%natom))
    allocate (coords(3, mol%natom))
    allocate (nadjs(mol%natom))
    allocate (adjlists(mol%natom, mol%natom))
@@ -106,7 +99,6 @@ subroutine readmol2(unit, mol)
    do i = 1, mol%natom
       read (unit, *, end=99) id, element, coords(:, i)
       call readlabel(element, elnums(i), labels(i))
-      weights(i) = weight_func(elnums(i))
    end do
 
    do
@@ -134,7 +126,6 @@ subroutine readmol2(unit, mol)
 
    call mol%set_elnums(elnums)
    call mol%set_labels(labels)
-   call mol%set_weights(weights)
    call mol%set_coords(coords)
    call mol%set_adjlists(nadjs, adjlists)
 

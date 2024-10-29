@@ -45,11 +45,8 @@ subroutine remove_reactive_bonds(mol1, mol2, mapping)
 
    ! Align coordinates
 
-   rotquat = leastrotquat(mol1%natom, mol1%get_weights(), mol1%get_coords(), mol2%get_coords(), mapping)
+   rotquat = leastrotquat(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), mol2%get_coords(), mapping)
    call mol2%rotate_coords(rotquat)
-
-!   write (stderr, *) sqrt(squaredist(mol1%natom, mol1%get_weights(), mol1%get_coords(), mol2%get_coords(), mapping) &
-!         /sum(mol1%get_weights()))
 
    ! Initialization
 

@@ -26,7 +26,7 @@ use molecule
 implicit none
 
 abstract interface
-   subroutine f_bias( atoms1, atoms2, eltypes, mnadists)
+   subroutine bias_proc( atoms1, atoms2, eltypes, mnadists)
       use kinds
       use partition
       use molecule
@@ -37,7 +37,7 @@ abstract interface
 end interface
 
 real(rk) :: bias_scale
-procedure(f_bias), pointer :: bias_procedure
+procedure(bias_proc), pointer :: bias_procedure
 
 contains
 

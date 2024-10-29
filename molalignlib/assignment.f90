@@ -30,10 +30,10 @@ public assign_atoms
 public assign_atoms_nearest
 public assign_atoms_pruned
 public assign_atoms_biased
-public f_assign
+public assign_proc
 
 abstract interface
-   subroutine f_assign( eltypes, coords1, coords2, prunemask, mnadists, mapping)
+   subroutine assign_proc( eltypes, coords1, coords2, prunemask, mnadists, mapping)
       use kinds
       use partition
       type(partition_type), intent(in) :: eltypes
@@ -44,7 +44,7 @@ abstract interface
    end subroutine
 end interface
 
-procedure(f_assign), pointer :: assign_atoms
+procedure(assign_proc), pointer :: assign_atoms
 
 contains
 

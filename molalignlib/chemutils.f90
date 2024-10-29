@@ -16,34 +16,15 @@
 
 module chemutils
 use kinds
-use pointers
 use chemdata
 use strutils
 
 implicit none
 
 private
-public unity
-public stdmass
-public valency
 public readlabel
 
 contains
-
-real(rk) function unity(z) result(res)
-   integer, intent(in) :: z
-   res = 1.
-end function
-
-real(rk) function stdmass(z) result(res)
-   integer, intent(in) :: z
-   res = stdmasses(z)
-end function
-
-real(rk) function valency(z) result(res)
-   integer, intent(in) :: z
-   res = real(valencies(z), rk)
-end function
 
 subroutine readlabel(element, atomelnum, atomlabel)
    character(*), intent(in) :: element

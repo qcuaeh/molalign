@@ -16,10 +16,11 @@
 
 module remapping
 use kinds
-use molecule
 use flags
 use bounds
+use molecule
 use strutils
+use chemdata
 use permutation
 use translation
 use rotation
@@ -69,7 +70,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
    coords2 = mol2%get_coords()
    adjmat1 = mol1%get_adjmat()
    adjmat2 = mol2%get_adjmat()
-   weights1 = mol1%get_weights()
+   weights1 = weights(mol1%atoms%elnum)
 
    ! Calculate prune matrix
 

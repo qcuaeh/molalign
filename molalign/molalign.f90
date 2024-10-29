@@ -16,10 +16,9 @@
 
 program molalign
 use kinds
-use molecule
 use flags
 use bounds
-use pointers
+use molecule
 use printing
 use rotation
 use translation
@@ -80,7 +79,7 @@ maxlevel = 16
 prune_tol = 0.5
 bias_scale = 1.e3
 
-weight_func => unity
+weights => ones
 print_stats => print_stats_dist
 assign_atoms => assign_atoms_pruned
 bias_procedure => bias_none
@@ -138,7 +137,7 @@ do while (get_arg(arg))
    case ('-reac')
       reac_flag = .true.
    case ('-mass')
-      weight_func => stdmass
+      weights => stdmasses
    case ('-mirror')
       mirror_flag = .true.
    case ('-count')

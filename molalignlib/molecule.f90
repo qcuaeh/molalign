@@ -17,7 +17,6 @@ private
 type, public :: atom_type
    integer :: elnum
    integer :: label
-   real(rk) :: weight
    real(rk) :: coords(3)
    integer, allocatable :: adjlist(:)
 end type
@@ -36,7 +35,6 @@ contains
    procedure :: set_elnums
    procedure :: set_labels
    procedure :: set_coords
-   procedure :: set_weights
    procedure :: set_adjlists
 !   procedure :: set_molfrags
    procedure :: get_natom
@@ -47,7 +45,6 @@ contains
    procedure :: get_bonds
    procedure :: get_adjlists
 !   procedure :: get_molfrags
-   procedure :: get_weights
    procedure :: get_coords
    procedure :: get_adjmat
    procedure :: permutate_atoms
@@ -170,23 +167,6 @@ function get_labels(self) result(labels)
 
 end function
 
-subroutine set_weights(self, weights)
-   class(molecule_type), intent(inout) :: self
-   real(rk), intent(in) :: weights(size(self%atoms))
-
-   self%atoms%weight = weights
-
-end subroutine
-
-function get_weights(self) result(weights)
-   class(molecule_type), intent(in) :: self
-   ! Local variables
-   real(rk), allocatable :: weights(:)
-
-   weights = self%atoms%weight
-
-end function
-
 subroutine set_coords(self, coords)
    class(molecule_type), intent(inout) :: self
    real(rk), intent(in) :: coords(3, size(self%atoms))
@@ -291,14 +271,14 @@ subroutine print_atoms(self)
    type(atom_type) :: atom
 
    write (stderr, '(a,1x,i0)') 'Atoms:', size(self%atoms)
-   write (stderr, '(a,a4,a12,a7,2a14)') "ind:", "elsym", "weight", &
+   write (stderr, '(a,a4,a12,a7,2a14)') "ind:", "elsym", "label", &
          "{ coords }", "[ adjlist ]"
 
    do i = 1, size(self%atoms)
       atom = self%atoms(i)
-      fmtstr = '(i3,": ",a2,1x,f6.2," {",3(1x,f8.4)," } ["' // &
+      fmtstr = '(i3,": ",a2,1x,i3," {",3(1x,f8.4)," } ["' // &
             repeat(',1x,i3', size(atom%adjlist)) // '," ]")'
-      write (stderr, fmtstr) i, elsyms(atom%elnum), atom%weight, &
+      write (stderr, fmtstr) i, elsyms(atom%elnum), atom%label, &
             atom%coords, atom%adjlist
    end do
 

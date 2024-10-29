@@ -17,8 +17,8 @@
 module molalignlib
 use stdio
 use kinds
-use molecule
 use bounds
+use molecule
 use random
 use linalg
 use sorting
@@ -133,10 +133,8 @@ subroutine remapped_molecule_align( &
    integer, intent(in) :: mapping(:)
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    ! Local variables
-   real(rk), allocatable :: weights(:)
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
-   weights = mol1%get_weights()
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
 
@@ -149,7 +147,7 @@ subroutine remapped_molecule_align( &
 
    rotquat = leastrotquat( &
       mol1%natom, &
-      weights, &
+      weights(mol1%atoms%elnum), &
       translated(mol1%natom, coords1, travec1), &
       translated(mol2%natom, coords2, travec2), &
       mapping &
@@ -215,7 +213,7 @@ subroutine molecule_align( &
 
    rotquat = leastrotquat( &
       mol1%natom, &
-      mol1%get_weights(), &
+      weights(mol1%atoms%elnum), &
       translated(mol1%natom, mol1%get_coords(), travec1), &
       translated(mol2%natom, mol2%get_coords(), travec2), &
       identity_permutation(mol1%natom) &
@@ -228,8 +226,8 @@ function get_rmsd(mol1, mol2, mapping) result(rmsd)
    integer :: mapping(:)
    real(rk) :: rmsd
 
-   rmsd = sqrt(squaredist(mol1%natom, mol1%get_weights(), mol1%get_coords(), &
-         mol2%get_coords(), mapping) / sum(mol1%get_weights()))
+   rmsd = sqrt(squaredist(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), &
+         mol2%get_coords(), mapping) / sum(weights(mol1%atoms%elnum)))
 
 end function
 
@@ -249,20 +247,18 @@ function centroid(mol)
    integer :: i
    real(rk) :: centroid(3)
    real(rk), allocatable :: coords(:, :)
-   real(rk), allocatable :: weights(:)
 
    coords = mol%get_coords()
-   weights = mol%get_weights()
 
 ! Calculate the coordinates of the center of mass
 
    centroid(:) = 0
 
    do i = 1, size(mol%atoms)
-      centroid(:) = centroid(:) + weights(i)*coords(:, i)
+      centroid(:) = centroid(:) + weights(mol%atoms(i)%elnum)*coords(:, i)
    end do
 
-   centroid(:) = centroid(:)/sum(weights)
+   centroid(:) = centroid(:)/sum(weights(mol%atoms%elnum))
 
 end function
 

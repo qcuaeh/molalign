@@ -24,10 +24,10 @@ use partition
 implicit none
 
 real(rk) :: prune_tol
-procedure(f_prune), pointer :: prune_procedure
+procedure(prune_proc), pointer :: prune_procedure
 
 abstract interface
-   subroutine f_prune( eltypes, coords1, coords2, prunemask)
+   subroutine prune_proc( eltypes, coords1, coords2, prunemask)
       use kinds
       use partition
       type(partition_type), intent(in) :: eltypes

@@ -22,7 +22,7 @@ use flags
 implicit none
 
 abstract interface
-   subroutine print_stats_proc(nrec, matches, avgsteps, avgtotalrot, avgrealrot, recadjd, recrmsd)
+   subroutine printstats_proc(nrec, matches, avgsteps, avgtotalrot, avgrealrot, recadjd, recrmsd)
       use kinds
       integer, intent(in) :: nrec
       integer, dimension(:), intent(in) :: matches, recadjd
@@ -32,7 +32,7 @@ end interface
 
 character(*), parameter :: line1 = repeat('-', 41)
 character(*), parameter :: line2 = repeat('-', 48)
-procedure(print_stats_proc), pointer :: print_stats
+procedure(printstats_proc), pointer :: print_stats
 
 contains
 
