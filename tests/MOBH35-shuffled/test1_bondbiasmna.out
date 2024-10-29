@@ -1,4 +1,4 @@
-Map   Count    Steps     Rotat.      RMSD   AdjΔ
+Map   Count    Steps     Rot.      RMSD     Δadj
 ------------------------------------------------
   1      10      3.1     117.7     0.5398      6
   2       2      4.5     118.5     2.7684     26

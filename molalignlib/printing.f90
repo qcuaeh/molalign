@@ -30,10 +30,9 @@ abstract interface
    end subroutine
 end interface
 
+character(*), parameter :: line1 = repeat('-', 41)
+character(*), parameter :: line2 = repeat('-', 48)
 procedure(print_stats_proc), pointer :: print_stats
-
-character(*), parameter :: line1 = '-----------------------------------------'
-character(*), parameter :: line2 = '------------------------------------------------'
 
 contains
 
@@ -42,7 +41,7 @@ subroutine print_stats_dist(nrec, matches, avgsteps, avgtotalrot, avgrealrot, re
    integer, dimension(:), intent(in) :: matches, recadjd
    real(rk), dimension(:), intent(in) :: avgsteps, avgtotalrot, avgrealrot, recrmsd
    integer :: irec
-   write (stderr, '(a,3x,a,4x,a,5x,a,6x,a)') 'Map', 'Count', 'Steps', 'Rotat.', 'RMSD'
+   write (stderr, '(a,3x,a,4x,a,5x,a,8x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD'
    write (stderr, '(a)') line1
    do irec = 1, nrec
       write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4)') &
@@ -57,7 +56,7 @@ subroutine print_stats_diff(nrec, matches, avgsteps, avgtotalrot, avgrealrot, re
    integer, dimension(:), intent(in) :: matches, recadjd
    real(rk), dimension(:), intent(in) :: avgsteps, avgtotalrot, avgrealrot, recrmsd
    integer :: irec
-   write (stderr, '(a,3x,a,4x,a,5x,a,6x,a,3x,a)') 'Map', 'Count', 'Steps', 'Rotat.', 'RMSD', 'AdjΔ'
+   write (stderr, '(a,3x,a,4x,a,5x,a,6x,a,5x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD', 'Δadj'
    write (stderr, '(a)') line2
    do irec = 1, nrec
       write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4,3x,i4)') &

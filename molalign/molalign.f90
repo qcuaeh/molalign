@@ -298,9 +298,9 @@ end if
 
 if (print_flag) then
    if (bond_flag) then
-      write (stderr, "(f9.4,',',i4)") minrmsd, minadjd
+      write (stderr, "(a,1x,i0)") realstr(minrmsd, 4), minadjd
    else
-      write (stderr, '(i4)') minrmsd
+      write (stderr, "(a)") realstr(minrmsd, 4)
    end if
 end if
 
