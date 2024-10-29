@@ -34,52 +34,52 @@ real(rk) function squaredist(natom, weights, coords1, coords2, mapping)
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
-   squaredist = sum(weights(1:natom)*sum((coords1(:, 1:natom) - coords2(:, mapping(1:natom)))**2, dim=1))
+   squaredist = sum(weights*sum((coords1 - coords2(:, mapping))**2, dim=1))
 
 end function
 
-real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping) result(squaredist)
+real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping)
 ! Purpose: Calculate least square distance from eigenvalues
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: mapping
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   real(rk) :: resmat(4, 4)
+   real(rk) :: residuals(4, 4)
 
-   call kearsley(natom, weights, coords1, coords2, mapping, resmat)
+   call kearsley(natom, weights, coords1, coords2, mapping, residuals)
    ! eigenvalue can be negative due to numerical errors
-   squaredist = max(leasteigval(resmat), 0._rk)
+   leastsquaredist = max(leasteigval(residuals), 0._rk)
 
 end function
 
-!real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping) result(dist)
+!real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping)
 !! Purpose: Calculate least square distance from aligned coordinates
 !   integer, intent(in) :: natom
 !   integer, dimension(:), intent(in) :: mapping
 !   real(rk), dimension(:), intent(in) :: weights
 !   real(rk), dimension(:, :), intent(in) :: coords1, coords2
-!   real(rk) :: resmat(4, 4), eigval(4)
+!   real(rk) :: residuals(4, 4), eigval(4)
 !
-!   call kearsley(natom, weights, coords1, coords2, mapping, resmat)
-!   call syevec4(resmat, eigval)
-!   dist = squaredist(natom, weights, coords1, rotated(natom, coords2, resmat(:, 1)), mapping)
+!   call kearsley(natom, weights, coords1, coords2, mapping, residuals)
+!   call syevec4(residuals, eigval)
+!   leastsquaredist = squaredist(natom, weights, coords1, rotated(natom, coords2, residuals(:, 1)), mapping)
 !
 !end function
 
-function leastrotquat(natom, weights, coords1, coords2, mapping) result(rotquat)
+function leastrotquat(natom, weights, coords1, coords2, mapping)
 ! Purpose: Calculate rotation quaternion which minimzes the square distance
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: mapping
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   real(rk) :: rotquat(4), resmat(4, 4)
+   real(rk) :: leastrotquat(4), residuals(4, 4)
 
-   call kearsley(natom, weights, coords1, coords2, mapping, resmat)
-   rotquat = leasteigvec(resmat)
+   call kearsley(natom, weights, coords1, coords2, mapping, residuals)
+   leastrotquat = leasteigvec(residuals)
 
 end function
 
-subroutine kearsley(natom, weights, coords1, coords2, mapping, resmat)
+subroutine kearsley(natom, weights, coords1, coords2, mapping, residuals)
 ! Purpose: Find the best orientation by least squares minimization
 ! Reference: Acta Cryst. (1989). A45, 208-210
    integer, intent(in) :: natom
@@ -88,9 +88,9 @@ subroutine kearsley(natom, weights, coords1, coords2, mapping, resmat)
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
    integer :: i
-   real(rk) :: resmat(4, 4), p(3, natom), q(3, natom)
+   real(rk) :: residuals(4, 4), p(3, natom), q(3, natom)
 
-   resmat = 0
+   residuals = 0
 
    do i = 1, natom
       p(:, i) = coords1(:, i) + coords2(:, mapping(i))
@@ -100,26 +100,26 @@ subroutine kearsley(natom, weights, coords1, coords2, mapping, resmat)
    ! Calculate upper matrix elements
 
    do i = 1, natom
-      resmat(1, 1) = resmat(1, 1) + weights(i)*(q(1, i)**2 + q(2, i)**2 + q(3, i)**2)
-      resmat(1, 2) = resmat(1, 2) + weights(i)*(p(2, i)*q(3, i) - q(2, i)*p(3, i))
-      resmat(1, 3) = resmat(1, 3) + weights(i)*(q(1, i)*p(3, i) - p(1, i)*q(3, i))
-      resmat(1, 4) = resmat(1, 4) + weights(i)*(p(1, i)*q(2, i) - q(1, i)*p(2, i))
-      resmat(2, 2) = resmat(2, 2) + weights(i)*(p(2, i)**2 + p(3, i)**2 + q(1, i)**2)
-      resmat(2, 3) = resmat(2, 3) + weights(i)*(q(1, i)*q(2, i) - p(1, i)*p(2, i))
-      resmat(2, 4) = resmat(2, 4) + weights(i)*(q(1, i)*q(3, i) - p(1, i)*p(3, i))
-      resmat(3, 3) = resmat(3, 3) + weights(i)*(p(1, i)**2 + p(3, i)**2 + q(2, i)**2)
-      resmat(3, 4) = resmat(3, 4) + weights(i)*(q(2, i)*q(3, i) - p(2, i)*p(3, i))
-      resmat(4, 4) = resmat(4, 4) + weights(i)*(p(1, i)**2 + p(2, i)**2 + q(3, i)**2)
+      residuals(1, 1) = residuals(1, 1) + weights(i)*(q(1, i)**2 + q(2, i)**2 + q(3, i)**2)
+      residuals(1, 2) = residuals(1, 2) + weights(i)*(p(2, i)*q(3, i) - q(2, i)*p(3, i))
+      residuals(1, 3) = residuals(1, 3) + weights(i)*(q(1, i)*p(3, i) - p(1, i)*q(3, i))
+      residuals(1, 4) = residuals(1, 4) + weights(i)*(p(1, i)*q(2, i) - q(1, i)*p(2, i))
+      residuals(2, 2) = residuals(2, 2) + weights(i)*(p(2, i)**2 + p(3, i)**2 + q(1, i)**2)
+      residuals(2, 3) = residuals(2, 3) + weights(i)*(q(1, i)*q(2, i) - p(1, i)*p(2, i))
+      residuals(2, 4) = residuals(2, 4) + weights(i)*(q(1, i)*q(3, i) - p(1, i)*p(3, i))
+      residuals(3, 3) = residuals(3, 3) + weights(i)*(p(1, i)**2 + p(3, i)**2 + q(2, i)**2)
+      residuals(3, 4) = residuals(3, 4) + weights(i)*(q(2, i)*q(3, i) - p(2, i)*p(3, i))
+      residuals(4, 4) = residuals(4, 4) + weights(i)*(p(1, i)**2 + p(2, i)**2 + q(3, i)**2)
    end do
 
    ! Symmetrize matrix
 
-   resmat(2, 1) = resmat(1, 2)
-   resmat(3, 1) = resmat(1, 3)
-   resmat(4, 1) = resmat(1, 4)
-   resmat(3, 2) = resmat(2, 3)
-   resmat(4, 2) = resmat(2, 4)
-   resmat(4, 3) = resmat(3, 4)
+   residuals(2, 1) = residuals(1, 2)
+   residuals(3, 1) = residuals(1, 3)
+   residuals(4, 1) = residuals(1, 4)
+   residuals(3, 2) = residuals(2, 3)
+   residuals(4, 2) = residuals(2, 4)
+   residuals(4, 3) = residuals(3, 4)
 
 end subroutine
 
