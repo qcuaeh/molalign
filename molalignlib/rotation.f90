@@ -110,10 +110,16 @@ function quatmul(p, q)
    real(wp) :: quatmul(4)
    real(wp) :: left(4, 4)
 
-   left(:, 1) = [ p(1), -p(2), -p(3), -p(4) ]
-   left(:, 2) = [ p(2),  p(1), -p(4),  p(3) ]
-   left(:, 3) = [ p(3),  p(4),  p(1), -p(2) ]
-   left(:, 4) = [ p(4), -p(3),  p(2),  p(1) ]
+! This matrix was erroneously transposed in previous versions
+! (it is used only to calculate rotation statistics)
+!   left(1, :) = [ p(1), -p(2), -p(3), -p(4) ]
+!   left(2, :) = [ p(2),  p(1), -p(4),  p(3) ]
+!   left(3, :) = [ p(3),  p(4),  p(1), -p(2) ]
+!   left(4, :) = [ p(4), -p(3),  p(2),  p(1) ]
+   left(:, 1) = [  p(1),  p(2),  p(3),  p(4) ]
+   left(:, 2) = [ -p(2),  p(1),  p(4), -p(3) ]
+   left(:, 3) = [ -p(3), -p(4),  p(1),  p(2) ]
+   left(:, 4) = [ -p(4),  p(3), -p(2),  p(1) ]
 
    quatmul = matmul(left, q)
 

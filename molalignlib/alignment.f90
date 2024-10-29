@@ -23,26 +23,10 @@ implicit none
 
 private
 public squaredist
-public biasdist
 public leastsquaredist
 public leastrotquat
 
 contains
-
-real(wp) function biasdist(natom, weights, biasmat, atomperm) result(dist)
-   integer, intent(in) :: natom
-   real(wp), dimension(:), intent(in) :: weights
-   real(wp), dimension(:, :), intent(in) :: biasmat
-   integer, dimension(:), intent(in) :: atomperm
-   integer :: i
-
-   dist = 0
-
-   do i = 1, natom
-      dist = dist + weights(i)*biasmat(i, atomperm(i))
-   end do
-
-end function
 
 real(wp) function squaredist(natom, weights, coords0, coords1, atomperm) result(dist)
    integer, intent(in) :: natom

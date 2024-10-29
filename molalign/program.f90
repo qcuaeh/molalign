@@ -50,14 +50,14 @@ program molalign
    real(wp) :: rmsd, minrmsd, travec(3), rotmat(3, 3)
    real(wp), allocatable, dimension(:) :: weights0, weights1
    real(wp), allocatable, dimension(:, :) :: coords0, coords1, aligned1
-   logical :: sort_flag, mirror_flag, stdin_flag, stdout_flag
+   logical :: remap_flag, mirror_flag, stdin_flag, stdout_flag
 
    procedure(f_realint), pointer :: weight_function
 
    ! Set default options
 
    iter_flag = .false.
-   sort_flag = .false.
+   remap_flag = .false.
    trial_flag = .false.
    stdin_flag = .false.
    stdout_flag = .false.
@@ -89,8 +89,8 @@ program molalign
          stats_flag = .true.
       case ('-test')
          test_flag = .true.
-      case ('-sort')
-         sort_flag = .true.
+      case ('-remap', '-sort')
+         remap_flag = .true.
       case ('-fast')
          iter_flag = .true.
          bias_flag = .true.
@@ -191,7 +191,7 @@ program molalign
 
    ! Sort atoms to minimize MSD
 
-   if (sort_flag) then
+   if (remap_flag) then
 
       call assign_atoms( &
          natom0, &
@@ -241,7 +241,7 @@ program molalign
 
       end do
 
-      if (.not. stats_flag) write (output_unit, '(a)') 'Optimized RMSD = '//realstr(minrmsd, 4)
+      if (.not. stats_flag) write (output_unit, '(a)') realstr(minrmsd, 4)
 
    else
 
@@ -266,7 +266,7 @@ program molalign
 
       aligned1 = translated(natom1, rotated(natom1, coords1, rotmat), travec)
       rmsd = sqrt(sum(weights0*sum((aligned1 - coords0)**2, dim=1))/sum(weights0))
-      write (output_unit, '(a)') 'RMSD = '//realstr(rmsd, 4)
+      write (output_unit, '(a)') realstr(rmsd, 4)
       call writefile(write_unit, fmtout, 'Reference', natom0, znums0, coords0)
       call writefile(write_unit, fmtout, 'RMSD '//realstr(rmsd, 4), natom1, znums1, aligned1)
 

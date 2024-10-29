@@ -24,7 +24,7 @@ def molalign():
 
     parser = ArgumentParser()
     parser.add_argument('file', nargs='*')
-    parser.add_argument('-sort', action='store_true')
+    parser.add_argument('-remap', '-sort', action='store_true')
     parser.add_argument('-mass', action='store_true')
     parser.add_argument('-mirror', action='store_true')
     parser.add_argument('-stats', action='store_true')
@@ -57,7 +57,7 @@ def molalign():
     if args.mirror:
         mol1.mirror_x()
 
-    if args.sort:
+    if args.remap:
         assignments = assign_atoms(
             mol0,
             mol1,

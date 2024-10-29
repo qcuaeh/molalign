@@ -8,7 +8,7 @@ Before installing
 -----------------
 
 If you can't install stuff on your computer then
-[try&nbsp;MolAlignLib&nbsp;on&nbsp;Binder](https://notebooks.gesis.org/binder/v2/gh/qcuaeh/molalignlib/HEAD?filepath=examples%2Fjupyter).
+[try&nbsp;MolAlignLib&nbsp;on&nbsp;Binder](https://notebooks.gesis.org/binder/v2/gh/qcuaeh/molalignlib/HEAD?filepath=examples).
 
 * To build the native executable you will need a Fortran 2008 compiler and LAPACK.
 
@@ -62,7 +62,7 @@ Program options
 
 #### Options supported by the native executable and the python script
 
-<code>-sort</code>&nbsp; Reorder atoms to minimize the RMSD.  
+<code>-remap/-sort</code>&nbsp; Remap atoms to minimize the RMSD.  
 <code>-fast</code>&nbsp; Prune assignments that surpass the displacement tolerance.  
 <code>-tol <em>TOL</em></code>&nbsp; Set the displacement tolerance to *TOL* (defaults to 0.35 Å).  
 <code>-out <em>NAME</em></code>&nbsp; Set the output file name to *NAME* (defaults to aligned.xyz).  
@@ -96,7 +96,7 @@ formats supported by *ASE*.
 
 * Running the command without options will align the atoms without reordering.
 
-* Running the command with the `-sort` option will remap the atoms to minimize the RMSD
+* Running the command with the `-remap` option will remap the atoms to minimize the RMSD
 and the aligned coordinates will be written in the optimal mapping order.
 
 
@@ -127,17 +127,17 @@ Command line examples
 For small atom displacements the default tolerance is enough:
 
 ```
-./build/molalign examples/Co138_0.xyz examples/Co138_1.xyz -sort -fast
+./build/molalign examples/Co138_0.xyz examples/Co138_1.xyz -remap -fast
 ```
 
 ```
-Optimized RMSD = 0.0506
+0.0506
 ```
 
 but for atom displacements larger than the tolerance the assignment will fail:
 
 ```
-./build/molalign examples/Co138_0.xyz examples/Co138_3.xyz -sort -fast
+./build/molalign examples/Co138_0.xyz examples/Co138_3.xyz -remap -fast
 ```
 
 ```
@@ -147,17 +147,17 @@ Error: Assignment failed
 Increasing the tolerance will fix the problem but the calculation will slow down:
 
 ```
-./build/molalign examples/Co138_0.xyz examples/Co138_3.xyz -sort -fast -tol 0.7
+./build/molalign examples/Co138_0.xyz examples/Co138_3.xyz -remap -fast -tol 0.7
 ```
 
 ```
-Optimized RMSD = 0.1973
+0.1973
 ```
 
 Printing multiple alignments and stats can be useful to identify rotational symmetric clusters:
 
 ```
-./build/molalign examples/Co138_0.xyz examples/Co138_1.xyz -sort -fast -rec 5 -stats
+./build/molalign examples/Co138_0.xyz examples/Co138_1.xyz -remap -fast -rec 5 -stats
 ```
 
 ```

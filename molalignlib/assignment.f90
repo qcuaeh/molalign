@@ -59,9 +59,9 @@ subroutine optimize_assignment( &
    logical visited, overflow
    integer irec, ntrial, nstep, steps
    integer, dimension(natom) :: atomperm, auxmap
-   real(wp) :: dist2, olddist, newdist, totalrot
+   real(wp) :: dist, totalrot
    real(wp), dimension(4) :: rotquat, prodquat
-   real(wp), dimension(maxrec) :: dist2rec, avgsteps, avgtotalrot, avgrealrot
+   real(wp), dimension(maxrec) :: distrec, avgsteps, avgtotalrot, avgrealrot
    real(wp) :: workcoords1(3, natom)
    real(wp) :: weights(natom)
 
@@ -104,7 +104,7 @@ subroutine optimize_assignment( &
 
    ! Minimize the euclidean distance
 
-      call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, biasmat, atomperm, olddist)
+      call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, biasmat, atomperm, dist)
       rotquat = leastrotquat(natom, weights, coords0, workcoords1, atomperm)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
@@ -113,13 +113,8 @@ subroutine optimize_assignment( &
       steps = 1
 
       do while (iter_flag)
-         olddist = squaredist(natom, weights, coords0, workcoords1, atomperm) + biasdist(natom, weights, biasmat, atomperm)
-         call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, biasmat, auxmap, newdist)
+         call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, biasmat, auxmap, dist)
          if (all(auxmap == atomperm)) exit
-         if (newdist > olddist) then
-            write (error_unit, '(a)') 'newdist is larger than olddist!'
-!            print *, olddist, newdist
-         end if
          rotquat = leastrotquat(natom, weights, coords0, workcoords1, auxmap)
          prodquat = quatmul(rotquat, prodquat)
          call rotate(natom, workcoords1, rotquat)
@@ -130,7 +125,7 @@ subroutine optimize_assignment( &
 
       nstep = nstep + steps
 
-      dist2 = squaredist(natom, weights, coords0, workcoords1, atomperm)
+      dist = squaredist(natom, weights, coords0, workcoords1, atomperm)
 
       ! Check for new best permlist
 
@@ -145,7 +140,7 @@ subroutine optimize_assignment( &
             if (stats_flag .and. live_flag) then
                write (error_unit, '(a)', advance='no') achar(27) // '[' // intstr(irec + 2) // 'H'
                call print_body(irec, countlist(irec), avgsteps(irec), avgtotalrot(irec), &
-                  avgrealrot(irec), dist2rec(irec)/sum(weights))
+                  avgrealrot(irec), distrec(irec)/sum(weights))
             end if
             visited = .true.
             exit
@@ -157,32 +152,32 @@ subroutine optimize_assignment( &
             nrec = nrec + 1
          else
             overflow = .true.
-            if (dist2 > dist2rec(nrec)) cycle
+            if (dist > distrec(nrec)) cycle
          end if
          do irec = nrec, 2, -1
-            if (dist2 > dist2rec(irec - 1)) exit
+            if (dist > distrec(irec - 1)) exit
             permlist(:, irec) = permlist(:, irec - 1)
             countlist(irec) = countlist(irec - 1)
-            dist2rec(irec) = dist2rec(irec - 1)
+            distrec(irec) = distrec(irec - 1)
             avgsteps(irec) = avgsteps(irec - 1)
             avgrealrot(irec) = avgrealrot(irec - 1)
             avgtotalrot(irec) = avgtotalrot(irec - 1)
             if (stats_flag .and. live_flag) then
                write (error_unit, '(a)', advance='no') achar(27) // '[' // intstr(irec + 2) // 'H'
                call print_body(irec, countlist(irec), avgsteps(irec), avgtotalrot(irec), &
-                  avgrealrot(irec), dist2rec(irec)/sum(weights))
+                  avgrealrot(irec), distrec(irec)/sum(weights))
             end if
          end do
          permlist(:, irec) = atomperm
          countlist(irec) = 1
-         dist2rec(irec) = dist2
+         distrec(irec) = dist
          avgsteps(irec) = steps
          avgrealrot(irec) = rotangle(prodquat)
          avgtotalrot(irec) = totalrot
          if (stats_flag .and. live_flag) then
             write (error_unit, '(a)', advance='no') achar(27) // '[' // intstr(irec + 2) // 'H'
             call print_body(irec, countlist(irec), avgsteps(irec), avgtotalrot(irec), &
-               avgrealrot(irec), dist2rec(irec)/sum(weights))
+               avgrealrot(irec), distrec(irec)/sum(weights))
          end if
       end if
 
@@ -197,7 +192,7 @@ subroutine optimize_assignment( &
       call print_header()
       do irec = 1, nrec
          call print_body(irec, countlist(irec), avgsteps(irec), avgtotalrot(irec), &
-            avgrealrot(irec), dist2rec(irec)/sum(weights))
+            avgrealrot(irec), distrec(irec)/sum(weights))
       end do
       call print_footer()
    end if
