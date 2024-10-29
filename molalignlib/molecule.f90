@@ -124,7 +124,7 @@ subroutine permutate_atoms(self, atom_order)
 
    allocate (atom_mapping(size(self%atoms)))
 
-   atom_mapping = inverse_permutation(atom_order)
+   atom_mapping = inverse_perm(atom_order)
    self%atoms = self%atoms(atom_order)
    do i = 1, size(self%atoms)
       do k = 1, size(self%atoms(i)%adjlist)

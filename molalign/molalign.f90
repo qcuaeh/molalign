@@ -39,7 +39,7 @@ integer :: i, nrec
 integer :: read_unit1, read_unit2, write_unit
 integer, allocatable :: countlist(:)
 integer, allocatable :: maplist(:, :)
-integer, allocatable :: mapping(:)
+integer, allocatable :: atomperm(:)
 character(:), allocatable :: arg, optarg
 character(:), allocatable :: fmtin1, fmtin2, fmtout
 character(:), allocatable :: optfmtin, optfmtout
@@ -255,11 +255,11 @@ if (remap_flag) then
       call auxmol1%rotate_coords(rotquat)
       call auxmol1%translate_coords(-travec1)
 
-!      mapping = maplist(:, i)
-      mapping = identity_permutation(size(mol1%atoms))
+!      atomperm = maplist(:, i)
+      atomperm = identity_perm(size(mol1%atoms))
 
-      rmsd = get_rmsd(mol1, auxmol1, mapping)
-      adjd = get_adjd(mol1, auxmol1, mapping)
+      rmsd = get_rmsd(mol1, auxmol1, atomperm)
+      adjd = get_adjd(mol1, auxmol1, atomperm)
 
       minrmsd = min(minrmsd, rmsd)
       minadjd = min(minadjd, adjd)
@@ -285,10 +285,10 @@ else
    call mol2%rotate_coords(rotquat)
    call mol2%translate_coords(-travec1)
 
-   mapping = identity_permutation(size(mol1%atoms))
+   atomperm = identity_perm(size(mol1%atoms))
 
-   minrmsd = get_rmsd(mol1, mol2, mapping)
-   minadjd = get_adjd(mol1, mol2, mapping)
+   minrmsd = get_rmsd(mol1, mol2, atomperm)
+   minadjd = get_adjd(mol1, mol2, atomperm)
 
    mol2%title = 'RMSD='//realstr(rmsd, 4)
    call writefile(write_unit, fmtout, mol2)

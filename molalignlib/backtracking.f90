@@ -19,9 +19,9 @@ logical, parameter :: printInfo = .false.
 contains
 
 ! Find best correspondence between points of graphs
-subroutine minadjdiff (mol1, mol2, mapping)
+subroutine minadjdiff (mol1, mol2, atomperm)
    type(molecule_type), intent(in) :: mol1, mol2
-   integer, dimension(:), intent(inout) :: mapping
+   integer, dimension(:), intent(inout) :: atomperm
 
    ! Local variables
 
@@ -110,9 +110,9 @@ subroutine minadjdiff (mol1, mol2, mapping)
 
    ntrack = 0
    tracked(:) = .false.
-   unmapping = inverse_permutation(mapping)
-   moldiff = adjacencydiff (natom, adjmat1, adjmat2, mapping)
-   moldist = squaredist (natom, weights, coords1, coords2, mapping)
+   unmapping = inverse_perm(atomperm)
+   moldiff = adjacencydiff (natom, adjmat1, adjmat2, atomperm)
+   moldist = squaredist (natom, weights, coords1, coords2, atomperm)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "moldiff:", moldiff
@@ -120,26 +120,26 @@ subroutine minadjdiff (mol1, mol2, mapping)
    end if
 
    do i = 1, size(fragroots1)
-      call recursive_backtrack (fragroots1(i), mapping, unmapping, tracked, moldiff, moldist, ntrack, track)
+      call recursive_backtrack (fragroots1(i), atomperm, unmapping, tracked, moldiff, moldist, ntrack, track)
 !        print *, ntrack
    end do
 
    if ( printInfo ) then
       print '(a,1x,i0)', "countFrag:", size(fragroots1)
-      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, mapping), moldiff
-      print '(a,1x,f0.4,1x,f0.4)', "moldist:", squaredist (natom, weights, coords1, coords2, mapping), moldist
+      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
+      print '(a,1x,f0.4,1x,f0.4)', "moldist:", squaredist (natom, weights, coords1, coords2, atomperm), moldist
    end if
 
-!    if (adjacencydiff (natom, adjmat1, adjmat2, mapping) /= moldiff) then
-!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, mapping), moldiff
+!    if (adjacencydiff (natom, adjmat1, adjmat2, atomperm) /= moldiff) then
+!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
 !    end if
 
    contains    
 
 ! classify the atoms connected to node as matches or unmatched
-   subroutine nodematch (node, mapping, tracked, nmatch, matches, &
+   subroutine nodematch (node, atomperm, tracked, nmatch, matches, &
                    nmismatch0, mismatches0, nmismatch1, mismatches1)
-      integer, intent(in) :: node, mapping(:)
+      integer, intent(in) :: node, atomperm(:)
       logical, intent(in) :: tracked(:)
       integer, intent(out) :: nmatch, matches(natom)
       integer, intent(out) :: nmismatch0, mismatches0(natom)
@@ -147,31 +147,31 @@ subroutine minadjdiff (mol1, mol2, mapping)
       integer :: i, adj0(natom), adj1(natom)
 
       adj0(:nadjs1(node)) = adjlists1(:nadjs1(node), node)
-      adj1(:nadjs2(mapping(node))) = adjlists2(:nadjs2(mapping(node)), mapping(node))
+      adj1(:nadjs2(atomperm(node))) = adjlists2(:nadjs2(atomperm(node)), atomperm(node))
       nmatch = 0
       nmismatch0 = 0
       nmismatch1 = 0
 
       do i = 1, nadjs1(node)
-         if (findInd(mapping(adj0(i)), nadjs2(mapping(node)), adj1) /= 0) then
+         if (findInd(atomperm(adj0(i)), nadjs2(atomperm(node)), adj1) /= 0) then
             call addInd(adj0(i), nmatch, matches)
          else
             call addInd(adj0(i), nmismatch0, mismatches0)
          end if
       end do
 
-      do i = 1, nadjs2(mapping(node))
-         if (findInd(adj1(i), nmatch, mapping(matches(:nmatch))) == 0) then
+      do i = 1, nadjs2(atomperm(node))
+         if (findInd(adj1(i), nmatch, atomperm(matches(:nmatch))) == 0) then
             call addInd(adj1(i), nmismatch1, mismatches1)
          end if
       end do
    end subroutine nodematch
 
 ! backtracks structure to find assignments that minimize moldiff
-   recursive subroutine recursive_backtrack (node, mapping, unmapping, tracked, moldiff, moldist, &
+   recursive subroutine recursive_backtrack (node, atomperm, unmapping, tracked, moldiff, moldist, &
                                   ntrack, track)
       integer, intent(in) :: node
-      integer, intent(inout) :: mapping(natom), unmapping(natom)
+      integer, intent(inout) :: atomperm(natom), unmapping(natom)
       logical, intent(inout) :: tracked(natom)
       integer, intent(inout) :: moldiff, ntrack, track(natom)
       real(rk), intent(inout) :: moldist
@@ -194,7 +194,7 @@ subroutine minadjdiff (mol1, mol2, mapping)
       tracked(node) = .true.
 
       ! classify neighbor atoms as matches or mismatched for coords1/coords2
-      call nodematch (node, mapping, tracked, nmatch, matches, &
+      call nodematch (node, atomperm, tracked, nmatch, matches, &
                   nmismatch0, mismatches0, nmismatch1, mismatches1)
 
       if (printInfo) then
@@ -212,7 +212,7 @@ subroutine minadjdiff (mol1, mol2, mapping)
       ! run over matches neighbors
       do i = 1, nmatch
          if (.not. tracked(matches(i))) then
-            call recursive_backtrack(matches(i), mapping, unmapping, tracked, moldiff, &
+            call recursive_backtrack(matches(i), atomperm, unmapping, tracked, moldiff, &
                             moldist, ntrack, track)
          end if
       end do
@@ -230,27 +230,27 @@ subroutine minadjdiff (mol1, mol2, mapping)
                      ntrack_branch = ntrack
                      track_branch(:) = track(:)
                      tracked_branch(:) = tracked(:)
-                     mapping_branch(:) = mapping(:)
+                     mapping_branch(:) = atomperm(:)
                      unmapping_branch(:) = unmapping(:)
 
-                     ! Apply swap to mapping branch 
+                     ! Apply swap to atomperm branch 
                      mapping_branch(mismatches0(i)) = mismatches1(j)
-                     mapping_branch(unmapping(mismatches1(j))) = mapping(mismatches0(i))
+                     mapping_branch(unmapping(mismatches1(j))) = atomperm(mismatches0(i))
 
                      ! Apply swap to unmapping branch 
                      unmapping_branch(mismatches1(j)) = mismatches0(i)
-                     unmapping_branch(mapping(mismatches0(i))) = unmapping(mismatches1(j))
+                     unmapping_branch(atomperm(mismatches0(i))) = unmapping(mismatches1(j))
 
                      ! Update ssd with swap
                      moldist_branch = moldist + weights(mismatches0(i))*( &
-                        - sum((coords2(:, mapping(mismatches0(i))) - coords1(:, mismatches0(i)))**2) &
+                        - sum((coords2(:, atomperm(mismatches0(i))) - coords1(:, mismatches0(i)))**2) &
                         - sum((coords2(:, mismatches1(j)) - coords1(:, unmapping(mismatches1(j))))**2) &
                         + sum((coords2(:, mismatches1(j)) - coords1(:, mismatches0(i)))**2) &
-                        + sum((coords2(:, mapping(mismatches0(i))) - coords1(:, unmapping(mismatches1(j))))**2))
+                        + sum((coords2(:, atomperm(mismatches0(i))) - coords1(:, unmapping(mismatches1(j))))**2))
 
                      ! Update adjd with swap
                      moldiff_branch = moldiff + adjacencydelta(nadjs1, adjlists1, adjmat2, &
-                                   mapping, mismatches0(i), unmapping(mismatches1(j)))
+                                   atomperm, mismatches0(i), unmapping(mismatches1(j)))
 
                      ! backtrack swapped index
                      call recursive_backtrack(mismatches0(i), mapping_branch, unmapping_branch, &
@@ -260,13 +260,13 @@ subroutine minadjdiff (mol1, mol2, mapping)
                         moldiff_branch < moldiff &
                         .and. ( &
                            mnatypemap1(mismatches0(i)) == mnatypemap1(unmapping(mismatches1(j))) &
-                           .and. mnatypemap2(mapping(mismatches0(i))) == mnatypemap2(mismatches1(j)) &
+                           .and. mnatypemap2(atomperm(mismatches0(i))) == mnatypemap2(mismatches1(j)) &
                         ) &
                      ) then
                         ntrack = ntrack_branch
                         track(:) = track_branch(:)
                         tracked(:) = tracked_branch(:)
-                        mapping(:) = mapping_branch(:)
+                        atomperm(:) = mapping_branch(:)
                         unmapping(:) = unmapping_branch(:)
                         moldiff = moldiff_branch
                         moldist = moldist_branch
@@ -284,7 +284,7 @@ subroutine minadjdiff (mol1, mol2, mapping)
       do i = 1, nmismatch0
          if (.not. matched0(i)) then
             if (.not. tracked(mismatches0(i))) then
-               call recursive_backtrack(mismatches0(i), mapping, unmapping, &
+               call recursive_backtrack(mismatches0(i), atomperm, unmapping, &
                  tracked, moldiff, moldist, ntrack, track)
             end if
          end if
@@ -295,10 +295,10 @@ subroutine minadjdiff (mol1, mol2, mapping)
 end subroutine
 
 ! Find best correspondence between points of graphs
-subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
+subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    type(molecule_type), intent(in) :: mol1, mol2
    real(rk), intent(in) :: workcoords(:, :)
-   integer, intent(inout) :: mapping(:)
+   integer, intent(inout) :: atomperm(:)
 
    ! Local variables
 
@@ -404,27 +404,27 @@ subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
 !        if ( tracked(i) ) then
 !            i = i + 1
 !        else
-!            call recursive_permut (i, mapping, tracked, held, 0, 0)
+!            call recursive_permut (i, atomperm, tracked, held, 0, 0)
 !            i = 1   ! restart loop to find unconnected, untracked atoms
 !            fragcount = fragcount + 1
 !        end if
 !    end do
 
    do i = 1, size(fragroots1)
-      call recursive_permut (fragroots1(i), mapping, tracked, held, ntrack, track)
+      call recursive_permut (fragroots1(i), atomperm, tracked, held, ntrack, track)
 !        print *, ntrack
    end do
 
 !   print '(a,i0)', "Natoms: ", natom
-!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords1, workcoords, mapping)/sum(weights))
+!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords1, workcoords, atomperm)/sum(weights))
 !   print '(a,i0)', "permcount: ", permcount
 !   print '(a,i0)', "fragcount: ", fragcount
 
    contains    
 
-   recursive subroutine recursive_remap (nodea, nodeb, mapping_ref, mapping, held)
+   recursive subroutine recursive_remap (nodea, nodeb, mapping_ref, atomperm, held)
       integer, intent(in) :: nodea, nodeb, mapping_ref(natom)
-      integer, intent(inout) :: mapping(natom)
+      integer, intent(inout) :: atomperm(natom)
       logical, dimension(natom), intent(inout) :: held
       logical, dimension(natom) :: locked_c
       integer :: meqvnei, equiva(natom), equivb(natom)
@@ -447,20 +447,20 @@ subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
          locked_c(:) = held(:)
          do i = 1, meqvnei
             if ( equiva(i) /= equivb(i) ) then
-               mapping(equiva(i)) = mapping_ref(equivb(i))
+               atomperm(equiva(i)) = mapping_ref(equivb(i))
                call recursive_remap (equiva(i), equivb(i), mapping_ref, &
-                  mapping, locked_c)
+                  atomperm, locked_c)
             end if
          end do
          offset = offset + adjmnatypepartlens1(h, nodea)
       end do
    end subroutine recursive_remap
 
-   recursive subroutine recursive_permut (node, mapping, tracked, held, ntrack, track)
+   recursive subroutine recursive_permut (node, atomperm, tracked, held, ntrack, track)
       integer, intent(in) :: node
       integer, intent(inout) :: ntrack
       logical, dimension(natom), intent(inout) :: tracked, held
-      integer, dimension(natom), intent(inout) :: mapping, track
+      integer, dimension(natom), intent(inout) :: atomperm, track
 
       logical :: locked_c(natom)
       integer :: meqvnei, moldiff, track4ind(4), track4ind_c(4)
@@ -471,8 +471,8 @@ subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
-         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, mapping)/sum(weights))
-         moldiff = adjacencydiff(natom, adjmat1, adjmat2, mapping)
+         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm)/sum(weights))
+         moldiff = adjacencydiff(natom, adjmat1, adjmat2, atomperm)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist
       end if
@@ -502,17 +502,17 @@ subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
          ! check permutations
          if ( meqvnei > 0 ) then
             ! save initial state before permutations
-            mapping_min(:) = mapping(:)
+            mapping_min(:) = atomperm(:)
             ! run over all permutarions for the meqvnei equivalent atoms
             more = .false.
             call perm1_next3 (meqvnei, perm, more, rank)
             perm_min(:) = perm(:)
             ! initialize state to test new permutation
-            mapping_min(:) = mapping(:)
+            mapping_min(:) = atomperm(:)
             moldist_min = 0.0
             ! apply permutation
             do i = 1, meqvnei
-               mapping_min(equiv(i)) = mapping(equiv(perm_min(i)))
+               mapping_min(equiv(i)) = atomperm(equiv(perm_min(i)))
                moldist_min = moldist_min &
                         + sum((workcoords(:, mapping_min(equiv(i))) - coords1(:, equiv(i)))**2)
             end do
@@ -520,11 +520,11 @@ subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
                call perm1_next3 (meqvnei, perm, more, rank)
                permcount = permcount + 1
                ! initialize state to test new permutation
-               mapping_p(:) = mapping(:)
+               mapping_p(:) = atomperm(:)
                moldist_p = 0.0
                ! apply permutation
                do i = 1, meqvnei
-                  mapping_p(equiv(i)) = mapping(equiv(perm(i)))
+                  mapping_p(equiv(i)) = atomperm(equiv(perm(i)))
                   moldist_p = moldist_p &
                          + sum((workcoords(:, mapping_p(equiv(i))) - coords1(:, equiv(i)))**2) 
                end do
@@ -558,13 +558,13 @@ subroutine eqvatomperm (mol1, mol2, workcoords, mapping)
             do i = 1, meqvnei
                if ( equiv(i) /= equiv(perm_min(i)) ) then
                   call recursive_remap (equiv(i), equiv(perm_min(i)), &
-                               mapping, mapping_min, locked_c)
+                               atomperm, mapping_min, locked_c)
                end if
             end do
-            ! update mapping
-            mapping(:) = mapping_min(:)
+            ! update atomperm
+            atomperm(:) = mapping_min(:)
             do i = 1, meqvnei
-               call recursive_permut (equiv(i), mapping, tracked, &
+               call recursive_permut (equiv(i), atomperm, tracked, &
                                 locked_c, ntrack, track)
             end do
          end if

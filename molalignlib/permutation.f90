@@ -21,34 +21,34 @@ implicit none
 contains
 
 ! Get an identity permutation
-function identity_permutation(n) result(mapping)
+function identity_perm(n) result(perm)
    integer, intent(in) :: n
    ! Local variables
    integer :: i
-   integer :: mapping(n)
+   integer :: perm(n)
 
    do i = 1, n
-      mapping(i) = i
+      perm(i) = i
    end do
 
 end function
 
-! Get the inverse mapping of mapping
-function inverse_permutation(mapping)
-   integer, intent(in) :: mapping(:)
+! Get the inverse perm of perm
+function inverse_perm(perm)
+   integer, intent(in) :: perm(:)
    ! Local variables
    integer :: i
-   integer, allocatable :: inverse_permutation(:)
+   integer, allocatable :: inverse_perm(:)
 
-   allocate (inverse_permutation(size(mapping)))
+   allocate (inverse_perm(size(perm)))
 
-   do i = 1, size(mapping)
-      inverse_permutation(mapping(i)) = i
+   do i = 1, size(perm)
+      inverse_perm(perm(i)) = i
    end do
 
 end function
 
-logical function is_permutation(arr)
+logical function is_perm(arr)
    implicit none
    integer, intent(in) :: arr(:)
    integer :: i, N
@@ -56,11 +56,11 @@ logical function is_permutation(arr)
    
    N = size(arr)
    seen = .false.
-   is_permutation = .true.
+   is_perm = .true.
    
    do i = 1, N
       if (arr(i) < 1 .or. arr(i) > N .or. seen(arr(i))) then
-         is_permutation = .false.
+         is_perm = .false.
          return
       end if
       seen(arr(i)) = .true.

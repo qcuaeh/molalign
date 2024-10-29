@@ -27,10 +27,10 @@ implicit none
 
 contains
 
-subroutine remove_reactive_bonds(mol1, mol2, mapping)
+subroutine remove_reactive_bonds(mol1, mol2, atomperm)
 
    type(molecule_type), intent(inout) :: mol1, mol2
-   integer, dimension(:), intent(in) :: mapping
+   integer, dimension(:), intent(in) :: atomperm
 
    integer :: i, j, k, j_, k_
    type(partition_type) :: mnatypes1, mnatypes2
@@ -45,7 +45,7 @@ subroutine remove_reactive_bonds(mol1, mol2, mapping)
 
    ! Align coordinates
 
-   rotquat = leastrotquat(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), mol2%get_coords(), mapping)
+   rotquat = leastrotquat(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), mol2%get_coords(), atomperm)
    call mol2%rotate_coords(rotquat)
 
    ! Initialization
@@ -62,19 +62,19 @@ subroutine remove_reactive_bonds(mol1, mol2, mapping)
    mnatypemap2 = mol2%mnatypes%partition_map
    molfragparts1 = mol1%get_molfrags()
    molfragparts2 = mol2%get_molfrags()
-   unmapping = inverse_permutation(mapping)
+   unmapping = inverse_perm(atomperm)
 
    ! Remove mismatched bonds
 
    do i = 1, size(mol1%atoms)
       do j_ = 1, size(adjlists1(i)%atomidcs)
          j = adjlists1(i)%atomidcs(j_)
-         if (.not. adjmat2(mapping(i), mapping(j))) then
+         if (.not. adjmat2(atomperm(i), atomperm(j))) then
             mnatypepartidcs1 = mnatypes1%parts(mnatypemap1(j))%indices
             do k_ = 1, size(mnatypepartidcs1)
                k = mnatypepartidcs1(k_)
                call mol1%remove_bond(i, k)
-               call mol2%remove_bond(mapping(i), mapping(k))
+               call mol2%remove_bond(atomperm(i), atomperm(k))
             end do
          end if
       end do

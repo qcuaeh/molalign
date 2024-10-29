@@ -28,62 +28,62 @@ public leastrotquat
 
 contains
 
-real(rk) function squaredist(natom, weights, coords1, coords2, mapping)
+real(rk) function squaredist(natom, weights, coords1, coords2, atomperm)
    integer, intent(in) :: natom
-   integer, dimension(:), intent(in) :: mapping
+   integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
-   squaredist = sum(weights*sum((coords1 - coords2(:, mapping))**2, dim=1))
+   squaredist = sum(weights*sum((coords1 - coords2(:, atomperm))**2, dim=1))
 
 end function
 
-real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping)
+real(rk) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
 ! Purpose: Calculate least square distance from eigenvalues
    integer, intent(in) :: natom
-   integer, dimension(:), intent(in) :: mapping
+   integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    real(rk) :: residuals(4, 4)
 
-   call kearsley(natom, weights, coords1, coords2, mapping, residuals)
+   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
    ! eigenvalue can be negative due to numerical errors
    leastsquaredist = max(leasteigval(residuals), 0._rk)
 
 end function
 
-!real(rk) function leastsquaredist(natom, weights, coords1, coords2, mapping)
+!real(rk) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
 !! Purpose: Calculate least square distance from aligned coordinates
 !   integer, intent(in) :: natom
-!   integer, dimension(:), intent(in) :: mapping
+!   integer, dimension(:), intent(in) :: atomperm
 !   real(rk), dimension(:), intent(in) :: weights
 !   real(rk), dimension(:, :), intent(in) :: coords1, coords2
 !   real(rk) :: residuals(4, 4), eigval(4)
 !
-!   call kearsley(natom, weights, coords1, coords2, mapping, residuals)
+!   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
 !   call syevec4(residuals, eigval)
-!   leastsquaredist = squaredist(natom, weights, coords1, rotated(natom, coords2, residuals(:, 1)), mapping)
+!   leastsquaredist = squaredist(natom, weights, coords1, rotated(natom, coords2, residuals(:, 1)), atomperm)
 !
 !end function
 
-function leastrotquat(natom, weights, coords1, coords2, mapping)
+function leastrotquat(natom, weights, coords1, coords2, atomperm)
 ! Purpose: Calculate rotation quaternion which minimzes the square distance
    integer, intent(in) :: natom
-   integer, dimension(:), intent(in) :: mapping
+   integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    real(rk) :: leastrotquat(4), residuals(4, 4)
 
-   call kearsley(natom, weights, coords1, coords2, mapping, residuals)
+   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
    leastrotquat = leasteigvec(residuals)
 
 end function
 
-subroutine kearsley(natom, weights, coords1, coords2, mapping, residuals)
+subroutine kearsley(natom, weights, coords1, coords2, atomperm, residuals)
 ! Purpose: Find the best orientation by least squares minimization
 ! Reference: Acta Cryst. (1989). A45, 208-210
    integer, intent(in) :: natom
-   integer, dimension(:), intent(in) :: mapping
+   integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
@@ -93,8 +93,8 @@ subroutine kearsley(natom, weights, coords1, coords2, mapping, residuals)
    residuals = 0
 
    do i = 1, natom
-      p(:, i) = coords1(:, i) + coords2(:, mapping(i))
-      q(:, i) = coords1(:, i) - coords2(:, mapping(i))
+      p(:, i) = coords1(:, i) + coords2(:, atomperm(i))
+      q(:, i) = coords1(:, i) - coords2(:, atomperm(i))
    end do
 
    ! Calculate upper matrix elements

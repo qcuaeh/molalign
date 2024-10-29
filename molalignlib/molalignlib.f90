@@ -28,8 +28,8 @@ use translation
 use assorting
 use adjacency
 use alignment
-use remapping
 use assignment
+use lap_driver
 use writemol
 use biasing
 !use reactivity
@@ -124,13 +124,13 @@ end subroutine
 subroutine remapped_molecule_align( &
    mol1, &
    mol2, &
-   mapping, &
+   atomperm, &
    travec1, &
    travec2, &
    rotquat)
 
    type(molecule_type), intent(in) :: mol1, mol2
-   integer, intent(in) :: mapping(:)
+   integer, intent(in) :: atomperm(:)
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    ! Local variables
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
@@ -150,7 +150,7 @@ subroutine remapped_molecule_align( &
       weights(mol1%atoms%elnum), &
       translated(mol1%natom, coords1, travec1), &
       translated(mol2%natom, coords2, travec2), &
-      mapping &
+      atomperm &
    )
 
 end subroutine
@@ -216,27 +216,27 @@ subroutine molecule_align( &
       weights(mol1%atoms%elnum), &
       translated(mol1%natom, mol1%get_coords(), travec1), &
       translated(mol2%natom, mol2%get_coords(), travec2), &
-      identity_permutation(mol1%natom) &
+      identity_perm(mol1%natom) &
    )
 
 end subroutine
 
-function get_rmsd(mol1, mol2, mapping) result(rmsd)
+function get_rmsd(mol1, mol2, atomperm) result(rmsd)
    type(molecule_type), intent(in) :: mol1, mol2
-   integer :: mapping(:)
+   integer :: atomperm(:)
    real(rk) :: rmsd
 
    rmsd = sqrt(squaredist(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), &
-         mol2%get_coords(), mapping) / sum(weights(mol1%atoms%elnum)))
+         mol2%get_coords(), atomperm) / sum(weights(mol1%atoms%elnum)))
 
 end function
 
-function get_adjd(mol1, mol2, mapping) result(adjd)
+function get_adjd(mol1, mol2, atomperm) result(adjd)
    type(molecule_type), intent(in) :: mol1, mol2
-   integer :: mapping(:)
+   integer :: atomperm(:)
    integer :: adjd
 
-   adjd = adjacencydiff(mol1%natom, mol1%get_adjmat(), mol2%get_adjmat(), mapping)
+   adjd = adjacencydiff(mol1%natom, mol1%get_adjmat(), mol2%get_adjmat(), atomperm)
 
 end function
 
