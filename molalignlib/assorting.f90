@@ -17,7 +17,7 @@
 module assorting
 use stdio
 use kinds
-use discrete
+use permutation
 use sorting
 use chemdata
 

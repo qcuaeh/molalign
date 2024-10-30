@@ -20,7 +20,7 @@ use flags
 use bounds
 use random
 use strutils
-use lap
+use lap_sparse
 use translation
 use alignment
 use rotation
@@ -41,7 +41,7 @@ subroutine optimize_assignment( &
    blkwt, &
    coords0, &
    coords1, &
-   biasmat, &
+   prunemask, &
    permlist, &
    countlist, &
    nrec)
@@ -50,7 +50,7 @@ subroutine optimize_assignment( &
    integer, dimension(:), intent(in) :: blksz
    real(wp), dimension(:), intent(in) :: blkwt
    real(wp), dimension(:, :), intent(in) :: coords0, coords1
-   real(wp), dimension(:, :), intent(in) :: biasmat
+   logical, dimension(:, :), intent(in) :: prunemask
    integer, intent(out) :: permlist(:, :)
    integer, intent(out) :: countlist(:)
    integer, intent(out) :: nrec
@@ -104,7 +104,7 @@ subroutine optimize_assignment( &
 
    ! Minimize the euclidean distance
 
-      call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, biasmat, atomperm, dist)
+      call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, prunemask, atomperm, dist)
       rotquat = leastrotquat(natom, weights, coords0, workcoords1, atomperm)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
@@ -113,7 +113,7 @@ subroutine optimize_assignment( &
       steps = 1
 
       do while (iter_flag)
-         call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, biasmat, auxmap, dist)
+         call minatomperm(natom, coords0, workcoords1, nblk, blksz, blkwt, prunemask, auxmap, dist)
          if (all(auxmap == atomperm)) exit
          rotquat = leastrotquat(natom, weights, coords0, workcoords1, auxmap)
          prodquat = quatmul(rotquat, prodquat)
@@ -204,7 +204,7 @@ subroutine optimize_assignment( &
 end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine minatomperm(natom, coords0, coords1, nblk, blksz, blkwt, biasmat, atomperm, totdist)
+subroutine minatomperm(natom, coords0, coords1, nblk, blksz, blkwt, prunemask, atomperm, totdist)
 
 ! nblk: Number of block atoms
 ! blksz: Number of atoms in each block
@@ -216,7 +216,7 @@ subroutine minatomperm(natom, coords0, coords1, nblk, blksz, blkwt, biasmat, ato
    real(wp), dimension(:), intent(in) :: blkwt
    real(wp), dimension(:, :), intent(in) :: coords0
    real(wp), dimension(:, :), intent(in) :: coords1
-   real(wp), dimension(:, :), intent(in) :: biasmat
+   logical, dimension(:, :), intent(in) :: prunemask
    integer, dimension(:), intent(out) :: atomperm
    real(wp), intent(out) :: totdist
 
@@ -231,7 +231,7 @@ subroutine minatomperm(natom, coords0, coords1, nblk, blksz, blkwt, biasmat, ato
 
    do h = 1, nblk
       call minperm(blksz(h), coords0(:, offset+1:offset+blksz(h)), coords1(:, offset+1:offset+blksz(h)), &
-         biasmat(offset+1:offset+blksz(h), offset+1:offset+blksz(h)), perm, dist)
+         prunemask(offset+1:offset+blksz(h), offset+1:offset+blksz(h)), perm, dist)
       atomperm(offset+1:offset+blksz(h)) = perm(:blksz(h)) + offset
       totdist = totdist + blkwt(h)*dist
       offset = offset + blksz(h)

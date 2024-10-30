@@ -28,7 +28,7 @@ program molalign
    use translation
    use rotation
    use alignment
-   use discrete
+   use permutation
    use library
 
    implicit none

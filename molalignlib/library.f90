@@ -20,7 +20,7 @@ use kinds
 use bounds
 use random
 use biasing
-use discrete
+use permutation
 use sorting
 use assorting
 use rotation
@@ -67,7 +67,7 @@ subroutine assign_atoms( &
    integer, dimension(:), allocatable :: backorder0, backorder1
    real(wp) :: center0(3), center1(3)
    real(wp), dimension(:, :), allocatable :: coords0, coords1
-   real(wp), dimension(:, :), allocatable :: biasmat
+   logical, dimension(:, :), allocatable :: prunemask
 
    ! Set error code to 0 by default
 
@@ -89,7 +89,7 @@ subroutine assign_atoms( &
    allocate(blksz0(natom0), blksz1(natom1))
    allocate(blkwt0(natom0), blkwt1(natom1))
    allocate(coords0(3, natom0), coords1(3, natom1))
-   allocate(biasmat(natom0, natom1))
+   allocate(prunemask(natom0, natom1))
 
    ! Group atoms by label
 
@@ -142,7 +142,7 @@ subroutine assign_atoms( &
 
    ! Calculate biases
 
-   call setcrossbias(natom0, nblk0, blksz0, coords0, coords1, biasmat)
+   call setcrossbias(natom0, nblk0, blksz0, coords0, coords1, prunemask)
 
    ! Initialize random number generator
 
@@ -157,7 +157,7 @@ subroutine assign_atoms( &
       blkwt0, &
       coords0, &
       coords1, &
-      biasmat, &
+      prunemask, &
       permlist, &
       countlist, &
       nrec)

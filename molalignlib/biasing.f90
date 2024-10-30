@@ -25,19 +25,15 @@ real(wp) :: bias_scale
 
 contains
 
-subroutine setcrossbias(natom, nblk, blksz, coords0, coords1, biasmat)
+subroutine setcrossbias(natom, nblk, blksz, coords0, coords1, prunemask)
 ! Purpose: Set biases from sorted distances to neighbors equivalence
 
    integer, intent(in) :: natom, nblk
    integer, dimension(:), intent(in) :: blksz
    real(wp), dimension(:, :), intent(in) :: coords0, coords1
-   real(wp), dimension(:, :), intent(out) :: biasmat
+   logical, dimension(:, :), intent(out) :: prunemask
    integer :: h, i, j, offset
    real(wp), allocatable :: d0(:, :), d1(:, :)
-
-   ! Set default bias
-
-   biasmat(:, :) = 0
 
    ! Quick return
 
@@ -73,7 +69,9 @@ subroutine setcrossbias(natom, nblk, blksz, coords0, coords1, biasmat)
       do i = offset + 1, offset + blksz(h)
          do j = offset + 1, offset + blksz(h)
             if (any(abs(d1(:, j) - d0(:, i)) > bias_tol)) then
-               biasmat(i, j) = bias_scale**2
+               prunemask(j, i) = .false.
+            else
+               prunemask(j, i) = .true.
             end if
          end do
       end do

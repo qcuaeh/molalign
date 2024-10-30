@@ -4,10 +4,9 @@ flags.f90
 bounds.f90
 strutils.f90
 linear.f90
-discrete.f90
+permutation.f90
+lap_sparse.f90
 rnglib.f90
-lap-jv.f90
-#lap-hun.f90
 random.f90
 sorting.f90
 biasing.f90
