@@ -7,32 +7,32 @@ found in publication [[1]](#1).
 Before installing
 -----------------
 
-If you can't install stuff on your computer then
-[try&nbsp;MolAlignLib&nbsp;on&nbsp;Binder](https://notebooks.gesis.org/binder/v2/gh/qcuaeh/molalignlib/HEAD?filepath=examples).
+You can try [MolAlignLib&nbsp;on&nbsp;Binder](https://notebooks.gesis.org/binder/v2/gh/qcuaeh/molalignlib/HEAD?filepath=examples) if you don't want to build and install it.
 
-* To build the native executable you will need a Fortran 2008 compiler and LAPACK.
+* To build the native executable you will only need *GFortran 4.8* or higher or any other
+compiler with Fortran 2008 support.
 
-* To build the python module you will need GFortran 4.8 or higher, LAPACK, Python 3.6 or
-higher, *NumPy* and *ASE*.
+* To build the python module you will need *GFortran 4.8* or higher, *Python 3.6* or higher,
+*NumPy 1.18-1.26* and *ASE*.
 
 The easiest way to install the required packages is with your distro's package manager:
 
 #### RHEL, Centos, Fedora, etc.
 
 ```
-yum install git python3 python3-pip gcc-gfortran lapack-devel
+yum install git python3 python3-pip gcc-gfortran
 ```
 
 #### Debian, Ubuntu, Mint, etc.
 
 ```
-apt install git python3 python3-pip gfortran liblapack-dev
+apt install git python3 python3-pip gfortran
 ```
 
-Build the native executable
----------------------------
+To build the native executable
+------------------------------
 
-Clone the repository:
+clone the repository:
 
 ```
 git clone https://github.com/qcuaeh/molalignlib.git
@@ -44,18 +44,18 @@ then enter the cloned directory, edit the *build.env* file to suit your system a
 ./build.sh
 ```
 
-It will create the *molalign* executable inside the *build* directory.
+it will create the *molalign* executable inside the *build* directory.
 
-or build and install the python module
---------------------------------------
+or to build and install the python module
+-----------------------------------------
 
-Simply run:
+just run:
 
 ```
 pip3 install git+https://github.com/qcuaeh/molalignlib.git
 ```
 
-It will install *NumPy*, *ASE* and *MolAlignLib* in your site packages and the *molalign* script in your path.
+it will install *NumPy*, *ASE* and *MolAlignLib* in your site packages and the *molalign* script in your path.
 
 Program options
 ---------------

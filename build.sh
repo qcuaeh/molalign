@@ -72,7 +72,7 @@ make_prog() {
    fi
    echo Linking program...
    pushd "$buildir" > /dev/null
-   "$F90" -o "$1" "${obj_files[@]}" -llapack
+   "$F90" -o "$1" "${obj_files[@]}"
    popd > /dev/null
 }
 
@@ -84,7 +84,7 @@ make_lib() {
    fi
    echo Linking dynamic library...
    pushd "$buildir" >/dev/null
-   "$F90" -shared -o "$1.so" "${obj_files[@]}" -llapack
+   "$F90" -shared -o "$1.so" "${obj_files[@]}"
    popd >/dev/null
 }
 
@@ -101,7 +101,7 @@ make_pyext() {
    pushd "$buildir" >/dev/null
    echo Linking extension module...
    "$F2PY" -h "$1.pyf" -m "$1" --overwrite-signature "${f2py_files[@]}" --quiet
-   "$F2PY" -c "$1.pyf" --fcompiler=gnu95 --link-lapack "${obj_files[@]}" --quiet
+   "$F2PY" -c "$1.pyf" --fcompiler=gnu95 "${obj_files[@]}" --quiet
    popd >/dev/null
 }
 
@@ -117,7 +117,7 @@ runtests() {
       testname=$(basename "$file" .out)
       echo -n "Running test $testset/$testname... "
 #      "$executable" -stdin xyz -stdout xyz -test -stats "$@" < "$testdir/$testset/$testname.xyz" 2>&1 > "$file"
-      if diff -bB <("$executable" -stdin xyz -stdout xyz -test -stats "$@" < "$testdir/$testset/$testname.xyz" 2>&1) "$file"; then
+      if diff -bB "$file" <("$executable" -stdin xyz -stdout xyz -test -stats "$@" < "$testdir/$testset/$testname.xyz" 2>&1); then
          echo ok
       else
          echo failed

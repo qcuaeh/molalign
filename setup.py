@@ -16,7 +16,7 @@ with open(path.join('molalignlib', 'f2py_files'), 'r') as file:
             f2py_files.append(path.join('molalignlib', line.rstrip()))
 
 molalignlib = ('molalignlib', dict(sources=source_files, extra_f90_compile_args=['-O3', '-ffast-math']))
-molalignlibext = Extension('molalignlibext', sources=f2py_files, libraries=['molalignlib', 'lapack'])
+molalignlibext = Extension('molalignlibext', sources=f2py_files, libraries=['molalignlib'])
 
 setup(
     libraries = [molalignlib],

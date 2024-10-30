@@ -3,7 +3,7 @@ kinds.f90
 flags.f90
 bounds.f90
 strutils.f90
-linear.f90
+jacobi.f90
 permutation.f90
 lap_sparse.f90
 rnglib.f90

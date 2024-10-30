@@ -16,7 +16,7 @@
 
 module alignment
 use kinds
-use linear
+use jacobi
 use rotation
 
 implicit none
@@ -28,91 +28,98 @@ public leastrotquat
 
 contains
 
-real(wp) function squaredist(natom, weights, coords0, coords1, atomperm) result(dist)
+real(wp) function squaredist(natom, weights, coords1, coords2, atomperm)
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
    real(wp), dimension(:), intent(in) :: weights
-   real(wp), dimension(:, :), intent(in) :: coords0, coords1
+   real(wp), dimension(:, :), intent(in) :: coords1, coords2
 
-   dist = sum(weights(1:natom)*sum((coords0(:, 1:natom) - coords1(:, atomperm(1:natom)))**2, dim=1))
+   squaredist = sum(weights*sum((coords1 - coords2(:, atomperm))**2, dim=1))
 
 end function
 
-real(wp) function leastsquaredist(natom, weights, coords0, coords1, atomperm) result(dist)
+real(wp) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
 ! Purpose: Calculate least square distance from eigenvalues
-    integer, intent(in) :: natom
-    integer, dimension(:), intent(in) :: atomperm
-    real(wp), dimension(:), intent(in) :: weights
-    real(wp), dimension(:, :), intent(in) :: coords0, coords1
-    real(wp) eigmat(4, 4), eigval(4)
+   integer, intent(in) :: natom
+   integer, dimension(:), intent(in) :: atomperm
+   real(wp), dimension(:), intent(in) :: weights
+   real(wp), dimension(:, :), intent(in) :: coords1, coords2
+   real(wp) :: residuals(4, 4)
 
-    call kearsleymat(natom, weights, coords0, coords1, atomperm, eigmat)
-    call syeval4(eigmat, eigval)
-    dist = max(eigval(1), 0._wp)
+   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
+   ! eigenvalue can be negative due to numerical errors
+   leastsquaredist = max(leasteigval(residuals), 0._wp)
 
 end function
 
-!real(wp) function leastsquaredist(natom, weights, coords0, coords1, atomperm) result(dist)
+!real(wp) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
 !! Purpose: Calculate least square distance from aligned coordinates
 !   integer, intent(in) :: natom
 !   integer, dimension(:), intent(in) :: atomperm
 !   real(wp), dimension(:), intent(in) :: weights
-!   real(wp), dimension(:, :), intent(in) :: coords0, coords1
-!   real(wp) :: eigmat(4, 4), eigval(4)
+!   real(wp), dimension(:, :), intent(in) :: coords1, coords2
+!   real(wp) :: residuals(4, 4), eigval(4)
 !
-!   call kearsleymat(natom, weights, coords0, coords1, atomperm, eigmat)
-!   call syevec4(eigmat, eigval)
-!   dist = squaredist(natom, weights, coords0, rotated(natom, coords1, eigmat(:, 1)), atomperm)
+!   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
+!   call syevec4(residuals, eigval)
+!   leastsquaredist = squaredist(natom, weights, coords1, rotated(natom, coords2, residuals(:, 1)), atomperm)
 !
 !end function
 
-function leastrotquat(natom, weights, coords0, coords1, atomperm) result(quat)
+function leastrotquat(natom, weights, coords1, coords2, atomperm)
 ! Purpose: Calculate rotation quaternion which minimzes the square distance
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
    real(wp), dimension(:), intent(in) :: weights
-   real(wp), dimension(:, :), intent(in) :: coords0, coords1
-   real(wp) :: quat(4), eigmat(4, 4), eigval(4)
+   real(wp), dimension(:, :), intent(in) :: coords1, coords2
+   real(wp) :: leastrotquat(4), residuals(4, 4)
 
-   call kearsleymat(natom, weights, coords0, coords1, atomperm, eigmat)
-   call syevec4(eigmat, eigval)
-   quat = eigmat(:, 1)
+   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
+   leastrotquat = leasteigvec(residuals)
 
 end function
 
-subroutine kearsleymat(natom, weights, coords0, coords1, atomperm, eigmat)
+subroutine kearsley(natom, weights, coords1, coords2, atomperm, residuals)
 ! Purpose: Find the best orientation by least squares minimization
 ! Reference: Acta Cryst. (1989). A45, 208-210
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
    real(wp), dimension(:), intent(in) :: weights
-   real(wp), dimension(:, :), intent(in) :: coords0, coords1
+   real(wp), dimension(:, :), intent(in) :: coords1, coords2
 
    integer :: i
-   real(wp) :: eigmat(4, 4), p(3, natom), q(3, natom), auxmat(4, 4)
+   real(wp) :: residuals(4, 4), p(3, natom), q(3, natom)
 
-   eigmat = 0
-
-   do i = 1, natom
-      p(:, i) = coords0(:, i) + coords1(:, atomperm(i))
-      q(:, i) = coords0(:, i) - coords1(:, atomperm(i))
-   end do
-
-! Calculate uppercase diagonal elements of the matrix
+   residuals = 0
 
    do i = 1, natom
-      auxmat(1, 1) = q(1, i)**2 + q(2, i)**2 + q(3, i)**2
-      auxmat(1, 2) = p(2, i)*q(3, i) - q(2, i)*p(3, i)
-      auxmat(1, 3) = q(1, i)*p(3, i) - p(1, i)*q(3, i)
-      auxmat(1, 4) = p(1, i)*q(2, i) - q(1, i)*p(2, i)
-      auxmat(2, 2) = p(2, i)**2 + p(3, i)**2 + q(1, i)**2
-      auxmat(2, 3) = q(1, i)*q(2, i) - p(1, i)*p(2, i)
-      auxmat(2, 4) = q(1, i)*q(3, i) - p(1, i)*p(3, i)
-      auxmat(3, 3) = p(1, i)**2 + p(3, i)**2 + q(2, i)**2
-      auxmat(3, 4) = q(2, i)*q(3, i) - p(2, i)*p(3, i)
-      auxmat(4, 4) = p(1, i)**2 + p(2, i)**2 + q(3, i)**2
-      eigmat = eigmat + weights(i)*auxmat
+      p(:, i) = coords1(:, i) + coords2(:, atomperm(i))
+      q(:, i) = coords1(:, i) - coords2(:, atomperm(i))
    end do
+
+   ! Calculate upper matrix elements
+
+   do i = 1, natom
+      residuals(1, 1) = residuals(1, 1) + weights(i)*(q(1, i)**2 + q(2, i)**2 + q(3, i)**2)
+      residuals(1, 2) = residuals(1, 2) + weights(i)*(p(2, i)*q(3, i) - q(2, i)*p(3, i))
+      residuals(1, 3) = residuals(1, 3) + weights(i)*(q(1, i)*p(3, i) - p(1, i)*q(3, i))
+      residuals(1, 4) = residuals(1, 4) + weights(i)*(p(1, i)*q(2, i) - q(1, i)*p(2, i))
+      residuals(2, 2) = residuals(2, 2) + weights(i)*(p(2, i)**2 + p(3, i)**2 + q(1, i)**2)
+      residuals(2, 3) = residuals(2, 3) + weights(i)*(q(1, i)*q(2, i) - p(1, i)*p(2, i))
+      residuals(2, 4) = residuals(2, 4) + weights(i)*(q(1, i)*q(3, i) - p(1, i)*p(3, i))
+      residuals(3, 3) = residuals(3, 3) + weights(i)*(p(1, i)**2 + p(3, i)**2 + q(2, i)**2)
+      residuals(3, 4) = residuals(3, 4) + weights(i)*(q(2, i)*q(3, i) - p(2, i)*p(3, i))
+      residuals(4, 4) = residuals(4, 4) + weights(i)*(p(1, i)**2 + p(2, i)**2 + q(3, i)**2)
+   end do
+
+   ! Symmetrize matrix
+
+   residuals(2, 1) = residuals(1, 2)
+   residuals(3, 1) = residuals(1, 3)
+   residuals(4, 1) = residuals(1, 4)
+   residuals(3, 2) = residuals(2, 3)
+   residuals(4, 2) = residuals(2, 4)
+   residuals(4, 3) = residuals(3, 4)
 
 end subroutine
 
