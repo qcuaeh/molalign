@@ -59,8 +59,6 @@ subroutine compute_eltypes(mol1, mol2, eltypes)
       call partlist(elnum)%ptr%subset2%add(i)
    end do
 
-!   call eltypes%print_parts()
-
 end subroutine
 
 ! Level up MNA types

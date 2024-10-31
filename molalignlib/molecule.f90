@@ -267,7 +267,7 @@ subroutine print_atoms(self)
    class(molecule_type), intent(in) :: self
    ! Local variables
    integer :: i
-   character(ll) :: fmtstr
+   character(:), allocatable :: fmtstr
    type(atom_type) :: atom
 
    write (stderr, '(a,1x,i0)') 'Atoms:', size(self%atoms)

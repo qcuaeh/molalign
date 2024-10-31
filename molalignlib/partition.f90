@@ -185,14 +185,13 @@ end subroutine
 subroutine partition_print_parts(self)
    class(partition_type), intent(in) :: self
    integer :: h
+   character(:), allocatable :: fmtstr
 
-   write (stderr, *)
    do h = 1, self%partition_size
-      write (stderr, *) h, self%parts(h)%subset1%indices
-   end do
-   write (stderr, *)
-   do h = 1, self%partition_size
-      write (stderr, *) h, self%parts(h)%subset2%indices
+      fmtstr = "('{'" // repeat(',1x,i3', self%parts(h)%subset1%part_size) &
+            // ",' }   {'" // repeat(',1x,i3', self%parts(h)%subset2%part_size) // ",' }')"
+      print *,fmtstr
+      write (stderr, fmtstr) self%parts(h)%subset1%indices, self%parts(h)%subset2%indices
    end do
 
 end subroutine

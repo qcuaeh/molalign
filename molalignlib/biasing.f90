@@ -19,6 +19,7 @@ use kinds
 use flags
 use bounds
 use sorting
+use strutils
 use assorting
 use partition
 use molecule
@@ -110,9 +111,13 @@ subroutine compute_equivmat(atoms1, atoms2, eltypes, last_level, last_common_lev
 
    ! eltypes are our initial mnatypes
    mnatypes = eltypes
-   last_level = 1
+   last_level = 0
 
    do
+
+!      write (stderr, *)
+!      write (stderr, '(a)') repeat('-- level '//intstr(last_level)//' --', 6)
+!      call mnatypes%print_parts()
 
       do h = 1, eltypes%partition_size
          do i = 1, eltypes%parts(h)%subset1%part_size
@@ -137,8 +142,6 @@ subroutine compute_equivmat(atoms1, atoms2, eltypes, last_level, last_common_lev
       last_level = last_level + 1
 
    end do
-
-!   call mnatypes%print_parts()
 
 end subroutine
 
