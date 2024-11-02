@@ -42,17 +42,16 @@ contains
 subroutine molecule_remap( &
    mol1, &
    mol2, &
-   eltypes, &
    nrec, &
    maplist, &
    countlist)
 
    type(molecule_type), intent(inout) :: mol1, mol2
-   type(partition_type), intent(in) :: eltypes
    integer, intent(out) :: nrec
    integer, dimension(:, :), intent(inout) :: maplist
    integer, dimension(:), intent(inout) :: countlist
 
+   type(partition_type) :: eltypes
    real(rk) :: travec1(3), travec2(3)
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
@@ -69,6 +68,10 @@ subroutine molecule_remap( &
       write (stderr, '(a)') 'Error: These molecules are not isomers'
       stop
    end if
+
+   ! Compute atomic types
+
+   call compute_crosseltypes(mol1, mol2, eltypes)
 
    ! Abort if there are conflicting atomic types
 
@@ -159,14 +162,13 @@ subroutine molecule_align( &
 ! Purpose: Align atoms0 and atoms1
    mol1, &
    mol2, &
-   eltypes, &
    travec1, &
    travec2, &
    rotquat)
 
    type(molecule_type), intent(in) :: mol1, mol2
-   type(partition_type), intent(in) :: eltypes
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
+   type(partition_type) :: eltypes
 
    ! Abort if molecules have different number of atoms
 
@@ -181,6 +183,10 @@ subroutine molecule_align( &
 !      write (stderr, '(a)') '*Error: These molecules are not isomers'
 !      stop
 !   end if
+
+   ! Compute atomic types
+
+   call compute_crosseltypes(mol1, mol2, eltypes)
 
    ! Abort if there are conflicting atomic types
 

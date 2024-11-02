@@ -52,7 +52,6 @@ integer :: adjd, minadjd
 real(rk) :: rmsd, minrmsd
 type(p_char) :: posargs(2)
 type(molecule_type) :: mol1, mol2, auxmol1
-type(partition_type) :: eltypes
 
 ! Set default options
 
@@ -216,9 +215,18 @@ if (fmtout_flag) then
    fmtout = optfmtout
 end if
 
-! Compute types
-
-call compute_eltypes(mol1, mol2, eltypes)
+!block
+!   ! Compute MNA types
+!   type(partition_type) :: eltypes1, eltypes2
+!   type(partition_type) :: mnatypes1, mnatypes2
+!   call compute_eltypes(mol1, eltypes1)
+!   call compute_eltypes(mol2, eltypes2)
+!   call compute_mnatypes(mol1, eltypes1, mnatypes1)
+!   call compute_mnatypes(mol2, eltypes2, mnatypes2)
+!   call mnatypes1%print_parts()
+!   write (stderr, *)
+!   call mnatypes2%print_parts()
+!end block
 
 if (remap_flag) then
 
@@ -227,7 +235,6 @@ if (remap_flag) then
    call molecule_remap( &
       mol1, &
       mol2, &
-      eltypes, &
       nrec, &
       maplist, &
       countlist)
@@ -276,7 +283,6 @@ else
    call molecule_align( &
       mol1, &
       mol2, &
-      eltypes, &
       travec1, &
       travec2, &
       rotquat)

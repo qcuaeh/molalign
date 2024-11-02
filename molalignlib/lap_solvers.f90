@@ -5,6 +5,7 @@ use stdio
 use permutation
 implicit none
 private
+public minperm
 public minperm_biased
 public minperm_pruned
 public minperm_nearest
@@ -16,6 +17,21 @@ real(rk), parameter :: scale = 1.0e6_rk
 integer, parameter :: maxnei = 20
 
 contains
+
+subroutine minperm(n, bias, perm, dist)
+   integer, intent(in) :: n
+   integer, intent(in) :: bias(n, n)
+   integer, intent(out) :: perm(n)
+   real(rk), intent(out) :: dist
+   ! Local variables
+   real(rk), allocatable :: costs(:, :)
+
+   allocate (costs(n, n))
+   costs = bias
+
+   call assndx(2, costs, n, n, perm, dist)
+
+end subroutine
 
 subroutine minperm_biased(n, e1, e2, r1, r2, bias, perm, dist)
    integer, intent(in) :: n

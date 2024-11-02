@@ -68,7 +68,7 @@ type, public :: partition_type
    type(part_type), pointer :: parts(:)
 contains
    procedure :: init => partition_init
-   procedure :: new_part => partition_get_new_part
+   procedure :: new_part => partition_new_part
    procedure :: print_parts => partition_print_parts
 end type
 
@@ -121,7 +121,7 @@ subroutine partition_init(self, max_partition_size, max_part_size)
 
 end subroutine
 
-function partition_get_new_part(self) result(part)
+function partition_new_part(self) result(part)
    class(partition_type), intent(inout) :: self
    ! Result variable
    type(part_type), pointer :: part
@@ -190,7 +190,6 @@ subroutine partition_print_parts(self)
    do h = 1, self%partition_size
       fmtstr = "('{'" // repeat(',1x,i3', self%parts(h)%subset1%part_size) &
             // ",' }   {'" // repeat(',1x,i3', self%parts(h)%subset2%part_size) // ",' }')"
-      print *,fmtstr
       write (stderr, fmtstr) self%parts(h)%subset1%indices, self%parts(h)%subset2%indices
    end do
 
