@@ -29,7 +29,7 @@ contains
 subroutine writexyz(unit, mol)
    ! Arguments
    integer, intent(in) :: unit
-   type(molecule_type) :: mol
+   type(mol_type) :: mol
    ! Local varibles
    integer :: i, natom
    character(:), allocatable :: title
@@ -53,7 +53,7 @@ end subroutine
 subroutine writemol2(unit, mol)
    ! Arguments
    integer, intent(in) :: unit
-   type(molecule_type) :: mol
+   type(mol_type) :: mol
    ! Local varibles
    integer :: i, natom
    character(:), allocatable :: title

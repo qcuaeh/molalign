@@ -20,7 +20,7 @@ contains
 
 ! Find best correspondence between points of graphs
 subroutine minadjdiff (mol1, mol2, atomperm)
-   type(molecule_type), intent(in) :: mol1, mol2
+   type(mol_type), intent(in) :: mol1, mol2
    integer, dimension(:), intent(inout) :: atomperm
 
    ! Local variables
@@ -37,8 +37,8 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    integer :: neltype1
    integer :: nmnatype1, nmnatype2
 
-   type(partition_type) :: eltypes1
-   type(partition_type) :: mnatypes1, mnatypes2
+   type(bipartition_type) :: eltypes1
+   type(bipartition_type) :: mnatypes1, mnatypes2
 
    integer, allocatable, dimension(:) :: eltypepartsizes1
    integer, allocatable, dimension(:) :: mnatypepartsizes1, mnatypepartsizes2
@@ -296,7 +296,7 @@ end subroutine
 
 ! Find best correspondence between points of graphs
 subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
-   type(molecule_type), intent(in) :: mol1, mol2
+   type(mol_type), intent(in) :: mol1, mol2
    real(rk), intent(in) :: workcoords(:, :)
    integer, intent(inout) :: atomperm(:)
 
@@ -312,8 +312,8 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    integer :: neltype1
    integer :: nmnatype1, nmnatype2
 
-   type(partition_type) :: eltypes1
-   type(partition_type) :: mnatypes1, mnatypes2
+   type(bipartition_type) :: eltypes1
+   type(bipartition_type) :: mnatypes1, mnatypes2
 
    integer, allocatable, dimension(:) :: eltypepartsizes1
    integer, allocatable, dimension(:) :: mnatypepartsizes1, mnatypepartsizes2

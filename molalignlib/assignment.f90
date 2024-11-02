@@ -38,8 +38,8 @@ implicit none
 contains
 
 subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
-   type(molecule_type), intent(in) :: mol1, mol2
-   type(partition_type), intent(in) :: eltypes
+   type(mol_type), intent(in) :: mol1, mol2
+   type(bipartition_type), intent(in) :: eltypes
    integer, intent(out) :: maplist(:, :)
    integer, intent(out) :: countlist(:)
    integer, intent(out) :: nrec
@@ -58,14 +58,11 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
    type(realmatrix_type), dimension(:), allocatable :: mnadists
 
    integer :: natom1
-   type(atom_type), dimension(:), allocatable :: atoms1, atoms2
    logical, dimension(:, :), allocatable :: adjmat1, adjmat2
    real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights1
 
    natom1 = mol1%natom
-   atoms1 = mol1%atoms
-   atoms2 = mol2%atoms
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
    adjmat1 = mol1%get_adjmat()
@@ -78,7 +75,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
    ! Calculate bias matrix
 
-   call bias_procedure(atoms1, atoms2, eltypes, mnadists)
+   call bias_procedure(mol1, mol2, eltypes, mnadists)
 
    ! Initialize loop variables
 

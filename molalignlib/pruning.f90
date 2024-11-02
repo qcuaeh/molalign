@@ -16,6 +16,7 @@
 
 module pruning
 use kinds
+use types
 use flags
 use bounds
 use sorting
@@ -29,8 +30,9 @@ procedure(prune_proc), pointer :: prune_procedure
 abstract interface
    subroutine prune_proc( eltypes, coords1, coords2, prunemask)
       use kinds
+      use types
       use partition
-      type(partition_type), intent(in) :: eltypes
+      type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
       type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
    end subroutine
@@ -39,7 +41,7 @@ end interface
 contains
 
 subroutine prune_none( eltypes, coords1, coords2, prunemask)
-   type(partition_type), intent(in) :: eltypes
+   type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
    ! Local variables
@@ -61,7 +63,7 @@ subroutine prune_none( eltypes, coords1, coords2, prunemask)
 end subroutine
 
 subroutine prune_rd( eltypes, coords1, coords2, prunemask)
-   type(partition_type), intent(in) :: eltypes
+   type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
    ! Local variables

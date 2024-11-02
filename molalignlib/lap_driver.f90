@@ -16,6 +16,7 @@
 
 module lap_driver
 use stdio
+use types
 use kinds
 use bounds
 use partition
@@ -34,8 +35,9 @@ public assign_proc
 abstract interface
    subroutine assign_proc( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
       use kinds
+      use types
       use partition
-      type(partition_type), intent(in) :: eltypes
+      type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
       type(boolmatrix_type), dimension(:), intent(in) :: prunemask
       type(realmatrix_type), dimension(:), intent(in) :: mnadists
@@ -49,7 +51,7 @@ contains
 
 ! Find best correspondence between points sets with fixed orientation
 subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
-   type(partition_type), intent(in) :: eltypes
+   type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), intent(in) :: prunemask
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
@@ -76,7 +78,7 @@ end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
 subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
-   type(partition_type), intent(in) :: eltypes
+   type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), intent(in) :: prunemask
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
@@ -102,7 +104,7 @@ end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
 subroutine assign_atoms_biased( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
-   type(partition_type), intent(in) :: eltypes
+   type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), intent(in) :: prunemask
    type(realmatrix_type), dimension(:), intent(in) :: mnadists

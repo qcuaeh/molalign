@@ -1,5 +1,6 @@
 stdio.f90
 kinds.f90
+types.f90
 flags.f90
 bounds.f90
 strutils.f90

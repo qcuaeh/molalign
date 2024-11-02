@@ -46,12 +46,12 @@ subroutine molecule_remap( &
    maplist, &
    countlist)
 
-   type(molecule_type), intent(inout) :: mol1, mol2
+   type(mol_type), intent(inout) :: mol1, mol2
    integer, intent(out) :: nrec
    integer, dimension(:, :), intent(inout) :: maplist
    integer, dimension(:), intent(inout) :: countlist
 
-   type(partition_type) :: eltypes
+   type(bipartition_type) :: eltypes
    real(rk) :: travec1(3), travec2(3)
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
@@ -132,7 +132,7 @@ subroutine remapped_molecule_align( &
    travec2, &
    rotquat)
 
-   type(molecule_type), intent(in) :: mol1, mol2
+   type(mol_type), intent(in) :: mol1, mol2
    integer, intent(in) :: atomperm(:)
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    ! Local variables
@@ -166,9 +166,9 @@ subroutine molecule_align( &
    travec2, &
    rotquat)
 
-   type(molecule_type), intent(in) :: mol1, mol2
+   type(mol_type), intent(in) :: mol1, mol2
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
-   type(partition_type) :: eltypes
+   type(bipartition_type) :: eltypes
 
    ! Abort if molecules have different number of atoms
 
@@ -228,7 +228,7 @@ subroutine molecule_align( &
 end subroutine
 
 function get_rmsd(mol1, mol2, atomperm) result(rmsd)
-   type(molecule_type), intent(in) :: mol1, mol2
+   type(mol_type), intent(in) :: mol1, mol2
    integer :: atomperm(:)
    real(rk) :: rmsd
 
@@ -238,7 +238,7 @@ function get_rmsd(mol1, mol2, atomperm) result(rmsd)
 end function
 
 function get_adjd(mol1, mol2, atomperm) result(adjd)
-   type(molecule_type), intent(in) :: mol1, mol2
+   type(mol_type), intent(in) :: mol1, mol2
    integer :: atomperm(:)
    integer :: adjd
 
@@ -248,7 +248,7 @@ end function
 
 function centroid(mol)
 ! Purpose: Get the centroid coordinates
-   type(molecule_type), intent(in) :: mol
+   type(mol_type), intent(in) :: mol
    ! Local variables
    integer :: i
    real(rk) :: centroid(3)

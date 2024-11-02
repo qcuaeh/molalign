@@ -17,7 +17,7 @@ type(atomlist_type), allocatable :: adjlists(:)
 contains
 
 subroutine find_molfrags (mol)
-   type(molecule_type), intent(inout) :: mol
+   type(mol_type), intent(inout) :: mol
    ! Local variables
    integer :: iatom, nfrag
    integer, allocatable :: fragidcs(:), fragsize(:)
@@ -74,7 +74,7 @@ recursive subroutine recrun (tracked, iatom, nfrag, fragidcs, fragsize)
 end subroutine
 
 subroutine set_molfrags(self, nfrag, fragidcs)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: nfrag
    integer, intent(in) :: fragidcs(:)
 
@@ -83,7 +83,7 @@ subroutine set_molfrags(self, nfrag, fragidcs)
 end subroutine
 
 function get_molfrags(self) result(molfrags)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i
    type(atomlist_type), allocatable :: molfrags(:)
@@ -97,7 +97,7 @@ function get_molfrags(self) result(molfrags)
 end function
 
 function get_molfragroots(self) result(fragroots)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Result variable
    integer, allocatable :: fragroots(:)
    ! Local variables

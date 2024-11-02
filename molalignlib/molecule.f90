@@ -1,8 +1,8 @@
 module molecule
 use kinds
+use types
 use bounds
 use setutils
-use partition
 use permutation
 use translation
 use rotation
@@ -26,11 +26,11 @@ type, public :: bond_type
    integer :: atomidx2
 end type
 
-type, public :: molecule_type
+type, public :: mol_type
    integer :: natom
    character(:), allocatable :: title
    type(atom_type), allocatable :: atoms(:)
-!   type(partition_type) :: molfrags
+!   type(bipartition_type) :: molfrags
 contains
    procedure :: set_elnums
    procedure :: set_labels
@@ -61,7 +61,7 @@ end type
 contains
 
 function get_title(self) result(title)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    character(:), allocatable :: title
 
    title = self%title
@@ -69,7 +69,7 @@ function get_title(self) result(title)
 end function
 
 function get_natom(self) result(natom)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    integer :: natom
 
    natom = size(self%atoms)
@@ -77,7 +77,7 @@ function get_natom(self) result(natom)
 end function
 
 function get_atoms(self) result(atoms)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    type(atom_type), allocatable :: atoms(:)
 
    atoms = self%atoms
@@ -85,7 +85,7 @@ function get_atoms(self) result(atoms)
 end function
 
 subroutine mirror_coords(self)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    ! Local variables
    real(rk), allocatable :: coords(:, :)
 
@@ -98,7 +98,7 @@ subroutine mirror_coords(self)
 end subroutine
 
 subroutine rotate_coords(self, rotquat)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    ! Local variables
    real(rk), intent(in) :: rotquat(4)
 
@@ -107,7 +107,7 @@ subroutine rotate_coords(self, rotquat)
 end subroutine
 
 subroutine translate_coords(self, travec)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    ! Local variables
    real(rk), intent(in) :: travec(3)
 
@@ -116,7 +116,7 @@ subroutine translate_coords(self, travec)
 end subroutine
 
 subroutine permutate_atoms(self, atom_order)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: atom_order(:)
    ! Local variables
    integer :: i, k
@@ -135,7 +135,7 @@ subroutine permutate_atoms(self, atom_order)
 end subroutine
 
 subroutine set_elnums(self, elnums)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: elnums(:)
 
    self%atoms%elnum = elnums
@@ -143,7 +143,7 @@ subroutine set_elnums(self, elnums)
 end subroutine
 
 function get_elnums(self) result(elnums)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    integer, allocatable :: elnums(:)
 
    elnums = self%atoms%elnum
@@ -151,7 +151,7 @@ function get_elnums(self) result(elnums)
 end function
 
 subroutine set_labels(self, labels)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: labels(:)
 
    self%atoms%label = labels
@@ -159,7 +159,7 @@ subroutine set_labels(self, labels)
 end subroutine
 
 function get_labels(self) result(labels)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer, allocatable :: labels(:)
 
@@ -168,7 +168,7 @@ function get_labels(self) result(labels)
 end function
 
 subroutine set_coords(self, coords)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    real(rk), intent(in) :: coords(3, size(self%atoms))
    ! Local variables
    integer :: i
@@ -180,7 +180,7 @@ subroutine set_coords(self, coords)
 end subroutine
 
 function get_coords(self) result(coords)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i
    real(rk), allocatable :: coords(:, :)
@@ -194,7 +194,7 @@ function get_coords(self) result(coords)
 end function
 
 subroutine set_adjlists(self, nadjs, adjlists)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: nadjs(:)
    integer, intent(in) :: adjlists(:, :)
    ! Local variables
@@ -207,7 +207,7 @@ subroutine set_adjlists(self, nadjs, adjlists)
 end subroutine
 
 function get_adjlists(self) result(adjlists)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i
    type(atomlist_type), allocatable :: adjlists(:)
@@ -221,7 +221,7 @@ function get_adjlists(self) result(adjlists)
 end function
 
 function get_adjmat(self) result(adjmat)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i, k
    type(atom_type) :: atom
@@ -241,7 +241,7 @@ function get_adjmat(self) result(adjmat)
 end function
 
 function get_bonds(self) result(bonds)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i, j, nbond
    logical, allocatable :: adjmat(:, :)
@@ -264,7 +264,7 @@ function get_bonds(self) result(bonds)
 end function
 
 subroutine print_atoms(self)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i
    character(:), allocatable :: fmtstr
@@ -285,7 +285,7 @@ subroutine print_atoms(self)
 end subroutine
 
 subroutine print_bonds(self)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i
    type(bond_type), allocatable :: bonds(:)
@@ -302,7 +302,7 @@ subroutine print_bonds(self)
 end subroutine
 
 function bonded(self, idx1, idx2) result(isbond)
-   class(molecule_type), intent(in) :: self
+   class(mol_type), intent(in) :: self
    integer, intent(in) :: idx1, idx2
    ! Local variables
    integer :: i
@@ -346,7 +346,7 @@ function bonded(self, idx1, idx2) result(isbond)
 end function
 
 subroutine remove_bond(self, idx1, idx2)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: idx1, idx2
    ! Local variables
    integer :: i, pos1, pos2, nadj1, nadj2
@@ -398,7 +398,7 @@ subroutine remove_bond(self, idx1, idx2)
 end subroutine
 
 subroutine add_bond(self, idx1, idx2)
-   class(molecule_type), intent(inout) :: self
+   class(mol_type), intent(inout) :: self
    integer, intent(in) :: idx1, idx2
    ! Local variables
    integer :: pos1, pos2, nadj1, nadj2

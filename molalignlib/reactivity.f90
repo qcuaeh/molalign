@@ -29,11 +29,11 @@ contains
 
 subroutine remove_reactive_bonds(mol1, mol2, atomperm)
 
-   type(molecule_type), intent(inout) :: mol1, mol2
+   type(mol_type), intent(inout) :: mol1, mol2
    integer, dimension(:), intent(in) :: atomperm
 
    integer :: i, j, k, j_, k_
-   type(partition_type) :: mnatypes1, mnatypes2
+   type(bipartition_type) :: mnatypes1, mnatypes2
    integer, allocatable, dimension(:) :: elnums1, elnums2
    integer, allocatable, dimension(:) :: mnatypemap1, mnatypemap2
    type(atomlist_type), allocatable, dimension(:) :: adjlists1, adjlists2

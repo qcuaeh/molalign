@@ -17,6 +17,7 @@
 module biasing
 use stdio
 use kinds
+use types
 use flags
 use bounds
 use sorting
@@ -28,12 +29,13 @@ use molecule
 implicit none
 
 abstract interface
-   subroutine bias_proc( atoms1, atoms2, eltypes, mnadists)
+   subroutine bias_proc( mol1, mol2, eltypes, mnadists)
       use kinds
+      use types
       use partition
       use molecule
-      type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
-      type(partition_type), intent(in) :: eltypes
+      type(mol_type), intent(in) :: mol1, mol2
+      type(bipartition_type), intent(in) :: eltypes
       type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
    end subroutine
 end interface
@@ -43,9 +45,9 @@ procedure(bias_proc), pointer :: bias_procedure
 
 contains
 
-subroutine bias_none( atoms1, atoms2, eltypes, mnadists)
-   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
-   type(partition_type), intent(in) :: eltypes
+subroutine bias_none( mol1, mol2, eltypes, mnadists)
+   type(mol_type), intent(in) :: mol1, mol2
+   type(bipartition_type), intent(in) :: eltypes
    type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
    ! Local variables
    integer :: h, i, j
@@ -65,9 +67,9 @@ subroutine bias_none( atoms1, atoms2, eltypes, mnadists)
 
 end subroutine
 
-subroutine bias_mna( atoms1, atoms2, eltypes, mnadists)
-   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
-   type(partition_type), intent(in) :: eltypes
+subroutine bias_mna( mol1, mol2, eltypes, mnadists)
+   type(mol_type), intent(in) :: mol1, mol2
+   type(bipartition_type), intent(in) :: eltypes
    type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
    ! Local variables
    integer :: h, i, j
@@ -75,7 +77,7 @@ subroutine bias_mna( atoms1, atoms2, eltypes, mnadists)
    type(intmatrix_type), dimension(:), allocatable :: mnadiffs
 
    ! Calculate MNA equivalence matrix
-   call compute_equivmat(atoms1, atoms2, eltypes, mnadiffs)
+   call compute_equivmat(mol1, mol2, eltypes, mnadiffs)
 
    allocate (mnadists(eltypes%partition_size))
    do h = 1, eltypes%partition_size
@@ -92,15 +94,15 @@ subroutine bias_mna( atoms1, atoms2, eltypes, mnadists)
 end subroutine
 
 ! Iteratively compute MNA types
-subroutine compute_equivmat(atoms1, atoms2, eltypes, mnadiffs)
-   type(atom_type), dimension(:), intent(in) :: atoms1, atoms2
-   type(partition_type), intent(in) :: eltypes
+subroutine compute_equivmat(mol1, mol2, eltypes, mnadiffs)
+   type(mol_type), intent(in) :: mol1, mol2
+   type(bipartition_type), intent(in) :: eltypes
    type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    ! Local variables
    integer :: h, i, j, level
    integer :: iatom, jatom
    integer :: subset1_size, subset2_size
-   type(partition_type) :: mnatypes, subtypes
+   type(bipartition_type) :: mnatypes, subtypes
 
    allocate (mnadiffs(eltypes%partition_size))
    do h = 1, eltypes%partition_size
@@ -134,7 +136,7 @@ subroutine compute_equivmat(atoms1, atoms2, eltypes, mnadiffs)
       end do
 
       ! Compute next level MNA subtypes
-      call levelup_crossmnatypes(atoms1, atoms2, mnatypes, subtypes)
+      call levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
 
       ! Exit the loop if subtypes are unchanged
       if (subtypes == mnatypes) exit

@@ -77,7 +77,7 @@ end subroutine
 subroutine readfile(unit, fmtin, mol)
    integer, intent(in) :: unit
    character(*), intent(in) :: fmtin
-   type(molecule_type), intent(out) :: mol
+   type(mol_type), intent(out) :: mol
 
    select case (fmtin)
    case ('xyz')
@@ -102,7 +102,7 @@ subroutine writefile(unit, fmtout, mol)
 !   character(*), intent(in) :: title, fmtout
    integer, intent(in) :: unit
    character(*), intent(in) :: fmtout
-   type(molecule_type), intent(in) :: mol
+   type(mol_type), intent(in) :: mol
 
    select case (fmtout)
    case ('xyz')
