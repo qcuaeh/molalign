@@ -59,8 +59,8 @@ program test_dict_part1
    end do
 
    ! Create dictionary
-   call d%init(MAX_KEY_LENGTH, MAX_KEY_VALUE, NUM_TEST_CASES)
-   print '(A,I0)', "Dictionary size: ", d%max_occupied
+   call d%init(NUM_TEST_CASES, MAX_KEY_LENGTH)
+   print '(A,I0)', "Actual dictionary size: ", d%num_slots
    print '(A,I0)', "Number of test cases: ", NUM_TEST_CASES
 
    total_success = 0

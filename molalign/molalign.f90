@@ -72,7 +72,7 @@ nrec_flag = .false.
 
 maxrec = 1
 maxcount = 10
-maxcoord = 16
+max_coord_num = 16
 maxlevel = 16
 
 prune_tol = 0.5
@@ -215,18 +215,15 @@ if (fmtout_flag) then
    fmtout = optfmtout
 end if
 
-!block
-!   ! Compute MNA types
-!   type(partition_type) :: eltypes1, eltypes2
-!   type(partition_type) :: mnatypes1, mnatypes2
-!   call compute_eltypes(mol1, eltypes1)
-!   call compute_eltypes(mol2, eltypes2)
-!   call compute_mnatypes(mol1, eltypes1, mnatypes1)
-!   call compute_mnatypes(mol2, eltypes2, mnatypes2)
-!   call mnatypes1%print_parts()
-!   write (stderr, *)
-!   call mnatypes2%print_parts()
-!end block
+block
+   ! Compute MNA types
+   type(partition_type) :: eltypes1
+   type(partition_type) :: mnatypes1
+   call compute_eltypes(mol1, eltypes1)
+   call compute_mnatypes(mol1, eltypes1, mnatypes1)
+   call mnatypes1%print_parts()
+   call compute_submnatypes(mol1, mnatypes1)
+end block
 
 if (remap_flag) then
 

@@ -26,8 +26,8 @@ program test_dict_part2b
    print '(A,I0)', "Number of keys to be generated: ", NUM_KEYS
 
    ! Create dictionary
-   call d%init(KEY_LENGTH, MAX_KEY_VALUE, NUM_KEYS)
-   print '(A,I0)', "Dictionary size: ", d%max_occupied
+   call d%init(NUM_KEYS, KEY_LENGTH)
+   print '(A,I0)', "Actual dictionary size: ", d%num_slots
 
    ! Allocate arrays for keys
    allocate(keys(KEY_LENGTH, NUM_KEYS))

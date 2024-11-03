@@ -143,7 +143,7 @@ subroutine set_bonds(mol)
    ! Local variables
    integer :: i, j
    integer :: nadjs(mol%natom)
-   integer :: adjlists(maxcoord, mol%natom)
+   integer :: adjlists(max_coord_num, mol%natom)
    integer, allocatable :: elnums(:)
    real(rk), allocatable :: coords(:, :)
    real(rk), allocatable :: adjrads(:)
@@ -172,7 +172,7 @@ subroutine set_bonds(mol)
          if (atomdist < adjrads(i) + adjrads(j)) then
             nadjs(i) = nadjs(i) + 1
             nadjs(j) = nadjs(j) + 1
-            if (nadjs(i) > maxcoord .or. nadjs(j) > maxcoord) then
+            if (nadjs(i) > max_coord_num .or. nadjs(j) > max_coord_num) then
                write (stderr, '("Maximum coordination number exceeded!")')
                stop
             end if

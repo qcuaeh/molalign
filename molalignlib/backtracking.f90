@@ -50,12 +50,12 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    integer :: nadjs1(mol1%natom)
    integer :: nadjs2(mol2%natom)
-   integer :: adjlists1(maxcoord, mol1%natom)
-   integer :: adjlists2(maxcoord, mol2%natom)
+   integer :: adjlists1(max_coord_num, mol1%natom)
+   integer :: adjlists2(max_coord_num, mol2%natom)
    integer :: nadjmnatypes1(mol1%natom)
    integer :: nadjmnatypes2(mol2%natom)
-   integer :: adjmnatypepartlens1(maxcoord, mol1%natom)
-   integer :: adjmnatypepartlens2(maxcoord, mol2%natom)
+   integer :: adjmnatypepartlens1(max_coord_num, mol1%natom)
+   integer :: adjmnatypepartlens2(max_coord_num, mol2%natom)
 
    natom = mol1%get_natom()
 
@@ -325,12 +325,12 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
 
    integer :: nadjs1(mol1%natom)
    integer :: nadjs2(mol2%natom)
-   integer :: adjlists1(maxcoord, mol1%natom)
-   integer :: adjlists2(maxcoord, mol2%natom)
+   integer :: adjlists1(max_coord_num, mol1%natom)
+   integer :: adjlists2(max_coord_num, mol2%natom)
    integer :: nadjmnatypes1(mol1%natom)
    integer :: nadjmnatypes2(mol2%natom)
-   integer :: adjmnatypepartlens1(maxcoord, mol1%natom)
-   integer :: adjmnatypepartlens2(maxcoord, mol2%natom)
+   integer :: adjmnatypepartlens1(max_coord_num, mol1%natom)
+   integer :: adjmnatypepartlens2(max_coord_num, mol2%natom)
 
    natom = mol1%get_natom()
 
@@ -465,7 +465,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
       logical :: locked_c(natom)
       integer :: meqvnei, moldiff, track4ind(4), track4ind_c(4)
       integer, dimension(natom) :: mapping_p, mapping_min, equiv, perm, perm_min
-      real(rk) :: moldist, moldist_p, moldist_min, dihed0(maxcoord), dihed1(maxcoord)
+      real(rk) :: moldist, moldist_p, moldist_min, dihed0(max_coord_num), dihed1(max_coord_num)
       logical :: more, calcd, printInfo = .false.
       integer :: h, i, j, offset, first, last, rank
       character(len=80) :: strfmt

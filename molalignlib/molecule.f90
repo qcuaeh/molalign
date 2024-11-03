@@ -309,7 +309,7 @@ function bonded(self, idx1, idx2) result(isbond)
    logical :: isbond, found1, found2
    integer, allocatable :: adjlist1(:), adjlist2(:)
 
-   allocate (adjlist1(maxcoord), adjlist2(maxcoord))
+   allocate (adjlist1(max_coord_num), adjlist2(max_coord_num))
 
 ! copy arrays of adjlist
    adjlist1 = self%atoms(idx1)%adjlist
@@ -352,7 +352,7 @@ subroutine remove_bond(self, idx1, idx2)
    integer :: i, pos1, pos2, nadj1, nadj2
    integer, allocatable :: adjlist1(:), adjlist2(:)
 
-   allocate (adjlist1(maxcoord), adjlist2(maxcoord))
+   allocate (adjlist1(max_coord_num), adjlist2(max_coord_num))
 
 ! copy adjlist arrays
    nadj1 = size(self%atoms(idx1)%adjlist)
@@ -404,7 +404,7 @@ subroutine add_bond(self, idx1, idx2)
    integer :: pos1, pos2, nadj1, nadj2
    integer, allocatable :: adjlist1(:), adjlist2(:)
 
-   allocate (adjlist1(maxcoord), adjlist2(maxcoord))
+   allocate (adjlist1(max_coord_num), adjlist2(max_coord_num))
 
 ! copy array of adjlist
    nadj1 = size(self%atoms(idx1)%adjlist)
