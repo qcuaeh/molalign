@@ -1,15 +1,15 @@
 module hash_table
 use stdio
 use bounds
-
 implicit none
 private
 
-public :: dict_type
+public neighbordict_type
+public operator (.in.)
 
 real, parameter :: MAX_LOAD_FACTOR = 0.5
 
-type, public :: dict_type
+type, public :: neighbordict_type
    integer, allocatable :: keys(:,:)
    integer, allocatable :: key_lengths(:)
    logical, allocatable :: occupied(:)
@@ -17,17 +17,20 @@ type, public :: dict_type
    integer :: max_key_len
    integer :: num_occupied
 contains
-   procedure :: has_index
    procedure :: get_index
    procedure :: new_index
    procedure :: init => dict_init
    procedure :: reset => dict_reset
-end type dict_type
+end type neighbordict_type
+
+interface operator (.in.)
+   module procedure key_in_dict
+end interface
 
 contains
 
 subroutine dict_init( this, min_dict_size, max_key_len)
-   class(dict_type), intent(inout) :: this
+   class(neighbordict_type), intent(inout) :: this
    integer, intent(in) :: min_dict_size
    integer, intent(in) :: max_key_len
    
@@ -44,7 +47,7 @@ subroutine dict_init( this, min_dict_size, max_key_len)
 end subroutine dict_init
 
 subroutine dict_reset(this)
-   class(dict_type), intent(inout) :: this
+   class(neighbordict_type), intent(inout) :: this
 
    this%occupied = .false.
    this%num_occupied = 0
@@ -52,7 +55,7 @@ subroutine dict_reset(this)
 end subroutine dict_reset
 
 function new_index( this, key) result(index)
-   class(dict_type), intent(inout) :: this
+   class(neighbordict_type), intent(inout) :: this
    integer, intent(in) :: key(:)
    integer :: hash, index
 
@@ -79,7 +82,7 @@ function new_index( this, key) result(index)
 end function new_index
 
 function get_index( this, key) result(index)
-   class(dict_type), intent(in) :: this
+   class(neighbordict_type), intent(in) :: this
    integer, intent(in) :: key(:)
    integer :: hash, index
 
@@ -97,25 +100,25 @@ function get_index( this, key) result(index)
 
 end function get_index
 
-function has_index( this, key)
-   class(dict_type), intent(in) :: this
+function key_in_dict( key, dict)
    integer, intent(in) :: key(:)
-   logical :: has_index
+   class(neighbordict_type), intent(in) :: dict
+   logical :: key_in_dict
    integer :: hash, index
 
    hash = compute_hash(key)
-   index = modulo(hash, this%num_slots) + 1
+   index = modulo(hash, dict%num_slots) + 1
 
-   has_index = .false.
-   do while (this%occupied(index))
-      if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key))) then
-         has_index = .true.
+   key_in_dict = .false.
+   do while (dict%occupied(index))
+      if (same_keys(dict%keys(:, index), dict%key_lengths(index), key, size(key))) then
+         key_in_dict = .true.
          return
       end if
-      index = modulo(index, this%num_slots) + 1
+      index = modulo(index, dict%num_slots) + 1
    end do
 
-end function has_index
+end function key_in_dict
 
 function compute_hash(key) result(hash)
    integer, parameter :: HASH_CONSTANT = 1779033703

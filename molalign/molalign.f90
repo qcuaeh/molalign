@@ -220,9 +220,11 @@ block
    type(partition_type) :: eltypes1
    type(partition_type) :: mnatypes1
    call compute_eltypes(mol1, eltypes1)
-   call compute_mnatypes(mol1, eltypes1, mnatypes1)
+   ! Level 0 mnatypes are eltypes
+   mnatypes1 = eltypes1
+   call compute_mnatypes(mol1, mnatypes1)
    call mnatypes1%print_parts()
-   call compute_submnatypes(mol1, mnatypes1)
+   call compute_mnasupertypes(mol1, mnatypes1)
 end block
 
 if (remap_flag) then

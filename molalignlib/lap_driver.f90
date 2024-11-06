@@ -20,6 +20,7 @@ use types
 use kinds
 use bounds
 use partition
+use bipartition
 use permutation
 use lap_solvers
 
@@ -37,6 +38,7 @@ abstract interface
       use kinds
       use types
       use partition
+      use bipartition
       type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
       type(boolmatrix_type), dimension(:), intent(in) :: prunemask

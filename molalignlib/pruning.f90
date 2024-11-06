@@ -21,6 +21,7 @@ use flags
 use bounds
 use sorting
 use partition
+use bipartition
 
 implicit none
 
@@ -32,6 +33,7 @@ abstract interface
       use kinds
       use types
       use partition
+      use bipartition
       type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
       type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask

@@ -19,6 +19,8 @@ use stdio
 use kinds
 use hash_table
 use partition
+use bipartition
+use superpartition
 use permutation
 use molecule
 use flags
@@ -62,20 +64,20 @@ subroutine compute_crosseltypes(mol1, mol2, eltypes)
 end subroutine
 
 ! Level up MNA types
-subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
+subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, submnatypes)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: mnatypes
-   type(bipartition_type), intent(out) :: subtypes
+   type(bipartition_type), intent(out) :: submnatypes
    ! Local variables
    integer :: h, i, index
    integer :: max_num_types, max_num_atoms
-   type(dict_type) :: typedict
+   type(neighbordict_type) :: typedict
    type(bipartpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
    max_num_types = size(mol1%atoms) + size(mol2%atoms)
    max_num_atoms = max(size(mol1%atoms), size(mol2%atoms))
-   call subtypes%init(max_num_types, max_num_atoms)
+   call submnatypes%init(max_num_types, max_num_atoms)
    call typedict%init(max_coord_num, mnatypes%largest_part_size)
    allocate (typelist(typedict%num_slots))
 
@@ -84,8 +86,8 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
       do i = 1, mnatypes%parts(h)%subset1%part_size
          index = mnatypes%parts(h)%subset1%indices(i)
          neighborhood = mnatypes%partition_map1(mol1%atoms(index)%adjlist)
-         if (.not. typedict%has_index(neighborhood)) then
-            typelist(typedict%new_index(neighborhood))%ptr => subtypes%new_part()
+         if (.not. (neighborhood .in. typedict)) then
+            typelist(typedict%new_index(neighborhood))%ptr => submnatypes%new_part()
          end if
          call typelist(typedict%get_index(neighborhood))%ptr%subset1%add(index)
       end do
@@ -93,8 +95,8 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
       do i = 1, mnatypes%parts(h)%subset2%part_size
          index = mnatypes%parts(h)%subset2%indices(i)
          neighborhood = mnatypes%partition_map2(mol2%atoms(index)%adjlist)
-         if (.not. typedict%has_index(neighborhood)) then
-            typelist(typedict%new_index(neighborhood))%ptr => subtypes%new_part()
+         if (.not. (neighborhood .in. typedict)) then
+            typelist(typedict%new_index(neighborhood))%ptr => submnatypes%new_part()
          end if
          call typelist(typedict%get_index(neighborhood))%ptr%subset2%add(index)
       end do
@@ -127,17 +129,17 @@ subroutine compute_eltypes(mol, eltypes)
 end subroutine
 
 ! Level up MNA types
-subroutine levelup_mnatypes(mol, mnatypes, subtypes)
+subroutine levelup_mnatypes(mol, mnatypes, submnatypes)
    type(mol_type), intent(in) :: mol
    type(partition_type), intent(in) :: mnatypes
-   type(partition_type), intent(out) :: subtypes
+   type(partition_type), intent(out) :: submnatypes
    ! Local variables
    integer :: h, i, index
-   type(dict_type) :: typedict
+   type(neighbordict_type) :: typedict
    type(partpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
-   call subtypes%init(mnatypes%max_partition_size, mnatypes%largest_part_size)
+   call submnatypes%init(mnatypes%max_partition_size, mnatypes%largest_part_size)
    call typedict%init(mnatypes%largest_part_size, max_coord_num)
    allocate (typelist(typedict%num_slots))
 
@@ -146,8 +148,8 @@ subroutine levelup_mnatypes(mol, mnatypes, subtypes)
       do i = 1, mnatypes%parts(h)%part_size
          index = mnatypes%parts(h)%indices(i)
          neighborhood = mnatypes%partition_map(mol%atoms(index)%adjlist)
-         if (.not. typedict%has_index(neighborhood)) then
-            typelist(typedict%new_index(neighborhood))%ptr => subtypes%new_part()
+         if (.not. (neighborhood .in. typedict)) then
+            typelist(typedict%new_index(neighborhood))%ptr => submnatypes%new_part()
          end if
          call typelist(typedict%get_index(neighborhood))%ptr%add(index)
       end do
@@ -159,86 +161,91 @@ subroutine levelup_mnatypes(mol, mnatypes, subtypes)
 end subroutine
 
 ! Iteratively compute MNA types
-subroutine compute_mnatypes(mol, eltypes, mnatypes)
+subroutine compute_mnatypes(mol, mnatypes)
    type(mol_type), intent(in) :: mol
-   type(partition_type), intent(in) :: eltypes
-   type(partition_type), intent(out) :: mnatypes
+   type(partition_type), intent(inout) :: mnatypes
    ! Local variables
-   type(partition_type) :: subtypes
-
-   ! Level 0 mnatypes are eltypes
-   mnatypes = eltypes
+   type(partition_type) :: submnatypes
 
    do
 
 !      write (stderr, *)
 !      call mnatypes%print_parts()
 
-      ! Compute next last_level MNA subtypes
-      call levelup_mnatypes(mol, mnatypes, subtypes)
+      ! Compute next level MNA types
+      call levelup_mnatypes(mol, mnatypes, submnatypes)
 
-      ! Exit the loop if subtypes are unchanged
-      if (subtypes == mnatypes) exit
+      ! Exit the loop if types did not change
+      if (submnatypes == mnatypes) exit
 
       ! Update mnatypes
-!      call mnatypes%update(subtypes)
+!      call mnatypes%update(submnatypes)
       call mnatypes%reset()
-      mnatypes = subtypes
-      call subtypes%reset()
+      mnatypes = submnatypes
+      call submnatypes%reset()
 
    end do
 
 end subroutine
 
 ! Split MNA types
-subroutine split_type(h, types, subtypes)
+subroutine split_mnatypes(h, mol, mnatypes, submnatypes)
    integer, intent(in) :: h
-   type(partition_type), intent(in) :: types
-   type(partition_type), intent(inout) :: subtypes
+   type(mol_type), intent(in) :: mol
+   type(partition_type), intent(in) :: mnatypes
+   type(partition_type), intent(out) :: submnatypes
    ! Local variables
    integer :: k, i
    type(part_type), pointer :: newtype
 
-   call subtypes%init(types%max_partition_size, types%largest_part_size)
+   call submnatypes%init(mnatypes%max_partition_size, mnatypes%largest_part_size)
 
    do k = 1, h - 1
-      call subtypes%add_part(types%parts(k))
+      call submnatypes%add_part(mnatypes%parts(k))
    end do
 
-   do i = 1, types%parts(h)%part_size
-      newtype => subtypes%new_part()
-      call newtype%add(types%parts(h)%indices(i))
+   do i = 1, mnatypes%parts(h)%part_size
+      newtype => submnatypes%new_part()
+      call newtype%add(mnatypes%parts(h)%indices(i))
    end do
 
-   do k = h + 1, types%partition_size
-      call subtypes%add_part(types%parts(k))
+   do k = h + 1, mnatypes%partition_size
+      call submnatypes%add_part(mnatypes%parts(k))
    end do
+
+!   call submnatypes%print_parts()
+   call compute_mnatypes(mol, submnatypes)
+!   call submnatypes%print_parts()
 
 end subroutine
 
 ! Split MNA types
-subroutine compute_submnatypes(mol, mnatypes)
+subroutine compute_mnasupertypes(mol, mnatypes)
    type(mol_type), intent(in) :: mol
    type(partition_type), intent(in) :: mnatypes
    ! Local variables
    integer :: h
-   type(partition_type) :: subtypes, submnatypes
-!   type(partition_type), allocatable :: uniqsubmnatypelist
+   type(partition_type) :: submnatypes
+   type(superpartition_type) :: mnasupertypes
+   type(partitiondict_type) :: partitiondict
+   type(partitionpointer_type), allocatable :: partitionlist(:)
 
-!   allocate (uniqsubmnatypelist(mnatypes%partition_size))
+   call mnasupertypes%init(mnatypes%partition_size, mnatypes%max_partition_size, mnatypes%largest_part_size)
+   call partitiondict%init(mnatypes%partition_size)
+   allocate (partitionlist(partitiondict%num_slots))
 
    do h = 1, mnatypes%partition_size
-      call split_type(h, mnatypes, subtypes)
-!      write (stderr, *)
-!      call subtypes%print_parts()
-      call compute_mnatypes(mol, subtypes, submnatypes)
-!      if (.not. submnatypes .in. uniqsubmnatypelist(k)) then
-!         uniqsubmnatypelist.append(submnatypes)
-!      end if
-      write (stderr, *)
-      call submnatypes%print_parts()
+      call split_mnatypes(h, mol, mnatypes, submnatypes)
+      if (.not. (submnatypes .in. partitiondict)) then
+!         call submnatypes%print_parts()
+         partitionlist(partitiondict%new_index(submnatypes))%ptr => mnasupertypes%new_partition()
+      end if
+      call partitionlist(partitiondict%get_index(submnatypes))%ptr%add_part(mnatypes%parts(h))
       call submnatypes%reset()
-      call subtypes%reset()
+   end do
+
+   do h = 1, mnasupertypes%superpartition_size
+      call mnasupertypes%partitions(h)%print_parts()
    end do
 
 end subroutine

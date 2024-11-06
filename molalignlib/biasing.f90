@@ -24,6 +24,7 @@ use sorting
 use strutils
 use assorting
 use partition
+use bipartition
 use molecule
 
 implicit none
@@ -33,6 +34,7 @@ abstract interface
       use kinds
       use types
       use partition
+      use bipartition
       use molecule
       type(mol_type), intent(in) :: mol1, mol2
       type(bipartition_type), intent(in) :: eltypes
@@ -102,7 +104,7 @@ subroutine compute_equivmat(mol1, mol2, eltypes, mnadiffs)
    integer :: h, i, j, level
    integer :: iatom, jatom
    integer :: subset1_size, subset2_size
-   type(bipartition_type) :: mnatypes, subtypes
+   type(bipartition_type) :: mnatypes, submnatypes
 
    allocate (mnadiffs(eltypes%partition_size))
    do h = 1, eltypes%partition_size
@@ -135,14 +137,14 @@ subroutine compute_equivmat(mol1, mol2, eltypes, mnadiffs)
          end do
       end do
 
-      ! Compute next level MNA subtypes
-      call levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
+      ! Compute next level MNA types
+      call levelup_crossmnatypes(mol1, mol2, mnatypes, submnatypes)
 
-      ! Exit the loop if subtypes are unchanged
-      if (subtypes == mnatypes) exit
+      ! Exit the loop if types did not change
+      if (submnatypes == mnatypes) exit
 
       ! Update mnatypes
-      mnatypes = subtypes
+      mnatypes = submnatypes
 
    end do
 
