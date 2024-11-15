@@ -29,8 +29,8 @@ public read_posarg
 public read_optarg
 public init_args
 
-type, public :: p_char
-   character(:), pointer :: var
+type, public :: strlist_type
+   character(:), allocatable :: arg
 end type
 
 interface read_optarg
@@ -50,7 +50,7 @@ end subroutine
 
 subroutine read_posarg(arg, posargs)
    character(*), intent(in) :: arg
-   type(p_char), intent(out) :: posargs(:)
+   type(strlist_type), intent(inout) :: posargs(:)
 
    if (arg(1:1) == '-') then
       write (stderr, '(a,1x,a)') 'Unknown option:', arg
@@ -60,11 +60,11 @@ subroutine read_posarg(arg, posargs)
    ipos = ipos + 1
 
    if (ipos > size(posargs)) then
-      write (stderr, '(a)') 'Too many positional arguments'
+      write (stderr, '(a)') 'Too many arguments'
       stop
    end if
 
-   posargs(ipos)%var = arg
+   posargs(ipos)%arg = arg
 
 end subroutine
 

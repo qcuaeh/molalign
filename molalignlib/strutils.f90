@@ -16,6 +16,7 @@
 
 module strutils
 use kinds
+use stdio
 
 implicit none
 
@@ -24,7 +25,7 @@ public lowercase
 public uppercase
 public intstr
 public realstr
-public baseext
+public get_extension
 
 contains
 
@@ -77,18 +78,31 @@ function realstr(x, n) result(str)
    write (str, format) x
 end function
 
-function baseext(path)
-   character(*), intent(in) :: path
-   character(:), allocatable :: basename
-   character(:), allocatable :: baseext
+function get_extension(filepath) result(extension)
+   character(*), intent(in) :: filepath
+   character(:), allocatable :: filename, basename, extension
    integer :: pos
-   pos = index(path, '/', back=.true.)
-   basename = path(pos+1:)
-   pos = index(basename, '.', back=.true.)
-   if (pos > 1 .and. pos < len(basename)) then
-      baseext = basename(pos+1:)
+   pos = index(filepath, '/', back=.true.)
+   filename = filepath(pos+1:)
+   if (len(filename) == 0) then
+      write (stderr, '(a,1x,a)') 'Missing file name'
+      stop
+   end if
+   pos = index(filename, '.', back=.true.)
+   if (pos /= 0) then
+      basename = filename(:pos-1)
+      extension = filename(pos+1:)
    else
-      baseext = ''
+      basename = filename
+      extension = ''
+   end if
+   if (len(basename) == 0) then
+      write (stderr, '(a,1x,a)') 'Missing base name of', filename
+      stop
+   end if
+   if (len(extension) == 0) then
+      write (stderr, '(a,1x,a)') 'Missing extension of', filename
+      stop
    end if
 end function
 

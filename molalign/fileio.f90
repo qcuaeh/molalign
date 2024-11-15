@@ -20,30 +20,18 @@ use molecule
 use readmol
 use writemol
 use adjacency
-use assorting
-!use tracking
 
 implicit none
 
 contains
 
-subroutine open2read(filepath, unit, fileext)
+subroutine open2read(filepath, unit, extension)
    character(*), intent(in) :: filepath
    integer, intent(out) :: unit
-   character(:), allocatable, intent(out) :: fileext
+   character(:), allocatable, intent(out) :: extension
    integer :: stat
 
-   if (len(filepath) == 0) then
-      write (stderr, '(a)') 'Error: File path is empty'
-      stop
-   end if
-
-   fileext = baseext(filepath)
-
-   if (len(fileext) == 0) then
-      write (stderr, '(a,1x,a)') 'Missing file extension:', filepath
-      stop
-   end if
+   extension = get_extension(filepath)
 
    open(newunit=unit, file=filepath, action='read', status='old', iostat=stat)
    if (stat /= 0) then
@@ -53,18 +41,13 @@ subroutine open2read(filepath, unit, fileext)
 
 end subroutine
 
-subroutine open2write(filepath, unit, fileext)
+subroutine open2write(filepath, unit, extension)
    character(*), intent(in) :: filepath
    integer, intent(out) :: unit
-   character(:), allocatable, intent(out) :: fileext
+   character(:), allocatable, intent(out) :: extension
    integer :: stat
 
-   fileext = baseext(filepath)
-
-   if (len(fileext) == 0) then
-      write (stderr, '(a,1x,a)') 'Missing file extension:', filepath
-      stop
-   end if
+   extension = get_extension(filepath)
 
    open(newunit=unit, file=filepath, action='write', status='replace', iostat=stat)
    if (stat /= 0) then
@@ -90,16 +73,10 @@ subroutine readfile(unit, fmtin, mol)
    end select
 
    call set_bonds(mol)
-!   call find_molfrags(mol)
 
 end subroutine
 
 subroutine writefile(unit, fmtout, mol)
-!   integer, intent(in) :: unit, natom
-!   integer, dimension(:), intent(in) :: elnums
-!   real(rk), dimension(:, :), intent(in) :: coords
-!   logical, dimension(:, :), intent(in) :: adjmat
-!   character(*), intent(in) :: title, fmtout
    integer, intent(in) :: unit
    character(*), intent(in) :: fmtout
    type(mol_type), intent(in) :: mol

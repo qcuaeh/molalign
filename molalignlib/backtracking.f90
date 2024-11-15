@@ -37,8 +37,8 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    integer :: neltype1
    integer :: nmnatype1, nmnatype2
 
-   type(bipartition_type) :: eltypes1
-   type(bipartition_type) :: mnatypes1, mnatypes2
+   type(partition_type) :: eltypes1
+   type(partition_type) :: mnatypes1, mnatypes2
 
    integer, allocatable, dimension(:) :: eltypepartsizes1
    integer, allocatable, dimension(:) :: mnatypepartsizes1, mnatypepartsizes2
@@ -60,7 +60,7 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    natom = mol1%get_natom()
 
    eltypes1 = mol1%gather_eltypes()
-   eltypemap1 = eltypes1%partition_map
+   eltypemap1 = eltypes1%indices
 
    neltype1 = eltypes1%size
    allocate (eltypepartsizes1(neltype1))
@@ -70,8 +70,8 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    mnatypes1 = mol1%gather_mnatypes()
    mnatypes2 = mol2%gather_mnatypes()
-   mnatypemap1 = mnatypes1%partition_map
-   mnatypemap2 = mnatypes2%partition_map
+   mnatypemap1 = mnatypes1%indices
+   mnatypemap2 = mnatypes2%indices
 
    nmnatype1 = size(mnatypes1%parts)
    nmnatype2 = size(mnatypes2%parts)
@@ -312,8 +312,8 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    integer :: neltype1
    integer :: nmnatype1, nmnatype2
 
-   type(bipartition_type) :: eltypes1
-   type(bipartition_type) :: mnatypes1, mnatypes2
+   type(partition_type) :: eltypes1
+   type(partition_type) :: mnatypes1, mnatypes2
 
    integer, allocatable, dimension(:) :: eltypepartsizes1
    integer, allocatable, dimension(:) :: mnatypepartsizes1, mnatypepartsizes2

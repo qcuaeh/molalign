@@ -3,12 +3,14 @@ use iso_fortran_env, only: int64
 use kinds
 use stdio
 use permutation
+use bipartition
 implicit none
 private
 public minperm
 public minperm_biased
 public minperm_pruned
 public minperm_nearest
+public minperm_debug
 
 !   Parameters
 !     scale : Precision
@@ -18,7 +20,7 @@ integer, parameter :: maxnei = 20
 
 contains
 
-subroutine minperm(n, bias, perm, dist)
+subroutine minperm_debug(n, bias, perm, dist)
    integer, intent(in) :: n
    integer, intent(in) :: bias(n, n)
    integer, intent(out) :: perm(n)
@@ -33,26 +35,46 @@ subroutine minperm(n, bias, perm, dist)
 
 end subroutine
 
-subroutine minperm_biased(n, e1, e2, r1, r2, bias, perm, dist)
-   integer, intent(in) :: n
-   integer, intent(in) :: e1(n), e2(n)
-   real(rk), intent(in) :: r1(3, *), r2(3, *)
-   real(rk), intent(in) :: bias(n, n)
-   integer, intent(out) :: perm(n)
+subroutine minperm(part, r1, r2, perm, dist)
+   type(bipart_type), intent(in) :: part
+   real(rk), intent(in) :: r1(:, :), r2(:, :)
+   integer, intent(out) :: perm(:)
    real(rk), intent(out) :: dist
    ! Local variables
    integer :: i, j
    real(rk), allocatable :: costs(:, :)
 
-   allocate (costs(n, n))
+   allocate (costs(part%size1, part%size2))
 
-   do i = 1, n
-      do j = 1, n
-         costs(j, i) = sum((r1(:, e1(i)) - r2(:, e2(j)))**2) + bias(j, i)
+   do j = 1, part%size2
+      do i = 1, part%size1
+         costs(i, j) = sum((r1(:, part%list1(i)) - r2(:, part%list2(j)))**2)
       end do
    end do
 
-   call assndx(2, costs, n, n, perm, dist)
+   call assndx(1, costs, part%size1, part%size2, perm, dist)
+
+end subroutine
+
+subroutine minperm_biased(part, r1, r2, bias, perm, dist)
+   type(bipart_type), intent(in) :: part
+   real(rk), intent(in) :: r1(:, :), r2(:, :)
+   real(rk), intent(in) :: bias(:, :)
+   integer, intent(out) :: perm(:)
+   real(rk), intent(out) :: dist
+   ! Local variables
+   integer :: i, j
+   real(rk), allocatable :: costs(:, :)
+
+   allocate (costs(part%size1, part%size2))
+
+   do j = 1, part%size2
+      do i = 1, part%size1
+         costs(i, j) = sum((r1(:, part%list1(i)) - r2(:, part%list2(j)))**2) + bias(i, j)
+      end do
+   end do
+
+   call assndx(1, costs, part%size1, part%size2, perm, dist)
 
 end subroutine
 

@@ -18,20 +18,19 @@ module molalignlib
 use stdio
 use kinds
 use bounds
-use molecule
 use random
 use linalg
 use sorting
-use permutation
+use molecule
 use rotation
 use translation
-use assorting
+use permutation
+use bipartition
+use bipartitioning
 use adjacency
 use alignment
 use assignment
-use lap_driver
 use writemol
-use biasing
 !use reactivity
 
 implicit none
@@ -75,7 +74,7 @@ subroutine molecule_remap( &
 
    ! Abort if there are conflicting atomic types
 
-   if (any(sorted(eltypes%partition_map1) /= sorted(eltypes%partition_map2))) then
+   if (any(sorted(eltypes%indices1) /= sorted(eltypes%indices2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
@@ -179,7 +178,7 @@ subroutine molecule_align( &
 
    ! Abort if molecules are not isomers
 
-!   if (any(sorted(elnums%partition_map1) /= sorted(elnums%partition_map2))) then
+!   if (any(sorted(elnums%indices1) /= sorted(elnums%indices2))) then
 !      write (stderr, '(a)') '*Error: These molecules are not isomers'
 !      stop
 !   end if
@@ -190,7 +189,7 @@ subroutine molecule_align( &
 
    ! Abort if there are conflicting atomic types
 
-   if (any(sorted(eltypes%partition_map1) /= sorted(eltypes%partition_map2))) then
+   if (any(sorted(eltypes%indices1) /= sorted(eltypes%indices2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
@@ -198,14 +197,14 @@ subroutine molecule_align( &
    ! Abort if atoms are not ordered
 
    if (any(mol1%atoms%elnum /= mol2%atoms%elnum)) then
-!   if (any(elnums%partition_map1 /= elnums%partition_map2)) then
+!   if (any(elnums%indices1 /= elnums%indices2)) then
       write (stderr, '(a)') 'Error: The atoms are not in the same order'
       stop
    end if
 
    ! Abort if atomic types are not ordered
 
-   if (any(eltypes%partition_map1 /= eltypes%partition_map2)) then
+   if (any(eltypes%indices1 /= eltypes%indices2)) then
       write (stderr, '(a)') 'Error: Atomic types are not in the same order'
       stop
    end if

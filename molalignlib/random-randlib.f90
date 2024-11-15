@@ -53,4 +53,11 @@ subroutine shuffle(a)
    end do
 end subroutine
 
+function random_element(a) result(e)
+   integer, intent(in) :: a(:)
+   integer :: i, e
+   i = random_uniform_integer(1, size(a))
+   e = a(i)
+end function
+
 end module

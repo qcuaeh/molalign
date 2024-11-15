@@ -6,7 +6,6 @@ use stdio
 use molecule
 use bounds
 use sorting
-use partition
 
 implicit none
 private
@@ -108,12 +107,12 @@ function get_molfragroots(self) result(fragroots)
 
    allocate (fragroots(size(self%molfrags)))
 
-   atomeltypes = self%eltypes%partition_map
+   atomeltypes = self%eltypes%indices
    do h = 1, size(self%molfrags)
       eltypepop_min = huge(eltypepop_min)
       do i = 1, size(self%molfrags(h)%atomidcs)
          iatom = self%molfrags(h)%atomidcs(i)
-         eltypepop_i = size(self%eltypes%parts(atomeltypes(iatom))%indices)
+         eltypepop_i = size(self%eltypes%parts(atomeltypes(iatom))%list)
          if (eltypepop_i < eltypepop_min) then
             root_atom = iatom
             eltypepop_min = eltypepop_i

@@ -19,7 +19,6 @@ use stdio
 use types
 use kinds
 use bounds
-use partition
 use bipartition
 use permutation
 use lap_solvers
@@ -27,17 +26,17 @@ use lap_solvers
 implicit none
 
 private
+public assign_atoms_proc
+public assign_atoms_generic
 public assign_atoms
+public assign_atoms_biased
 public assign_atoms_nearest
 public assign_atoms_pruned
-public assign_atoms_biased
-public assign_proc
 
 abstract interface
-   subroutine assign_proc( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
+   subroutine assign_atoms_proc( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
       use kinds
       use types
-      use partition
       use bipartition
       type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
@@ -47,7 +46,7 @@ abstract interface
    end subroutine
 end interface
 
-procedure(assign_proc), pointer :: assign_atoms
+procedure(assign_atoms_proc), pointer :: assign_atoms_generic
 
 contains
 
@@ -59,7 +58,7 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists,
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
-   integer :: h, subset1_size
+   integer :: h, part_size1
    integer, allocatable :: auxmap(:)
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
@@ -68,12 +67,12 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists,
 
    ! Fill distance matrix for each block
 
-   do h = 1, eltypes%partition_size
-      subset1_size = eltypes%parts(h)%subset1%part_size
-      atomidcs1 = eltypes%parts(h)%subset1%indices
-      atomidcs2 = eltypes%parts(h)%subset2%indices
-      call minperm_nearest(subset1_size, atomidcs1, atomidcs2, coords1, coords2, auxmap, dist)
-      atomperm(atomidcs1) = atomidcs2(auxmap(:subset1_size))
+   do h = 1, eltypes%num_parts
+      part_size1 = eltypes%parts(h)%size1
+      atomidcs1 = eltypes%parts(h)%list1
+      atomidcs2 = eltypes%parts(h)%list2
+      call minperm_nearest(part_size1, atomidcs1, atomidcs2, coords1, coords2, auxmap, dist)
+      atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
    end do
 
 end subroutine
@@ -86,7 +85,7 @@ subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, 
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
-   integer :: h, subset1_size
+   integer :: h, part_size1
    integer, allocatable :: auxmap(:)
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
@@ -94,12 +93,32 @@ subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, 
    allocate (auxmap(eltypes%largest_part_size))
 
    ! Optimize atomperm for each block
-   do h = 1, eltypes%partition_size
-      subset1_size = eltypes%parts(h)%subset1%part_size
-      atomidcs1 = eltypes%parts(h)%subset1%indices
-      atomidcs2 = eltypes%parts(h)%subset2%indices
-      call minperm_pruned(subset1_size, atomidcs1, atomidcs2, coords1, coords2, prunemask(h)%b, auxmap, dist)
-      atomperm(atomidcs1) = atomidcs2(auxmap(:subset1_size))
+   do h = 1, eltypes%num_parts
+      part_size1 = eltypes%parts(h)%size1
+      atomidcs1 = eltypes%parts(h)%list1
+      atomidcs2 = eltypes%parts(h)%list2
+      call minperm_pruned(part_size1, atomidcs1, atomidcs2, coords1, coords2, prunemask(h)%b, auxmap, dist)
+      atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
+   end do
+
+end subroutine
+
+! Find best correspondence between points sets with fixed orientation
+subroutine assign_atoms( eltypes, coords1, coords2, atomperm, dist)
+   type(bipartition_type), intent(in) :: eltypes
+   real(rk), dimension(:, :), intent(in) :: coords1, coords2
+   integer, dimension(:), intent(out) :: atomperm
+   real(rk), intent(out) :: dist
+   ! Local variables
+   integer :: h
+   integer, allocatable :: auxmap(:)
+
+   allocate (auxmap(eltypes%largest_part_size))
+
+   ! Optimize atomperm for each block
+   do h = 1, eltypes%num_parts
+      call minperm(eltypes%parts(h), coords1, coords2, auxmap, dist)
+      atomperm(eltypes%parts(h)%list1) = eltypes%parts(h)%list2(auxmap(:eltypes%parts(h)%size1))
    end do
 
 end subroutine
@@ -112,20 +131,16 @@ subroutine assign_atoms_biased( eltypes, coords1, coords2, prunemask, mnadists, 
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
-   integer :: h, subset1_size
+   integer :: h
    integer, allocatable :: auxmap(:)
-   integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
 
    allocate (auxmap(eltypes%largest_part_size))
 
    ! Optimize atomperm for each block
-   do h = 1, eltypes%partition_size
-      subset1_size = eltypes%parts(h)%subset1%part_size
-      atomidcs1 = eltypes%parts(h)%subset1%indices
-      atomidcs2 = eltypes%parts(h)%subset2%indices
-      call minperm_biased(subset1_size, atomidcs1, atomidcs2, coords1, coords2, mnadists(h)%x, auxmap, dist)
-      atomperm(atomidcs1) = atomidcs2(auxmap(:subset1_size))
+   do h = 1, eltypes%num_parts
+      call minperm_biased(eltypes%parts(h), coords1, coords2, mnadists(h)%x, auxmap, dist)
+      atomperm(eltypes%parts(h)%list1) = eltypes%parts(h)%list2(auxmap(:eltypes%parts(h)%size1))
    end do
 
 end subroutine

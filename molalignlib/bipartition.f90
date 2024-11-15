@@ -1,30 +1,51 @@
 module bipartition
+use partition
 use stdio
 use kinds
-use part
 implicit none
+private
 
-type, public :: bipart_type
+public bipart_type
+public bipartition_type
+public bipartpointer_type
+public operator (==)
+public assignment (=)
+
+type :: bipart_type
+   integer :: size1
+   integer :: size2
    integer :: index
-   type(part_type) :: subset1
-   type(part_type) :: subset2
-end type
-
-type, public :: bipartition_type
-   integer :: partition_size
-   integer :: max_partition_size
-   integer :: max_part_size
+   integer, pointer :: indices1(:)
+   integer, pointer :: indices2(:)
    integer, pointer :: largest_part_size
-   integer, pointer :: partition_map1(:)
-   integer, pointer :: partition_map2(:)
-   type(bipart_type), pointer :: parts(:)
+   integer, pointer :: list1_allocation(:)
+   integer, pointer :: list2_allocation(:)
+   integer, pointer :: list1(:)
+   integer, pointer :: list2(:)
 contains
-   procedure :: init => bipartition_init
-   procedure :: new_part => bipartition_new_part
-   procedure :: print_parts => bipartition_print_parts
+   procedure :: add1 => part_add1
+   procedure :: add2 => part_add2
 end type
 
-type, public :: bipartpointer_type
+type :: bipartition_type
+   integer :: num_parts
+   integer :: num_items1
+   integer :: num_items2
+   integer, pointer :: indices1(:)
+   integer, pointer :: indices2(:)
+   integer, pointer :: largest_part_size
+   logical :: initialized = .false.
+   type(bipart_type), pointer :: parts(:) => null()
+contains
+   final :: partition_finalize
+   procedure :: initialize => partition_initialize
+   procedure :: new_part => partition_new_part
+   procedure :: add_part => partition_add_part
+   procedure :: first_partition => partition_first_partition
+   procedure :: print_parts => partition_print_parts
+end type
+
+type :: bipartpointer_type
    type(bipart_type), pointer :: ptr => null()
 end type
 
@@ -32,73 +53,200 @@ interface operator (==)
    module procedure bipartition_equality
 end interface
 
+interface assignment (=)
+   module procedure partition_assignment
+end interface
+
 contains
 
-subroutine bipartition_init(self, max_partition_size, max_part_size)
-   class(bipartition_type), intent(inout) :: self
-   integer, intent(in) :: max_partition_size, max_part_size
+subroutine partition_assignment(left, right)
+   class(bipartition_type), intent(out) :: left
+   type(bipartition_type), intent(in) :: right
+   ! Local variables
+   integer :: h
 
-   allocate (self%parts(max_partition_size))
-   allocate (self%partition_map1(max_part_size))
-   allocate (self%partition_map2(max_part_size))
-   allocate (self%largest_part_size)
+   call left%initialize(right%num_items1, right%num_items2)
 
-   self%partition_size = 0
-   self%largest_part_size = 0
-   self%max_partition_size = max_partition_size
-   self%max_part_size = max_part_size
+   do h = 1, right%num_parts
+      call left%add_part(right%parts(h))
+   end do
 
 end subroutine
 
-function bipartition_new_part(self) result(part)
+subroutine partition_initialize(self, num_items1, num_items2)
    class(bipartition_type), intent(inout) :: self
+   integer, intent(in) :: num_items1, num_items2
+
+   if (associated(self%parts)) then
+      error stop 'Memory leak'
+   end if
+
+   allocate (self%largest_part_size)
+   allocate (self%indices1(num_items1))
+   allocate (self%indices2(num_items2))
+   allocate (self%parts(num_items1 + num_items2))
+
+   self%num_items1 = num_items1
+   self%num_items2 = num_items2
+   self%num_parts = 0
+   self%largest_part_size = 0
+   self%initialized = .true.
+
+end subroutine
+
+subroutine partition_finalize(self)
+   type(bipartition_type), intent(inout) :: self
+   integer :: h
+
+   if (.not. self%initialized) then
+      return
+   end if
+
+   do h = 1, self%num_parts
+      deallocate (self%parts(h)%list1_allocation)
+      deallocate (self%parts(h)%list2_allocation)
+   end do
+
+   deallocate (self%parts)
+   deallocate (self%indices1)
+   deallocate (self%indices2)
+   deallocate (self%largest_part_size)
+
+end subroutine
+
+function partition_new_part(self, max_size1, max_size2) result(part)
+   class(bipartition_type), intent(inout) :: self
+   integer, intent(in) :: max_size1, max_size2
    ! Result variable
    type(bipart_type), pointer :: part
 
    ! Increase partition size
-   self%partition_size = self%partition_size + 1
+   self%num_parts = self%num_parts + 1
 
-   ! Initialize new part size
-   self%parts(self%partition_size)%subset1%part_size = 0
-   self%parts(self%partition_size)%subset2%part_size = 0
+   ! Set part index to current part num
+   self%parts(self%num_parts)%index = self%num_parts
 
-   ! Allocate new part indices
-   allocate (self%parts(self%partition_size)%subset1%indices(self%max_part_size))
-   allocate (self%parts(self%partition_size)%subset2%indices(self%max_part_size))
+   ! Initialize part size
+   self%parts(self%num_parts)%size1 = 0
+   self%parts(self%num_parts)%size2 = 0
 
-   ! Set new part index to partition current num part
-   self%parts(self%partition_size)%index = self%partition_size
-   self%parts(self%partition_size)%subset1%index = self%partition_size
-   self%parts(self%partition_size)%subset2%index = self%partition_size
+   ! Allocate list allocation
+   allocate (self%parts(self%num_parts)%list1_allocation(max_size1))
+   allocate (self%parts(self%num_parts)%list2_allocation(max_size2))
 
-   ! Point new part max part size pointer to partition max part size
-   self%parts(self%partition_size)%subset1%largest_part_size => self%largest_part_size
-   self%parts(self%partition_size)%subset2%largest_part_size => self%largest_part_size
+   ! Point list pointer to list allocation with null size
+   self%parts(self%num_parts)%list1 => self%parts(self%num_parts)%list1_allocation(:0)
+   self%parts(self%num_parts)%list2 => self%parts(self%num_parts)%list2_allocation(:0)
 
-   ! Point new part map pointer to partition maps
-   self%parts(self%partition_size)%subset1%partition_map => self%partition_map1
-   self%parts(self%partition_size)%subset2%partition_map => self%partition_map2
+   ! Point part max part size pointer to partition max part size
+   self%parts(self%num_parts)%largest_part_size => self%largest_part_size
 
-   ! Return pointer to new part
-   part => self%parts(self%partition_size)
+   ! Point part map pointer to partition maps
+   self%parts(self%num_parts)%indices1 => self%indices1
+   self%parts(self%num_parts)%indices2 => self%indices2
+
+   ! Return pointer to part
+   part => self%parts(self%num_parts)
 
 end function
 
-subroutine bipartition_print_parts(self)
+subroutine partition_add_part(self, part)
+   class(bipartition_type), intent(inout) :: self
+   type(bipart_type), intent(in) :: part
+   type(bipart_type), pointer :: newpart
+   integer :: i
+
+   newpart => self%new_part(part%size1, part%size2)
+
+   do i = 1, part%size1
+      call newpart%add1(part%list1(i))
+   end do
+
+   do i = 1, part%size2
+      call newpart%add2(part%list2(i))
+   end do
+
+end subroutine
+
+subroutine part_add1(self, element)
+   class(bipart_type), intent(inout) :: self
+   integer, intent(in) :: element
+
+   ! Increase part size
+   self%size1 = self%size1 + 1
+
+   ! Update list pointers
+   self%list1 => self%list1_allocation(:self%size1)
+
+   ! Add element to part
+   self%list1(self%size1) = element
+
+   ! Add index to part map
+   self%indices1(element) = self%index
+
+   ! Update largest part size
+   if (self%size1 > self%largest_part_size) then
+      self%largest_part_size = self%size1
+   end if
+
+end subroutine
+
+subroutine part_add2(self, element)
+   class(bipart_type), intent(inout) :: self
+   integer, intent(in) :: element
+
+   ! Increase part size
+   self%size2 = self%size2 + 1
+
+   ! Update list pointers
+   self%list2 => self%list2_allocation(:self%size2)
+
+   ! Add element to part
+   self%list2(self%size2) = element
+
+   ! Add index to part map
+   self%indices2(element) = self%index
+
+   ! Update largest part size
+   if (self%size2 > self%largest_part_size) then
+      self%largest_part_size = self%size2
+   end if
+
+end subroutine
+
+subroutine partition_print_parts(self)
    class(bipartition_type), intent(in) :: self
    integer :: h
    character(:), allocatable :: fmtstr
 
    write (stderr, *)
-   do h = 1, self%partition_size
-      fmtstr = "('{'" // repeat(',1x,i3', self%parts(h)%subset1%part_size) &
-            // ",' }   {'" // repeat(',1x,i3', self%parts(h)%subset2%part_size) // ",' }')"
-      write (stderr, fmtstr) &
-            self%parts(h)%subset1%indices(:self%parts(h)%subset1%part_size), &
-            self%parts(h)%subset2%indices(:self%parts(h)%subset2%part_size)
+   do h = 1, self%num_parts
+      fmtstr = "(i3,':',2x,'{'" // repeat(',1x,i3', self%parts(h)%size1) &
+            // ",1x,'}',2x,'{'" // repeat(',1x,i3', self%parts(h)%size2) // ",1x,'}')"
+      write (stderr, fmtstr) h, self%parts(h)%list1(:self%parts(h)%size1), &
+            self%parts(h)%list2(:self%parts(h)%size2)
    end do
 
 end subroutine
+
+function partition_first_partition(self) result(partition)
+   class(bipartition_type), intent(in) :: self
+   integer :: h, i
+   type(partition_type) :: partition
+   type(part_type), pointer :: newtype
+
+   call partition%initialize(self%num_items1)
+
+   do h = 1, self%num_parts
+      if (self%parts(h)%size1 > 0) then
+         newtype => partition%new_part(self%parts(h)%size1)
+         do i = 1, self%parts(h)%size1
+            call newtype%add(self%parts(h)%list1(i))
+         end do
+      end if
+   end do
+
+end function
 
 function bipartition_equality(self, other) result(equality)
    type(bipartition_type), intent(in) :: self, other
@@ -107,17 +255,17 @@ function bipartition_equality(self, other) result(equality)
    ! Local variables
    integer :: h
 
-   if (self%partition_size /= other%partition_size) then
+   if (self%num_parts /= other%num_parts) then
       equality = .false.
       return
    end if
 
-   do h = 1, self%partition_size
-      if (self%parts(h)%subset1%part_size /= other%parts(h)%subset1%part_size) then
+   do h = 1, self%num_parts
+      if (self%parts(h)%size1 /= other%parts(h)%size1) then
          equality = .false.
          return
       end if
-      if (self%parts(h)%subset2%part_size /= other%parts(h)%subset2%part_size) then
+      if (self%parts(h)%size2 /= other%parts(h)%size2) then
          equality = .false.
          return
       end if

@@ -43,14 +43,13 @@ integer, allocatable :: atomperm(:)
 character(:), allocatable :: arg, optarg
 character(:), allocatable :: fmtin1, fmtin2, fmtout
 character(:), allocatable :: optfmtin, optfmtout
-character(:), allocatable, target :: pathin1, pathin2
 character(:), allocatable :: pathout
 logical :: fmtin_flag, fmtout_flag
 logical :: remap_flag, pipe_flag, nrec_flag
 real(rk) :: travec1(3), travec2(3), rotquat(4)
 integer :: adjd, minadjd
 real(rk) :: rmsd, minrmsd
-type(p_char) :: posargs(2)
+type(strlist_type) :: posargs(2)
 type(mol_type) :: mol1, mol2, auxmol1
 
 ! Set default options
@@ -80,12 +79,9 @@ bias_scale = 1.e3
 
 weights => ones
 print_stats => print_stats_dist
-assign_atoms => assign_atoms_pruned
+assign_atoms_generic => assign_atoms_pruned
 bias_procedure => bias_none
 prune_procedure => prune_none
-
-posargs(1)%var => pathin1
-posargs(2)%var => pathin2
 pathout = 'aligned.xyz'
 
 ! Get user options
@@ -105,10 +101,10 @@ do while (get_arg(arg))
       iter_flag = .false.
       bias_procedure => bias_none
       prune_procedure => prune_none
-      assign_atoms => assign_atoms_nearest
+      assign_atoms_generic => assign_atoms_nearest
    case ('-bias')
       iter_flag = .true.
-      assign_atoms => assign_atoms_biased
+      assign_atoms_generic => assign_atoms_biased
       call read_optarg(arg, optarg)
       select case (optarg)
       case ('mna')
@@ -119,7 +115,7 @@ do while (get_arg(arg))
       end select
    case ('-prune')
       iter_flag = .true.
-      assign_atoms => assign_atoms_pruned
+      assign_atoms_generic => assign_atoms_pruned
       call read_optarg(arg, optarg)
       select case (optarg)
       case ('rd')
@@ -175,16 +171,16 @@ if (pipe_flag) then
 else
    select case (ipos)
    case (0)
-      write (stderr, '(a)') 'Error: Missing arguments'
+      write (stderr, '(a)') 'Error: Missing file paths'
       stop
    case (1)
-      write (stderr, '(a)') 'Error: Too few arguments'
+      write (stderr, '(a)') 'Error: Too few file paths'
       stop
    case (2)
-      call open2read(pathin1, read_unit1, fmtin1)
-      call open2read(pathin2, read_unit2, fmtin2)
+      call open2read(posargs(1)%arg, read_unit1, fmtin1)
+      call open2read(posargs(2)%arg, read_unit2, fmtin2)
    case default
-      write (stderr, '(a)') 'Error: Too many arguments'
+      write (stderr, '(a)') 'Error: Too many file paths'
       stop
    end select
 end if
@@ -214,18 +210,6 @@ end if
 if (fmtout_flag) then
    fmtout = optfmtout
 end if
-
-block
-   ! Compute MNA types
-   type(partition_type) :: eltypes1
-   type(partition_type) :: mnatypes1
-   call compute_eltypes(mol1, eltypes1)
-   ! Level 0 mnatypes are eltypes
-   mnatypes1 = eltypes1
-   call compute_mnatypes(mol1, mnatypes1)
-   call mnatypes1%print_parts()
-   call compute_mnasupertypes(mol1, mnatypes1)
-end block
 
 if (remap_flag) then
 

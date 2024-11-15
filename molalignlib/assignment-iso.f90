@@ -27,7 +27,8 @@ use rotation
 use alignment
 use lap_driver
 use adjacency
-use assorting
+use bipartition
+use bipartitioning
 use biasing
 use pruning
 use printing
@@ -101,7 +102,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
       ! Minimize the euclidean distance
 
-      call assign_atoms(eltypes, coords1, workcoords, prunemask, mnadists, atomperm)
+      call assign_atoms_generic(eltypes, coords1, workcoords, prunemask, mnadists, atomperm)
       rotquat = leastrotquat(natom1, weights1, coords1, workcoords, atomperm)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
@@ -112,7 +113,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       steps = 1
 
       do while (iter_flag)
-         call assign_atoms(eltypes, coords1, workcoords, prunemask, mnadists, newmapping)
+         call assign_atoms_generic(eltypes, coords1, workcoords, prunemask, mnadists, newmapping)
          if (all(newmapping == atomperm)) exit
          rotquat = leastrotquat(natom1, weights1, coords1, workcoords, newmapping)
          prodquat = quatmul(rotquat, prodquat)
@@ -182,12 +183,6 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       end if
 
    end do
-
-   ! Reorder back to default atom ordering
-
-!   do irec = 1, nrec
-!      maplist(:, irec) = mol2%atomorder(maplist(mol1%atomordermap, irec))
-!   end do
 
    ! Print stats if requested
 

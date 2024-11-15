@@ -1,11 +1,27 @@
-integer a, b
-(integer, allocatable, rank=1) array1, array2
-(integer, kind=int64, allocatable, rank=2) int64_array2d
-(integer, kind=int64, rank=1, dimensions=[2]) int64_array_3x4
-(type=Permutation, pointer, rank=1) permutation_array_pointer
-((integer, pointer), rank=1) integer_pointer_array
-((type=Permutation, pointer), rank=1) permutation_pointer_array
-((integer, allocatable), allocatable) nested_integer_list ! List of lists of integers
-(((integer, allocatable), allocatable), allocatable) nested_nested_integer_list ! List of lists of lists of integers
+Integer a, b
+(Integer, rank=1) array1, array2
+(Integer, rank=2, allocatable) int64_array2d
+((Integer, rank=1, allocatable), rank=1, allocatable) nested_integer_list ! List of lists of integers
+(Real:real64, rank=1, pointer) real_array_pointer ! Pointer to array of reals
+(Real:real64, pointer, rank=1) real_pointer_array ! Array of pointers to reals
+(Complex, pointer, rank=1) complex_pointer_array
 
-allocate( int64_array2d, [3, 4])
+allocate( 10) array1, array2 
+allocate( 10, 10) int64_array2d
+print( int64_array2d[1..3, 1..5])
+newtype => partition.new_part(self.parts[i].num_elems)
+a = 8
+b = 8
+a /= 2
+if a \= b
+   print( 'a \= b')
+end if
+if a \= b then print( 'a \= b')
+for i = 1..array1:size
+   i+=1
+end for
+for i = 1..array:size do i += 1
+for e in array1
+   print( e)
+end for
+subroutine power(in:n, in:x, out:y)

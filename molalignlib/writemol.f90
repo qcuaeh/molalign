@@ -20,7 +20,6 @@ use molecule
 use bounds
 use strutils
 use chemdata
-use partition
 
 implicit none
 
