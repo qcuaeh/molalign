@@ -59,15 +59,12 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
    type(realmatrix_type), dimension(:), allocatable :: mnadists
 
    integer :: natom1
-   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
    real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights1
 
    natom1 = mol1%natom
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   adjmat1 = mol1%get_adjmat()
-   adjmat2 = mol2%get_adjmat()
    weights1 = weights(mol1%atoms%elnum)
 
    ! Calculate prune matrix
@@ -107,7 +104,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
       call rotate(natom1, workcoords, rotquat)
-!      print *, sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm)/sum(weights1))
+!      print *, sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 !      stop
 
       steps = 1
@@ -130,8 +127,8 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 !         call eqvatomperm(mol1, mol2, workcoords, atomperm)
 !      end if
 
-      adjd = adjacencydiff(natom1, adjmat1, adjmat2, atomperm)
-      rmsd = sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm)/sum(weights1))
+      adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm)
+      rmsd = sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 
       ! Check for new best maplist
 

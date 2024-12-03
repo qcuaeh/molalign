@@ -52,6 +52,10 @@ real(rk) :: rmsd, minrmsd
 type(strlist_type) :: posargs(2)
 type(mol_type) :: mol1, mol2, auxmol1
 
+integer :: natom1
+real(rk), dimension(:, :), allocatable :: coords1, coords2
+real(rk), dimension(:), allocatable :: weights1
+
 ! Set default options
 
 iter_flag = .false.
@@ -229,6 +233,10 @@ if (remap_flag) then
       call writefile(write_unit, fmtout, mol1)
    end if
 
+   natom1 = mol1%natom
+   coords1 = mol1%get_coords()
+   weights1 = weights(mol1%atoms%elnum)
+
    do i = 1, nrec
 
       call remapped_molecule_align( &
@@ -240,16 +248,15 @@ if (remap_flag) then
          rotquat)
 
       auxmol1 = mol2
-      call auxmol1%permutate_atoms(maplist(:, i))
-      call auxmol1%translate_coords(travec2)
-      call auxmol1%rotate_coords(rotquat)
-      call auxmol1%translate_coords(-travec1)
+      coords2 = mol2%get_coords()
+      atomperm = maplist(:, i)
 
-!      atomperm = maplist(:, i)
-      atomperm = identity_perm(size(mol1%atoms))
+      call translate(natom1, coords2, travec2)
+      call rotate(natom1, coords2, rotquat)
+      call translate(natom1, coords2, -travec1)
 
-      rmsd = get_rmsd(mol1, auxmol1, atomperm)
-      adjd = get_adjd(mol1, auxmol1, atomperm)
+      rmsd = rmsdist(natom1, weights1, coords1, coords2, atomperm)
+      adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm)
 
       minrmsd = min(minrmsd, rmsd)
       minadjd = min(minadjd, adjd)

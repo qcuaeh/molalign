@@ -37,17 +37,17 @@ subroutine compute_eltypes(mol, eltypes)
    type(mol_type), intent(in) :: mol
    type(partition_type), intent(out) :: eltypes
    ! Local variables
-   integer :: i, elnum, atoms_size
+   integer :: i, elnum, num_atoms
    type(partpointer_type), allocatable :: typelist(:)
 
-   atoms_size = size(mol%atoms)
-   call eltypes%initialize(atoms_size)
+   num_atoms = size(mol%atoms)
+   call eltypes%initialize(num_atoms)
    allocate (typelist(nelem))
 
-   do i = 1, atoms_size
+   do i = 1, num_atoms
       elnum = mol%atoms(i)%elnum
       if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%new_part(atoms_size)
+         typelist(elnum)%ptr => eltypes%new_part(num_atoms)
       end if
       call typelist(elnum)%ptr%add(i)
    end do

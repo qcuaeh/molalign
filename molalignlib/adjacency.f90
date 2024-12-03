@@ -57,7 +57,7 @@ subroutine adjmat2bonds(natom, adjmat, nbond, bonds)
 
 end subroutine
 
-function adjacencydiff(natom, adjmat1, adjmat2, atomperm) result(diff)
+function adjdiff(natom, adjmat1, adjmat2, atomperm) result(diff)
 ! Purpose: Check if two graphs are equal.
 ! Return the number of differences between graphs.
    integer, intent(in) :: natom

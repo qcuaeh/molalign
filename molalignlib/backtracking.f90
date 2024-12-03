@@ -111,8 +111,8 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    ntrack = 0
    tracked(:) = .false.
    unmapping = inverse_perm(atomperm)
-   moldiff = adjacencydiff (natom, adjmat1, adjmat2, atomperm)
-   moldist = squaredist (natom, weights, coords1, coords2, atomperm)
+   moldiff = adjdiff (natom, adjmat1, adjmat2, atomperm)
+   moldist = rmsdist (natom, weights, coords1, coords2, atomperm)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "moldiff:", moldiff
@@ -126,12 +126,12 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "countFrag:", size(fragroots1)
-      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
-      print '(a,1x,f0.4,1x,f0.4)', "moldist:", squaredist (natom, weights, coords1, coords2, atomperm), moldist
+      print '(a,1x,i0,1x,i0)', "moldiff:", adjdiff (natom, adjmat1, adjmat2, atomperm), moldiff
+      print '(a,1x,f0.4,1x,f0.4)', "moldist:", rmsdist (natom, weights, coords1, coords2, atomperm), moldist
    end if
 
-!    if (adjacencydiff (natom, adjmat1, adjmat2, atomperm) /= moldiff) then
-!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
+!    if (adjdiff (natom, adjmat1, adjmat2, atomperm) /= moldiff) then
+!        print '(a,x,i0,x,i0)', "moldiff:", adjdiff (natom, adjmat1, adjmat2, atomperm), moldiff
 !    end if
 
    contains    
@@ -416,7 +416,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    end do
 
 !   print '(a,i0)', "Natoms: ", natom
-!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist (natom, weights, coords1, workcoords, atomperm)/sum(weights))
+!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm))
 !   print '(a,i0)', "permcount: ", permcount
 !   print '(a,i0)', "fragcount: ", fragcount
 
@@ -471,8 +471,8 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
-         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm)/sum(weights))
-         moldiff = adjacencydiff(natom, adjmat1, adjmat2, atomperm)
+         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm))
+         moldiff = adjdiff(natom, adjmat1, adjmat2, atomperm)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist
       end if

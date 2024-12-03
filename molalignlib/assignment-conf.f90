@@ -56,7 +56,6 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
    real(rk) :: workcoords(3, mol2%natom)
 
    integer :: natom1
-   logical, dimension(:, :), allocatable :: adjmat1, adjmat2
    real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights1
 
@@ -68,15 +67,13 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
    natom1 = mol1%natom
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   adjmat1 = mol1%get_adjmat()
-   adjmat2 = mol2%get_adjmat()
    weights1 = weights(mol1%atoms%elnum)
 
    ! Compute mnatypes and metatypes
 
    mnatypes = eltypes
    call compute_crossmnatypes(mol1, mol2, mnatypes)
-!   call mnatypes%print_parts()
+   call mnatypes%print_parts()
 
    ntrial = 0
    maxtrials = 10
@@ -102,8 +99,9 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       end do
 !      call submnatypes%print_parts()
       call assign_atoms(submnatypes, coords1, workcoords, atomperm, dist)
-      write (stderr, *) adjacencydiff(natom1, adjmat1, adjmat2, atomperm), &
-            sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm)/sum(weights1))
+      write (stderr, *) &
+         adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm), &
+         sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 
    end do
 

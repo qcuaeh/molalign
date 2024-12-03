@@ -30,13 +30,13 @@ type, public :: mol_type
    integer :: natom
    character(:), allocatable :: title
    type(atom_type), allocatable :: atoms(:)
+   logical, allocatable :: adjmat(:, :)
 !   type(bipartition_type) :: molfrags
 contains
    procedure :: set_elnums
    procedure :: set_labels
    procedure :: set_coords
    procedure :: set_adjlists
-!   procedure :: set_molfrags
    procedure :: get_natom
    procedure :: get_atoms
    procedure :: get_elnums
@@ -44,18 +44,16 @@ contains
    procedure :: get_title
    procedure :: get_bonds
    procedure :: get_adjlists
-!   procedure :: get_molfrags
    procedure :: get_coords
-   procedure :: get_adjmat
-   procedure :: permutate_atoms
    procedure :: mirror_coords
    procedure :: translate_coords
    procedure :: rotate_coords
-   procedure :: bonded
    procedure :: add_bond
    procedure :: remove_bond
    procedure :: print_atoms
    procedure :: print_bonds
+!   procedure :: set_molfrags
+!   procedure :: get_molfrags
 end type
 
 contains
@@ -112,25 +110,6 @@ subroutine translate_coords(self, travec)
    real(rk), intent(in) :: travec(3)
 
    call self%set_coords(translated(size(self%atoms), self%get_coords(), travec))
-
-end subroutine
-
-subroutine permutate_atoms(self, atom_order)
-   class(mol_type), intent(inout) :: self
-   integer, intent(in) :: atom_order(:)
-   ! Local variables
-   integer :: i, k
-   integer, allocatable :: atom_mapping(:)
-
-   allocate (atom_mapping(size(self%atoms)))
-
-   atom_mapping = inverse_perm(atom_order)
-   self%atoms = self%atoms(atom_order)
-   do i = 1, size(self%atoms)
-      do k = 1, size(self%atoms(i)%adjlist)
-         self%atoms(i)%adjlist(k) = atom_mapping(self%atoms(i)%adjlist(k))
-      end do
-   end do
 
 end subroutine
 
@@ -198,10 +177,21 @@ subroutine set_adjlists(self, nadjs, adjlists)
    integer, intent(in) :: nadjs(:)
    integer, intent(in) :: adjlists(:, :)
    ! Local variables
-   integer :: i
+   integer :: i, k, num_atoms
 
-   do i = 1, size(self%atoms)
+   num_atoms = size(self%atoms)
+
+   do i = 1, num_atoms
       self%atoms(i)%adjlist = adjlists(:nadjs(i), i)
+   end do
+
+   allocate (self%adjmat(num_atoms, num_atoms))
+   self%adjmat(:, :) = .false.
+
+   do i = 1, num_atoms
+      do k = 1, nadjs(i)
+         self%adjmat(i, adjlists(k, i)) = .true.
+      end do
    end do
 
 end subroutine
@@ -220,40 +210,18 @@ function get_adjlists(self) result(adjlists)
 
 end function
 
-function get_adjmat(self) result(adjmat)
-   class(mol_type), intent(in) :: self
-   ! Local variables
-   integer :: i, k
-   type(atom_type) :: atom
-   logical, allocatable :: adjmat(:, :)
-
-   allocate (adjmat(size(self%atoms), size(self%atoms)))
-
-   adjmat(:, :) = .false.
-
-   do i = 1, size(self%atoms)
-      atom = self%atoms(i)
-      do k = 1, size(atom%adjlist)
-         adjmat(i, atom%adjlist(k)) = .true.
-      end do
-   end do
-
-end function
-
 function get_bonds(self) result(bonds)
    class(mol_type), intent(in) :: self
    ! Local variables
    integer :: i, j, nbond
-   logical, allocatable :: adjmat(:, :)
    type(bond_type), allocatable :: bonds(:)
 
-   adjmat = self%get_adjmat()
-   allocate (bonds(count(adjmat)/2))
+   allocate (bonds(count(self%adjmat)/2))
 
    nbond = 0
    do i = 1, size(self%atoms)
       do j = i + 1, size(self%atoms)
-         if (adjmat(i, j)) then
+         if (self%adjmat(i, j)) then
             nbond = nbond + 1
             bonds(nbond)%atomidx1 = i
             bonds(nbond)%atomidx2 = j
@@ -300,50 +268,6 @@ subroutine print_bonds(self)
    end do
 
 end subroutine
-
-function bonded(self, idx1, idx2) result(isbond)
-   class(mol_type), intent(in) :: self
-   integer, intent(in) :: idx1, idx2
-   ! Local variables
-   integer :: i
-   logical :: isbond, found1, found2
-   integer, allocatable :: adjlist1(:), adjlist2(:)
-
-   allocate (adjlist1(max_coord_num), adjlist2(max_coord_num))
-
-! copy arrays of adjlist
-   adjlist1 = self%atoms(idx1)%adjlist
-   adjlist2 = self%atoms(idx2)%adjlist
-
-! initialization
-   found1 = .false.
-   found2 = .false.
-
-! check cross reference of idx1 and idx2 in both adjlists
-   do i = 1, size(self%atoms(idx1)%adjlist)
-      if (idx2 == adjlist1(i)) then
-         found1 = .true.
-         exit
-      end if
-   end do
-   do i = 1, size(self%atoms(idx2)%adjlist)
-      if (idx1 == adjlist2(i)) then
-         found2 = .true.
-         exit
-      end if
-   end do
-
-! report or stop program
-   if (found1 .and. found2) then
-      isbond = .true.
-   else if (found1 .or. found2) then
-      write (stderr, '(a,i0,2x,i0)') 'Inconsistent bond for atoms: ', idx1, idx2
-      stop
-   else
-      isbond = .false.
-   end if
-
-end function
 
 subroutine remove_bond(self, idx1, idx2)
    class(mol_type), intent(inout) :: self
@@ -416,7 +340,7 @@ subroutine add_bond(self, idx1, idx2)
    pos1 = nadj1
    pos2 = nadj2
 
-   if (.not. self%bonded(idx1, idx2)) then
+   if (.not. self%adjmat(idx1, idx2)) then
 ! indices in adjlist are supposed to be sorted; inserting new indices
 !      size(self%atoms(idx1)%adjlist) = size(self%atoms(idx1)%adjlist) + 1
       nadj1 = nadj1 + 1

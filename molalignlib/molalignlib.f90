@@ -71,6 +71,7 @@ subroutine molecule_remap( &
    ! Compute atomic types
 
    call compute_crosseltypes(mol1, mol2, eltypes)
+!   call eltypes%print_parts()
 
    ! Abort if there are conflicting atomic types
 
@@ -231,8 +232,8 @@ function get_rmsd(mol1, mol2, atomperm) result(rmsd)
    integer :: atomperm(:)
    real(rk) :: rmsd
 
-   rmsd = sqrt(squaredist(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), &
-         mol2%get_coords(), atomperm) / sum(weights(mol1%atoms%elnum)))
+   rmsd = rmsdist(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), &
+         mol2%get_coords(), atomperm)
 
 end function
 
@@ -241,7 +242,7 @@ function get_adjd(mol1, mol2, atomperm) result(adjd)
    integer :: atomperm(:)
    integer :: adjd
 
-   adjd = adjacencydiff(mol1%natom, mol1%get_adjmat(), mol2%get_adjmat(), atomperm)
+   adjd = adjdiff(mol1%natom, mol1%adjmat, mol2%adjmat, atomperm)
 
 end function
 

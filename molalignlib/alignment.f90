@@ -22,19 +22,19 @@ use rotation
 implicit none
 
 private
-public squaredist
 public leastsquaredist
 public leastrotquat
+public rmsdist
 
 contains
 
-real(rk) function squaredist(natom, weights, coords1, coords2, atomperm)
+real(rk) function rmsdist(natom, weights, coords1, coords2, atomperm) result(rmsd)
    integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:), intent(in) :: weights
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
 
-   squaredist = sum(weights*sum((coords1 - coords2(:, atomperm))**2, dim=1))
+   rmsd = sqrt(sum(weights(atomperm)*sum((coords1 - coords2(:, atomperm))**2, dim=1))/sum(weights))
 
 end function
 
@@ -48,23 +48,9 @@ real(rk) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
 
    call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
    ! eigenvalue can be negative due to numerical errors
-   leastsquaredist = max(leasteigval(residuals), 0._rk)
+   leastsquaredist = max(leasteigval(residuals), 0._rk)/sum(weights)
 
 end function
-
-!real(rk) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
-!! Purpose: Calculate least square distance from aligned coordinates
-!   integer, intent(in) :: natom
-!   integer, dimension(:), intent(in) :: atomperm
-!   real(rk), dimension(:), intent(in) :: weights
-!   real(rk), dimension(:, :), intent(in) :: coords1, coords2
-!   real(rk) :: residuals(4, 4), eigval(4)
-!
-!   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
-!   call syevec4(residuals, eigval)
-!   leastsquaredist = squaredist(natom, weights, coords1, rotated(natom, coords2, residuals(:, 1)), atomperm)
-!
-!end function
 
 function leastrotquat(natom, weights, coords1, coords2, atomperm)
 ! Purpose: Calculate rotation quaternion which minimzes the square distance
