@@ -30,7 +30,6 @@ use bipartitioning
 use adjacency
 use alignment
 use assignment
-use writemol
 !use reactivity
 
 implicit none

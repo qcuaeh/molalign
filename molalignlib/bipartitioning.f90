@@ -37,26 +37,26 @@ subroutine compute_crosseltypes(mol1, mol2, eltypes)
    type(bipartition_type), intent(out) :: eltypes
    ! Local variables
    integer :: i, elnum
-   integer :: atoms1_size, atoms2_size
+   integer :: num_atoms1, num_atoms2
    type(bipartpointer_type), allocatable :: typelist(:)
 
-   atoms1_size = size(mol1%atoms)
-   atoms2_size = size(mol2%atoms)
-   call eltypes%initialize(atoms1_size, atoms2_size)
+   num_atoms1 = size(mol1%atoms)
+   num_atoms2 = size(mol2%atoms)
+   call eltypes%initialize(num_atoms1, num_atoms2)
    allocate (typelist(nelem))
 
-   do i = 1, atoms1_size
+   do i = 1, num_atoms1
       elnum = mol1%atoms(i)%elnum
       if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%new_part(atoms1_size, atoms2_size)
+         typelist(elnum)%ptr => eltypes%new_part(num_atoms1, num_atoms2)
       end if
       call typelist(elnum)%ptr%add1(i)
    end do
 
-   do i = 1, atoms2_size
+   do i = 1, num_atoms2
       elnum = mol2%atoms(i)%elnum
       if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%new_part(atoms1_size, atoms2_size)
+         typelist(elnum)%ptr => eltypes%new_part(num_atoms1, num_atoms2)
       end if
       call typelist(elnum)%ptr%add2(i)
    end do

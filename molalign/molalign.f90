@@ -261,6 +261,7 @@ if (remap_flag) then
       minrmsd = min(minrmsd, rmsd)
       minadjd = min(minadjd, adjd)
 
+      call auxmol1%set_coords(coords2)
       auxmol1%title = 'Map='//intstr(i)//' RMSD='//realstr(rmsd, 4)
       call writefile(write_unit, fmtout, auxmol1)
 
