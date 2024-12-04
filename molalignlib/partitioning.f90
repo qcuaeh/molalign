@@ -22,7 +22,7 @@ use bounds
 use sorting
 use chemdata
 use molecule
-use neighbordict
+use multisetdict
 use partition
 use metapartition
 use partitiondict
@@ -61,18 +61,18 @@ subroutine levelup_mnatypes(mol, mnatypes, subtypes)
    type(partition_type), intent(out) :: subtypes
    ! Local variables
    integer :: h, i, iatom
-   type(neighbordict_type) :: typedict
+   type(multisetdict_type) :: typedict
    type(partpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
-   call subtypes%initialize(mnatypes%num_items)
+   call subtypes%initialize(mnatypes%tot_items)
    call typedict%initialize(mnatypes%largest_part_size)
    allocate (typelist(typedict%num_slots))
 
    do h = 1, mnatypes%num_parts
 
       do i = 1, mnatypes%parts(h)%size
-         iatom = mnatypes%parts(h)%list(i)
+         iatom = mnatypes%parts(h)%items(i)
          neighborhood = mnatypes%indices(mol%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
@@ -125,7 +125,7 @@ subroutine split_mnatypes(h, mol, mnatypes)
    type(part_type), pointer :: newtype
    type(partition_type) :: subtypes
 
-   call subtypes%initialize(mnatypes%num_items)
+   call subtypes%initialize(mnatypes%tot_items)
 
    do k = 1, h - 1
       call subtypes%add_part(mnatypes%parts(k))
@@ -133,7 +133,7 @@ subroutine split_mnatypes(h, mol, mnatypes)
 
    do i = 1, mnatypes%parts(h)%size
       newtype => subtypes%new_part(mnatypes%parts(h)%size)
-      call newtype%add(mnatypes%parts(h)%list(i))
+      call newtype%add(mnatypes%parts(h)%items(i))
    end do
 
    do k = h + 1, mnatypes%num_parts

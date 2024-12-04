@@ -13,8 +13,8 @@ type :: metapart_type
    integer :: index
    type(partition_type) :: subpartition
    integer, pointer :: largest_part_size
-   integer, pointer :: list_allocation(:)
-   integer, pointer :: list(:)
+   integer, pointer :: items_allocation(:)
+   integer, pointer :: items(:)
 contains
    procedure :: add => part_add
 end type
@@ -66,7 +66,7 @@ subroutine partition_finalize(self)
    end if
 
    do h = 1, self%num_parts
-      deallocate (self%parts(h)%list_allocation)
+      deallocate (self%parts(h)%items_allocation)
    end do
 
    deallocate (self%parts)
@@ -89,10 +89,10 @@ function partition_new_part(self, max_size) result(part)
    self%parts(self%num_parts)%index = self%num_parts
 
    ! Allocate list allocation
-   allocate (self%parts(self%num_parts)%list_allocation(max_size))
+   allocate (self%parts(self%num_parts)%items_allocation(max_size))
 
    ! Point list pointer to list allocation with null size
-   self%parts(self%num_parts)%list => self%parts(self%num_parts)%list_allocation(:0)
+   self%parts(self%num_parts)%items => self%parts(self%num_parts)%items_allocation(:0)
 
    ! Point largest part size pointer to partition largest part size
    self%parts(self%num_parts)%largest_part_size => self%largest_part_size
@@ -111,7 +111,7 @@ subroutine partition_add_part(self, part)
    newpart => self%new_part(part%size)
 
    do i = 1, part%size
-      call newpart%add(part%list(i))
+      call newpart%add(part%items(i))
    end do
 
 end subroutine
@@ -124,10 +124,10 @@ subroutine part_add(self, element)
    self%size = self%size + 1
 
    ! Update list pointer
-   self%list => self%list_allocation(:self%size)
+   self%items => self%items_allocation(:self%size)
 
    ! Add element to part
-   self%list(self%size) = element
+   self%items(self%size) = element
 
    ! Update largest part size
    if (self%size > self%largest_part_size) then
@@ -144,7 +144,7 @@ subroutine partition_print_parts(self)
    write (stderr, *)
    do h = 1, self%num_parts
       fmtstr = "('{'" // repeat(',1x,i3', self%parts(h)%size) // ",' }')"
-      write (stderr, fmtstr) self%parts(h)%list(:self%parts(h)%size)
+      write (stderr, fmtstr) self%parts(h)%items(:self%parts(h)%size)
    end do
 
 end subroutine

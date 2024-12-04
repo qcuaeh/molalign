@@ -5,7 +5,7 @@ flags.f90
 bounds.f90
 strutils.f90
 sorting.f90
-neighbordict.f90
+multisetdict.f90
 partition.f90
 bipartition.f90
 metapartition.f90

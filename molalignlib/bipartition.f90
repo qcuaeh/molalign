@@ -18,10 +18,10 @@ type :: bipart_type
    integer, pointer :: indices1(:)
    integer, pointer :: indices2(:)
    integer, pointer :: largest_part_size
-   integer, pointer :: list1_allocation(:)
-   integer, pointer :: list2_allocation(:)
-   integer, pointer :: list1(:)
-   integer, pointer :: list2(:)
+   integer, pointer :: items1_allocation(:)
+   integer, pointer :: items2_allocation(:)
+   integer, pointer :: items1(:)
+   integer, pointer :: items2(:)
 contains
    procedure :: add1 => part_add1
    procedure :: add2 => part_add2
@@ -29,8 +29,8 @@ end type
 
 type :: bipartition_type
    integer :: num_parts
-   integer :: num_items1
-   integer :: num_items2
+   integer :: tot_items1
+   integer :: tot_items2
    integer, pointer :: indices1(:)
    integer, pointer :: indices2(:)
    integer, pointer :: largest_part_size
@@ -65,7 +65,7 @@ subroutine partition_assignment(left, right)
    ! Local variables
    integer :: h
 
-   call left%initialize(right%num_items1, right%num_items2)
+   call left%initialize(right%tot_items1, right%tot_items2)
 
    do h = 1, right%num_parts
       call left%add_part(right%parts(h))
@@ -73,21 +73,21 @@ subroutine partition_assignment(left, right)
 
 end subroutine
 
-subroutine partition_initialize(self, num_items1, num_items2)
+subroutine partition_initialize(self, tot_items1, tot_items2)
    class(bipartition_type), intent(inout) :: self
-   integer, intent(in) :: num_items1, num_items2
+   integer, intent(in) :: tot_items1, tot_items2
 
    if (associated(self%parts)) then
       error stop 'Memory leak'
    end if
 
    allocate (self%largest_part_size)
-   allocate (self%indices1(num_items1))
-   allocate (self%indices2(num_items2))
-   allocate (self%parts(num_items1 + num_items2))
+   allocate (self%indices1(tot_items1))
+   allocate (self%indices2(tot_items2))
+   allocate (self%parts(tot_items1 + tot_items2))
 
-   self%num_items1 = num_items1
-   self%num_items2 = num_items2
+   self%tot_items1 = tot_items1
+   self%tot_items2 = tot_items2
    self%num_parts = 0
    self%largest_part_size = 0
    self%initialized = .true.
@@ -103,8 +103,8 @@ subroutine partition_finalize(self)
    end if
 
    do h = 1, self%num_parts
-      deallocate (self%parts(h)%list1_allocation)
-      deallocate (self%parts(h)%list2_allocation)
+      deallocate (self%parts(h)%items1_allocation)
+      deallocate (self%parts(h)%items2_allocation)
    end do
 
    deallocate (self%parts)
@@ -131,12 +131,12 @@ function partition_new_part(self, max_size1, max_size2) result(part)
    self%parts(self%num_parts)%size2 = 0
 
    ! Allocate list allocation
-   allocate (self%parts(self%num_parts)%list1_allocation(max_size1))
-   allocate (self%parts(self%num_parts)%list2_allocation(max_size2))
+   allocate (self%parts(self%num_parts)%items1_allocation(max_size1))
+   allocate (self%parts(self%num_parts)%items2_allocation(max_size2))
 
    ! Point list pointer to list allocation with null size
-   self%parts(self%num_parts)%list1 => self%parts(self%num_parts)%list1_allocation(:0)
-   self%parts(self%num_parts)%list2 => self%parts(self%num_parts)%list2_allocation(:0)
+   self%parts(self%num_parts)%items1 => self%parts(self%num_parts)%items1_allocation(:0)
+   self%parts(self%num_parts)%items2 => self%parts(self%num_parts)%items2_allocation(:0)
 
    ! Point part max part size pointer to partition max part size
    self%parts(self%num_parts)%largest_part_size => self%largest_part_size
@@ -159,11 +159,11 @@ subroutine partition_add_part(self, part)
    newpart => self%new_part(part%size1, part%size2)
 
    do i = 1, part%size1
-      call newpart%add1(part%list1(i))
+      call newpart%add1(part%items1(i))
    end do
 
    do i = 1, part%size2
-      call newpart%add2(part%list2(i))
+      call newpart%add2(part%items2(i))
    end do
 
 end subroutine
@@ -176,10 +176,10 @@ subroutine part_add1(self, element)
    self%size1 = self%size1 + 1
 
    ! Update list pointers
-   self%list1 => self%list1_allocation(:self%size1)
+   self%items1 => self%items1_allocation(:self%size1)
 
    ! Add element to part
-   self%list1(self%size1) = element
+   self%items1(self%size1) = element
 
    ! Add index to part map
    self%indices1(element) = self%index
@@ -199,10 +199,10 @@ subroutine part_add2(self, element)
    self%size2 = self%size2 + 1
 
    ! Update list pointers
-   self%list2 => self%list2_allocation(:self%size2)
+   self%items2 => self%items2_allocation(:self%size2)
 
    ! Add element to part
-   self%list2(self%size2) = element
+   self%items2(self%size2) = element
 
    ! Add index to part map
    self%indices2(element) = self%index
@@ -223,8 +223,8 @@ subroutine partition_print_parts(self)
    do h = 1, self%num_parts
       fmtstr = "(i3,':',2x,'{'" // repeat(',1x,i3', self%parts(h)%size1) &
             // ",1x,'}',2x,'{'" // repeat(',1x,i3', self%parts(h)%size2) // ",1x,'}')"
-      write (stderr, fmtstr) h, self%parts(h)%list1(:self%parts(h)%size1), &
-            self%parts(h)%list2(:self%parts(h)%size2)
+      write (stderr, fmtstr) h, self%parts(h)%items1(:self%parts(h)%size1), &
+            self%parts(h)%items2(:self%parts(h)%size2)
    end do
 
 end subroutine
@@ -235,13 +235,13 @@ function partition_first_partition(self) result(partition)
    type(partition_type) :: partition
    type(part_type), pointer :: newtype
 
-   call partition%initialize(self%num_items1)
+   call partition%initialize(self%tot_items1)
 
    do h = 1, self%num_parts
       if (self%parts(h)%size1 > 0) then
          newtype => partition%new_part(self%parts(h)%size1)
          do i = 1, self%parts(h)%size1
-            call newtype%add(self%parts(h)%list1(i))
+            call newtype%add(self%parts(h)%items1(i))
          end do
       end if
    end do

@@ -67,7 +67,7 @@ subroutine remove_reactive_bonds(mol1, mol2, atomperm)
       do j_ = 1, size(adjlists1(i)%atomidcs)
          j = adjlists1(i)%atomidcs(j_)
          if (.not. mol2%adjmat(atomperm(i), atomperm(j))) then
-            mnatypepartidcs1 = mnatypes1%parts(mnatypemap1(j))%list
+            mnatypepartidcs1 = mnatypes1%parts(mnatypemap1(j))%items
             do k_ = 1, size(mnatypepartidcs1)
                k = mnatypepartidcs1(k_)
                call mol1%remove_bond(i, k)
@@ -81,7 +81,7 @@ subroutine remove_reactive_bonds(mol1, mol2, atomperm)
       do j_ = 1, size(adjlists2(i)%atomidcs)
          j = adjlists2(i)%atomidcs(j_)
          if (.not. mol1%adjmat(unmapping(i), unmapping(j))) then
-            mnatypepartidcs2 = mnatypes2%parts(mnatypemap2(j))%list
+            mnatypepartidcs2 = mnatypes2%parts(mnatypemap2(j))%items
             do k_ = 1, size(mnatypepartidcs2)
                k = mnatypepartidcs2(k_)
                call mol2%remove_bond(i, k)

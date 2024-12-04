@@ -69,8 +69,8 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists,
 
    do h = 1, eltypes%num_parts
       part_size1 = eltypes%parts(h)%size1
-      atomidcs1 = eltypes%parts(h)%list1
-      atomidcs2 = eltypes%parts(h)%list2
+      atomidcs1 = eltypes%parts(h)%items1
+      atomidcs2 = eltypes%parts(h)%items2
       call minperm_nearest(part_size1, atomidcs1, atomidcs2, coords1, coords2, auxmap, dist)
       atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
    end do
@@ -95,8 +95,8 @@ subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, 
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
       part_size1 = eltypes%parts(h)%size1
-      atomidcs1 = eltypes%parts(h)%list1
-      atomidcs2 = eltypes%parts(h)%list2
+      atomidcs1 = eltypes%parts(h)%items1
+      atomidcs2 = eltypes%parts(h)%items2
       call minperm_pruned(part_size1, atomidcs1, atomidcs2, coords1, coords2, prunemask(h)%b, auxmap, dist)
       atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
    end do
@@ -118,7 +118,7 @@ subroutine assign_atoms( eltypes, coords1, coords2, atomperm, dist)
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
       call minperm(eltypes%parts(h), coords1, coords2, auxmap, dist)
-      atomperm(eltypes%parts(h)%list1) = eltypes%parts(h)%list2(auxmap(:eltypes%parts(h)%size1))
+      atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxmap(:eltypes%parts(h)%size1))
    end do
 
 end subroutine
@@ -140,7 +140,7 @@ subroutine assign_atoms_biased( eltypes, coords1, coords2, prunemask, mnadists, 
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
       call minperm_biased(eltypes%parts(h), coords1, coords2, mnadists(h)%x, auxmap, dist)
-      atomperm(eltypes%parts(h)%list1) = eltypes%parts(h)%list2(auxmap(:eltypes%parts(h)%size1))
+      atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxmap(:eltypes%parts(h)%size1))
    end do
 
 end subroutine

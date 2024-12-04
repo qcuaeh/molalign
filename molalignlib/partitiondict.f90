@@ -21,7 +21,7 @@ contains
 end type
 
 interface operator (.in.)
-   module procedure partition_in_dict
+   module procedure in_dict
 end interface
 
 contains
@@ -32,8 +32,8 @@ subroutine initialize( this, min_dict_size)
    
    this%num_slots = int(min_dict_size / MAX_LOAD_FACTOR)
    
-   allocate(this%partitions(this%num_slots))
-   allocate(this%occupied(this%num_slots))
+   allocate (this%occupied(this%num_slots))
+   allocate (this%partitions(this%num_slots))
    
    this%occupied = .false.
    this%num_occupied = 0
@@ -90,27 +90,27 @@ function get_index( this, partition) result(index)
 
 end function
 
-function partition_in_dict( partition, dict)
+function in_dict( partition, dict)
    class(partitiondict_type), intent(in) :: dict
    type(partition_type), intent(in) :: partition
-   logical :: partition_in_dict
+   logical :: in_dict
    integer :: index
 
    index = modulo(hash(partition), dict%num_slots) + 1
 
    do while (dict%occupied(index))
       if (dict%partitions(index) == partition) then
-         partition_in_dict = .true.
+         in_dict = .true.
          return
       end if
       index = modulo(index, dict%num_slots) + 1
    end do
 
-   partition_in_dict = .false.
+   in_dict = .false.
 
 end function
 
-integer function hash(partition)
+integer function hash( partition)
    type(partition_type), intent(in) :: partition
    integer :: h, i, part_hash
 
@@ -121,7 +121,7 @@ integer function hash(partition)
       part_hash = 5381
       do i = 1, partition%parts(h)%size
          ! Update part hash
-         part_hash = iand(part_hash * 33 + partition%parts(h)%list(i), 2**16 - 1)
+         part_hash = iand(part_hash * 33 + partition%parts(h)%items(i), 2**16 - 1)
       end do
       ! Update partition hash
       hash = iand(hash * 33 + part_hash, 2**16 - 1)

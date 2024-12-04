@@ -22,7 +22,7 @@ use bounds
 use sorting
 use chemdata
 use molecule
-use neighbordict
+use multisetdict
 use bipartition
 use partitiondict
 use permutation
@@ -70,18 +70,18 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
    type(bipartition_type), intent(out) :: subtypes
    ! Local variables
    integer :: h, i, iatom
-   type(neighbordict_type) :: typedict
+   type(multisetdict_type) :: typedict
    type(bipartpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
-   call subtypes%initialize(mnatypes%num_items1, mnatypes%num_items2)
+   call subtypes%initialize(mnatypes%tot_items1, mnatypes%tot_items2)
    call typedict%initialize(mnatypes%largest_part_size)
    allocate (typelist(typedict%num_slots))
 
    do h = 1, mnatypes%num_parts
 
       do i = 1, mnatypes%parts(h)%size1
-         iatom = mnatypes%parts(h)%list1(i)
+         iatom = mnatypes%parts(h)%items1(i)
          neighborhood = mnatypes%indices1(mol1%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
@@ -91,7 +91,7 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
       end do
 
       do i = 1, mnatypes%parts(h)%size2
-         iatom = mnatypes%parts(h)%list2(i)
+         iatom = mnatypes%parts(h)%items2(i)
          neighborhood = mnatypes%indices2(mol2%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
@@ -143,7 +143,7 @@ subroutine split_crossmnatypes(h, perm, mnatypes)
       error stop 'part_size1 /= part_size2'
    end if
 
-   call subtypes%initialize(mnatypes%num_items1, mnatypes%num_items2)
+   call subtypes%initialize(mnatypes%tot_items1, mnatypes%tot_items2)
 
    do k = 1, h - 1
       call subtypes%add_part(mnatypes%parts(k))
@@ -151,8 +151,8 @@ subroutine split_crossmnatypes(h, perm, mnatypes)
 
    do i = 1, mnatypes%parts(h)%size1
       newtype => subtypes%new_part(mnatypes%parts(h)%size1, mnatypes%parts(h)%size2)
-      call newtype%add1(mnatypes%parts(h)%list1(i))
-      call newtype%add2(mnatypes%parts(h)%list2(perm(i)))
+      call newtype%add1(mnatypes%parts(h)%items1(i))
+      call newtype%add2(mnatypes%parts(h)%items2(perm(i)))
    end do
 
    do k = h + 1, mnatypes%num_parts

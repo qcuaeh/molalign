@@ -90,7 +90,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
       do while (metatypes%num_parts > 0)
          do i = 1, metatypes%num_parts
-            h = random_element(metatypes%parts(i)%list)
+            h = random_element(metatypes%parts(i)%items)
             call minperm(submnatypes%parts(h), coords1, workcoords, atomperm, dist)
             call split_crossmnatypes(h, atomperm, submnatypes)
          end do

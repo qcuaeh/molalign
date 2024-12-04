@@ -125,9 +125,9 @@ subroutine compute_equivmat(mol1, mol2, eltypes, mnadiffs)
 
       do h = 1, eltypes%num_parts
          do j = 1, eltypes%parts(h)%size2
-            jatom = eltypes%parts(h)%list2(j)
+            jatom = eltypes%parts(h)%items2(j)
             do i = 1, eltypes%parts(h)%size1
-               iatom = eltypes%parts(h)%list1(i)
+               iatom = eltypes%parts(h)%items1(i)
                if (mnatypes%indices1(iatom) /= mnatypes%indices2(jatom)) then
                   mnadiffs(h)%n(i, j) = mnadiffs(h)%n(i, j) + 1
                end if

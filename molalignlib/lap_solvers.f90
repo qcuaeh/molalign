@@ -48,7 +48,7 @@ subroutine minperm(part, r1, r2, perm, dist)
 
    do j = 1, part%size2
       do i = 1, part%size1
-         costs(i, j) = sum((r1(:, part%list1(i)) - r2(:, part%list2(j)))**2)
+         costs(i, j) = sum((r1(:, part%items1(i)) - r2(:, part%items2(j)))**2)
       end do
    end do
 
@@ -70,7 +70,7 @@ subroutine minperm_biased(part, r1, r2, bias, perm, dist)
 
    do j = 1, part%size2
       do i = 1, part%size1
-         costs(i, j) = sum((r1(:, part%list1(i)) - r2(:, part%list2(j)))**2) + bias(i, j)
+         costs(i, j) = sum((r1(:, part%items1(i)) - r2(:, part%items2(j)))**2) + bias(i, j)
       end do
    end do
 

@@ -87,7 +87,7 @@ subroutine prune_rd( eltypes, coords1, coords2, prunemask)
    do i = 1, size(coords1, dim=2)
       do h = 1, eltypes%num_parts
          do j = 1, eltypes%parts(h)%size1
-            jatom = eltypes%parts(h)%list1(j)
+            jatom = eltypes%parts(h)%items1(j)
             dists1(i)%s(h)%x(j) = sqrt(sum((coords1(:, jatom) - coords1(:, i))**2))
          end do
          call sort(dists1(i)%s(h)%x)
@@ -97,7 +97,7 @@ subroutine prune_rd( eltypes, coords1, coords2, prunemask)
    do i = 1, size(coords2, dim=2)
       do h = 1, eltypes%num_parts
          do j = 1, eltypes%parts(h)%size2
-            jatom = eltypes%parts(h)%list2(j)
+            jatom = eltypes%parts(h)%items2(j)
             dists2(i)%s(h)%x(j) = sqrt(sum((coords2(:, jatom) - coords2(:, i))**2))
          end do
          call sort(dists2(i)%s(h)%x)
@@ -110,9 +110,9 @@ subroutine prune_rd( eltypes, coords1, coords2, prunemask)
       part_size2 = eltypes%parts(h)%size2
       allocate (prunemask(h)%b(part_size1, part_size2))
       do i = 1, part_size1
-         iatom = eltypes%parts(h)%list1(i)
+         iatom = eltypes%parts(h)%items1(i)
          do j = 1, part_size2
-            jatom = eltypes%parts(h)%list2(j)
+            jatom = eltypes%parts(h)%items2(j)
             pruned = .false.
             do k = 1, eltypes%num_parts
                if (any(abs(dists2(jatom)%s(k)%x - dists1(iatom)%s(k)%x) > prune_tol)) then

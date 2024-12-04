@@ -112,7 +112,7 @@ function get_molfragroots(self) result(fragroots)
       eltypepop_min = huge(eltypepop_min)
       do i = 1, size(self%molfrags(h)%atomidcs)
          iatom = self%molfrags(h)%atomidcs(i)
-         eltypepop_i = size(self%eltypes%parts(atomeltypes(iatom))%list)
+         eltypepop_i = size(self%eltypes%parts(atomeltypes(iatom))%items)
          if (eltypepop_i < eltypepop_min) then
             root_atom = iatom
             eltypepop_min = eltypepop_i
