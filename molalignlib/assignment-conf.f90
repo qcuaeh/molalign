@@ -76,7 +76,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
    call mnatypes%print_parts()
 
    ntrial = 0
-   maxtrials = 10
+   maxtrials = 100
 
    ! Loop for map searching
 
@@ -99,9 +99,9 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       end do
 !      call submnatypes%print_parts()
       call assign_atoms(submnatypes, coords1, workcoords, atomperm, dist)
-      write (stderr, *) &
-         adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm), &
-         sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
+!      write (stderr, *) &
+!         adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm), &
+!         sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 
    end do
 

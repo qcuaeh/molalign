@@ -41,7 +41,7 @@ subroutine initialize( this, min_dict_size)
    this%occupied = .false.
    this%num_occupied = 0
 
-end subroutine initialize
+end subroutine
 
 subroutine reset(this)
    class(neighbordict_type), intent(inout) :: this
@@ -49,15 +49,14 @@ subroutine reset(this)
    this%occupied = .false.
    this%num_occupied = 0
 
-end subroutine reset
+end subroutine
 
 function new_index( this, key) result(index)
    class(neighbordict_type), intent(inout) :: this
    integer, intent(in) :: key(:)
-   integer :: hash, index
+   integer :: index
 
-   hash = compute_hash(key)
-   index = modulo(hash, this%num_slots) + 1
+   index = modulo(hash(key), this%num_slots) + 1
 
    do while (this%occupied(index))
       if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key))) then
@@ -75,15 +74,14 @@ function new_index( this, key) result(index)
    this%occupied(index) = .true.
    this%num_occupied = this%num_occupied + 1
 
-end function new_index
+end function
 
 function get_index( this, key) result(index)
    class(neighbordict_type), intent(in) :: this
    integer, intent(in) :: key(:)
-   integer :: hash, index
+   integer :: index
 
-   hash = compute_hash(key)
-   index = modulo(hash, this%num_slots) + 1
+   index = modulo(hash(key), this%num_slots) + 1
 
    do while (this%occupied(index))
       if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key))) then
@@ -94,16 +92,15 @@ function get_index( this, key) result(index)
 
    error stop "Key not found"
 
-end function get_index
+end function
 
 function key_in_dict( key, dict)
    integer, intent(in) :: key(:)
    class(neighbordict_type), intent(in) :: dict
    logical :: key_in_dict
-   integer :: hash, index
+   integer :: index
 
-   hash = compute_hash(key)
-   index = modulo(hash, dict%num_slots) + 1
+   index = modulo(hash(key), dict%num_slots) + 1
 
    do while (dict%occupied(index))
       if (same_keys(dict%keys(:, index), dict%key_lengths(index), key, size(key))) then
@@ -115,21 +112,20 @@ function key_in_dict( key, dict)
 
    key_in_dict = .false.
 
-end function key_in_dict
+end function
 
-function compute_hash(key) result(hash)
-   integer, parameter :: HASH_CONSTANT = 1779033703
+integer function hash(key)
+   integer, parameter :: HASH_CONSTANT = 5381
    integer, intent(in) :: key(:)
-   integer :: hash
    integer :: i
 
    hash = 1
    do i = 1, size(key)
-      hash = hash * (HASH_CONSTANT + 2 * key(i))
+      hash = iand(hash * (HASH_CONSTANT + 2 * key(i)), 2**16 - 1)
    end do
    hash = hash / 2
 
-end function compute_hash
+end function
 
 function same_keys(key1, key1_len, key2, key2_len)
    integer, intent(in) :: key1(:), key2(:)
@@ -165,6 +161,6 @@ function same_keys(key1, key1_len, key2, key2_len)
 
    same_keys = .true.
 
-end function same_keys
+end function
 
 end module

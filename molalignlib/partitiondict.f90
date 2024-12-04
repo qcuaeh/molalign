@@ -38,7 +38,7 @@ subroutine initialize( this, min_dict_size)
    this%occupied = .false.
    this%num_occupied = 0
 
-end subroutine initialize
+end subroutine
 
 subroutine reset(this)
    class(partitiondict_type), intent(inout) :: this
@@ -46,14 +46,14 @@ subroutine reset(this)
    this%occupied = .false.
    this%num_occupied = 0
 
-end subroutine reset
+end subroutine
 
 function new_index( this, partition) result(index)
    class(partitiondict_type), intent(inout) :: this
    type(partition_type), intent(in) :: partition
    integer :: index
 
-   index = compute_hash(partition, this%num_slots) + 1
+   index = modulo(hash(partition), this%num_slots) + 1
 
    do while (this%occupied(index))
       if (this%partitions(index) == partition) then
@@ -70,14 +70,14 @@ function new_index( this, partition) result(index)
    this%occupied(index) = .true.
    this%num_occupied = this%num_occupied + 1
 
-end function new_index
+end function
 
 function get_index( this, partition) result(index)
    class(partitiondict_type), intent(in) :: this
    type(partition_type), intent(in) :: partition
    integer :: index
 
-   index = compute_hash(partition, this%num_slots) + 1
+   index = modulo(hash(partition), this%num_slots) + 1
 
    do while (this%occupied(index))
       if (this%partitions(index) == partition) then
@@ -88,7 +88,7 @@ function get_index( this, partition) result(index)
 
    error stop "Key not found"
 
-end function get_index
+end function
 
 function partition_in_dict( partition, dict)
    class(partitiondict_type), intent(in) :: dict
@@ -96,7 +96,7 @@ function partition_in_dict( partition, dict)
    logical :: partition_in_dict
    integer :: index
 
-   index = compute_hash(partition, dict%num_slots) + 1
+   index = modulo(hash(partition), dict%num_slots) + 1
 
    do while (dict%occupied(index))
       if (dict%partitions(index) == partition) then
@@ -108,28 +108,25 @@ function partition_in_dict( partition, dict)
 
    partition_in_dict = .false.
 
-end function partition_in_dict
+end function
 
-function compute_hash(partition, num_slots) result(hash)
-    type(partition_type), intent(in) :: partition
-    integer, intent(in) :: num_slots  ! Number of slots in hash table
-    integer :: hash
-    integer :: h, i
-    
-    ! DJB2 initial value
-    hash = 5381
-    
-    ! Hash the partition structure
-    do h = 1, partition%num_parts
-        ! Hash the part size first
-        hash = modulo(hash * 33 + partition%parts(h)%size, num_slots)
-        
-        ! Hash each index in the part
-        do i = 1, partition%parts(h)%size
-            hash = modulo(hash * 33 + partition%parts(h)%list(i), num_slots)
-        end do
-    end do
-    
-end function compute_hash
+integer function hash(partition)
+   type(partition_type), intent(in) :: partition
+   integer :: h, i, part_hash
+
+   ! DJB2 partition hashing
+   hash = 5381
+   do h = 1, partition%num_parts
+      ! DJB2 part hashing
+      part_hash = 5381
+      do i = 1, partition%parts(h)%size
+         ! Update part hash
+         part_hash = iand(part_hash * 33 + partition%parts(h)%list(i), 2**16 - 1)
+      end do
+      ! Update partition hash
+      hash = iand(hash * 33 + part_hash, 2**16 - 1)
+   end do
+
+end function
 
 end module

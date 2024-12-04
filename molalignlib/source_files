@@ -35,6 +35,6 @@ lap_driver.f90
 #tracking.f90
 #backtracking.f90
 #reactivity.f90
-#assignment-iso.f90
-assignment-conf.f90
+assignment-iso.f90
+#assignment-conf.f90
 molalignlib.f90

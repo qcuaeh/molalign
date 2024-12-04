@@ -51,11 +51,10 @@ contains
    subroutine dict_add(this, key, value)
       class(dict), intent(inout) :: this
       integer, intent(in) :: key(:)
-      integer :: hash, index
       integer, intent(in) :: value
+      integer :: index
 
-      hash = compute_hash(key)
-      index = modulo(hash, this%num_slots) + 1
+      index = modulo(hash(key), this%num_slots) + 1
 
       do while (this%occupied(index))
          if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key))) then
@@ -80,11 +79,10 @@ contains
    function dict_get(this, key) result(value)
       class(dict), intent(in) :: this
       integer, intent(in) :: key(:)
-      integer :: hash, index
       integer :: value
+      integer :: index
 
-      hash = compute_hash(key)
-      index = modulo(hash, this%num_slots) + 1
+      index = modulo(hash(key), this%num_slots) + 1
 
       do while (this%occupied(index))
          if (same_keys(this%keys(:, index), this%key_lengths(index), key, size(key))) then
@@ -102,10 +100,9 @@ contains
       class(dict), intent(in) :: this
       integer, intent(in) :: key(:)
       logical :: exists
-      integer :: hash, index
+      integer :: index
 
-      hash = compute_hash(key)
-      index = modulo(hash, this%num_slots) + 1
+      index = modulo(hash(key), this%num_slots) + 1
 
       exists = .false.
       do while (this%occupied(index))
@@ -118,19 +115,19 @@ contains
 
    end function dict_has
 
-   function compute_hash(key) result(hash)
-      integer, parameter :: HASH_CONSTANT = 1779033703
+   function hash(key)
+      integer, parameter :: HASH_CONSTANT = 5381
       integer, intent(in) :: key(:)
       integer :: hash
       integer :: i
 
       hash = 1
       do i = 1, size(key)
-         hash = hash * (HASH_CONSTANT + 2 * key(i))
+         hash = iand(hash * (HASH_CONSTANT + 2 * key(i)), 2**16 - 1)
       end do
       hash = hash / 2
 
-   end function compute_hash
+   end function hash
 
    function same_keys(key1, key1_len, key2, key2_len)
       integer, intent(in) :: key1(:), key2(:)
