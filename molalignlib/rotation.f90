@@ -21,10 +21,9 @@ use random
 implicit none
 
 private
-public rotate
-public rotated
 public quatmul
 public rotangle
+public quatrotmat
 public randrotquat
 
 contains
@@ -45,34 +44,6 @@ function quatrotmat(q) result(rotmat)
    rotmat(1, 3) = 2*(q(2)*q(4) - q(1)*q(3))
    rotmat(2, 3) = 2*(q(3)*q(4) + q(1)*q(2))
    rotmat(3, 3) = 1.0_rk - 2*(q(2)**2 + q(3)**2)
-
-end function
-
-! Apply rotation quaternion to atomic coordinates
-subroutine rotate(natom, coords, q)
-   integer, intent(in) :: natom
-   real(rk), intent(in) :: q(4)
-   real(rk), intent(inout) :: coords(3, natom)
-   real(rk) :: rotmat(3, 3)
-
-! Rotate atomic coordinates
-
-   rotmat = quatrotmat(q)
-   coords = matmul(rotmat, coords)
-
-end subroutine
-
-! Apply rotation quaternion to atomic coordinates
-function rotated(natom, coords, q) result(rotated_coords)
-   integer, intent(in) :: natom
-   real(rk), intent(in) :: q(4)
-   real(rk), intent(in) :: coords(3, natom)
-
-   real(rk) :: rotmat(3, 3)
-   real(rk) :: rotated_coords(3, natom)
-
-   rotmat = quatrotmat(q)
-   rotated_coords = matmul(rotmat, coords)
 
 end function
 

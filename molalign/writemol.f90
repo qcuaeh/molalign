@@ -26,58 +26,48 @@ implicit none
 contains
 
 subroutine writexyz(unit, mol)
-   ! Arguments
    integer, intent(in) :: unit
    type(mol_type) :: mol
    ! Local varibles
-   integer :: i, natom
-   character(:), allocatable :: title
-   integer, allocatable :: elnums(:)
-   real(rk), allocatable :: coords(:, :)
+   type(atom_type), allocatable :: atoms(:)
+   integer :: i
 
-   title = mol%get_title()
-   natom = mol%get_natom()
-   elnums = mol%get_elnums()
-   coords = mol%get_coords()
+   atoms = mol%atoms
 
-   write (unit, '(i0)') natom
-   write (unit, '(a)') title
+   write (unit, '(i0)') size(atoms)
+   write (unit, '(a)') mol%title
 
-   do i = 1, natom
-      write (unit, '(a,3(2x,f12.6))') elsyms(elnums(i)), coords(:, i)
+   do i = 1, size(atoms)
+      write (unit, '(a,3(2x,f12.6))') elsyms(atoms(i)%elnum), atoms(i)%coords
    end do
 
 end subroutine
 
 subroutine writemol2(unit, mol)
-   ! Arguments
    integer, intent(in) :: unit
    type(mol_type) :: mol
-   ! Local varibles
-   integer :: i, natom
-   character(:), allocatable :: title
-   type(bond_type), allocatable :: bonds(:)
+   ! Local variables
    real(rk), allocatable :: coords(:, :)
+   type(bond_type), allocatable :: bonds(:)
    type(atom_type), allocatable :: atoms(:)
+   integer :: i
 
-   title = mol%get_title()
-   atoms = mol%get_atoms()
+   atoms = mol%atoms
    bonds = mol%get_bonds()
-   natom = mol%get_natom()
    coords = mol%get_coords()
 
    write (unit, '(a)') '@<TRIPOS>MOLECULE'
-   if (title /= '') then
-      write (unit, '(a)') title
+   if (mol%title /= '') then
+      write (unit, '(a)') mol%title
    else
       write (unit, '(a)') 'Untitled'
    end if
-   write (unit, '(5(i4,1x))') natom, size(bonds), 0, 0, 0
+   write (unit, '(5(i4,1x))') size(atoms), size(bonds), 0, 0, 0
    write (unit, '(a)') 'SMALL'
    write (unit, '(a)') 'NO_CHARGES'
    write (unit, '(a)') '@<TRIPOS>ATOM'
 
-   do i = 1, natom
+   do i = 1, size(atoms)
       write (unit, '(i4,2x,a2,3(1x,f12.6),2x,a4,1x,i2,1x,a4,1x,f7.3)') &
          i, elsyms(atoms(i)%elnum), coords(:, i), atomtype(atoms(i)), 1, 'MOL1', 0.
    end do

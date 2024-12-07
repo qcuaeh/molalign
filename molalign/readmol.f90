@@ -55,8 +55,8 @@ subroutine readxyz(unit, mol)
       labels(i) = int(label)
    end do
 
-   call mol%set_elnums(elnums)
-   call mol%set_labels(labels)
+   mol%atoms%elnum = elnums
+   mol%atoms%label = labels
    call mol%set_coords(coords)
 
    return
@@ -130,8 +130,8 @@ subroutine readmol2(unit, mol)
       adjlists(nadjs(atom2), atom2) = atom1
    end do
 
-   call mol%set_elnums(elnums)
-   call mol%set_labels(labels)
+   mol%atoms%elnum = elnums
+   mol%atoms%label = labels
    call mol%set_coords(coords)
    call mol%set_adjlists(nadjs, adjlists)
 
@@ -144,7 +144,6 @@ subroutine readmol2(unit, mol)
 end subroutine
 
 subroutine set_bonds(mol)
-   ! Arguments
    type(mol_type), intent(inout) :: mol
    ! Local variables
    integer :: i, j
@@ -164,7 +163,7 @@ subroutine set_bonds(mol)
       return
    end if
 
-   elnums = mol%get_elnums()
+   elnums = mol%atoms%elnum
    coords = mol%get_coords()
 
    ! Set adjacency radii

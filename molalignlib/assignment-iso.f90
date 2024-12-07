@@ -22,7 +22,7 @@ use molecule
 use strutils
 use chemdata
 use permutation
-use translation
+use rigid_body
 use rotation
 use alignment
 use lap_driver
@@ -38,10 +38,10 @@ implicit none
 
 contains
 
-subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
+subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
-   integer, intent(out) :: maplist(:, :)
+   integer, intent(out) :: permlist(:, :)
    integer, intent(out) :: countlist(:)
    integer, intent(out) :: nrec
 
@@ -60,12 +60,30 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
    integer :: natom1
    real(rk), dimension(:, :), allocatable :: coords1, coords2
-   real(rk), dimension(:), allocatable :: weights1
+   real(rk), dimension(:), allocatable :: weights1, weights2
+   real(rk) :: travec1(3), travec2(3)
 
-   natom1 = mol1%natom
+   natom1 = size(mol1%atoms)
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
    weights1 = weights(mol1%atoms%elnum)
+   weights2 = weights(mol1%atoms%elnum)
+
+   ! Mirror coordinates
+
+   if (mirror_flag) then
+      call reflect_coords(coords2)
+   end if
+
+   ! Calculate centroids
+
+   travec1 = -centroid(coords1, weights1)
+   travec2 = -centroid(coords2, weights2)
+
+   ! Center coordinates at the centroids
+
+   call translate_coords(coords1, travec1)
+   call translate_coords(coords2, travec2)
 
    ! Calculate prune matrix
 
@@ -95,7 +113,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
       ! Aply a random rotation to workcoords
 
-      call rotate(natom1, workcoords, randrotquat())
+      call rotate_coords(workcoords, randrotquat())
 
       ! Minimize the euclidean distance
 
@@ -103,7 +121,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       rotquat = leastrotquat(natom1, weights1, coords1, workcoords, atomperm)
       prodquat = rotquat
       totalrot = rotangle(rotquat)
-      call rotate(natom1, workcoords, rotquat)
+      call rotate_coords(workcoords, rotquat)
 !      print *, sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 !      stop
 
@@ -114,7 +132,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
          if (all(newmapping == atomperm)) exit
          rotquat = leastrotquat(natom1, weights1, coords1, workcoords, newmapping)
          prodquat = quatmul(rotquat, prodquat)
-         call rotate(natom1, workcoords, rotquat)
+         call rotate_coords(workcoords, rotquat)
          totalrot = totalrot + rotangle(rotquat)
          atomperm = newmapping
          steps = steps + 1
@@ -130,12 +148,12 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
       adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm)
       rmsd = sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 
-      ! Check for new best maplist
+      ! Check for new best permlist
 
       visited = .false.
 
       do irec = 1, nrec
-         if (all(atomperm == maplist(:, irec))) then
+         if (all(atomperm == permlist(:, irec))) then
             countlist(irec) = countlist(irec) + 1
             avgsteps(irec) = avgsteps(irec) + (steps - avgsteps(irec))/countlist(irec)
             avgrealrot(irec) = avgrealrot(irec) + (rotangle(prodquat) - avgrealrot(irec))/countlist(irec)
@@ -167,7 +185,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
                avgsteps(irec) = avgsteps(irec - 1)
                avgrealrot(irec) = avgrealrot(irec - 1)
                avgtotalrot(irec) = avgtotalrot(irec - 1)
-               maplist(:, irec) = maplist(:, irec - 1)
+               permlist(:, irec) = permlist(:, irec - 1)
             end do
             countlist(krec) = 1
             recrmsd(krec) = rmsd
@@ -175,7 +193,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
             avgsteps(krec) = steps
             avgrealrot(krec) = rotangle(prodquat)
             avgtotalrot(krec) = totalrot
-            maplist(:, krec) = atomperm
+            permlist(:, krec) = atomperm
          end if
       end if
 

@@ -23,7 +23,7 @@ use linalg
 use sorting
 use molecule
 use rotation
-use translation
+use rigid_body
 use permutation
 use bipartition
 use bipartitioning
@@ -41,17 +41,16 @@ subroutine molecule_remap( &
    mol1, &
    mol2, &
    nrec, &
-   maplist, &
+   permlist, &
    countlist)
 
    type(mol_type), intent(inout) :: mol1, mol2
    integer, intent(out) :: nrec
-   integer, dimension(:, :), intent(inout) :: maplist
+   integer, dimension(:, :), intent(inout) :: permlist
    integer, dimension(:), intent(inout) :: countlist
 
    type(bipartition_type) :: eltypes
    real(rk) :: travec1(3), travec2(3)
-   real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
    ! Abort if molecules have different number of atoms
 
@@ -79,46 +78,20 @@ subroutine molecule_remap( &
       stop
    end if
 
-   ! Backup coordinates
-
-   coords1 = mol1%get_coords()
-   coords2 = mol2%get_coords()
-
-   ! Mirror coordinates
-
-   if (mirror_flag) then
-      call mol2%mirror_coords()
-   end if
-
-   ! Calculate centroids
-
-   travec1 = -centroid(mol1)
-   travec2 = -centroid(mol2)
-
-   ! Center coordinates at the centroids
-
-   call mol1%translate_coords(travec1)
-   call mol2%translate_coords(travec2)
-
    ! Initialize random number generator
 
    call random_initialize()
 
    ! Optimize assignment to minimize the AdjD and RMSD
 
-   call remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
+   call remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
    ! Remove bonds from reactive sites and reoptimize assignment
 
 !   if (reac_flag) then
-!      call remove_reactive_bonds(mol1, mol2, maplist(:, 1))
-!      call remap_atoms(mol1, mol2, maplist, countlist, nrec)
+!      call remove_reactive_bonds(mol1, mol2, permlist(:, 1))
+!      call remap_atoms(mol1, mol2, permlist, countlist, nrec)
 !   end if
-
-   ! Restore coordinates
-
-   call mol1%set_coords(coords1)
-   call mol2%set_coords(coords2)
 
 end subroutine
 
@@ -136,22 +109,26 @@ subroutine remapped_molecule_align( &
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    ! Local variables
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
+   real(rk), dimension(:), allocatable :: weights1, weights2
 
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
+   weights1 = weights(mol1%atoms%elnum)
+   weights2 = weights(mol1%atoms%elnum)
 
    ! Calculate centroids
 
-   travec1 = -centroid(mol1)
-   travec2 = -centroid(mol2)
+   travec1 = -centroid(coords1, weights1)
+   travec2 = -centroid(coords2, weights2)
+
 
    ! Calculate optimal rotation matrix
 
    rotquat = leastrotquat( &
-      mol1%natom, &
+      size(mol1%atoms), &
       weights(mol1%atoms%elnum), &
-      translated(mol1%natom, coords1, travec1), &
-      translated(mol2%natom, coords2, travec2), &
+      translated_coords(coords1, travec1), &
+      translated_coords(coords2, travec2), &
       atomperm &
    )
 
@@ -168,6 +145,10 @@ subroutine molecule_align( &
    type(mol_type), intent(in) :: mol1, mol2
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    type(bipartition_type) :: eltypes
+   ! Local variables
+   integer :: natom1
+   real(rk), allocatable, dimension(:, :) :: coords1, coords2
+   real(rk), dimension(:), allocatable :: weights1, weights2
 
    ! Abort if molecules have different number of atoms
 
@@ -178,10 +159,10 @@ subroutine molecule_align( &
 
    ! Abort if molecules are not isomers
 
-!   if (any(sorted(elnums%indices1) /= sorted(elnums%indices2))) then
-!      write (stderr, '(a)') '*Error: These molecules are not isomers'
-!      stop
-!   end if
+   if (any(sorted(mol1%atoms%elnum) /= sorted(mol2%atoms%elnum))) then
+      write (stderr, '(a)') 'Error: These molecules are not isomers'
+      stop
+   end if
 
    ! Compute atomic types
 
@@ -209,62 +190,27 @@ subroutine molecule_align( &
       stop
    end if
 
+   natom1 = size(mol1%atoms)
+   coords1 = mol1%get_coords()
+   coords2 = mol2%get_coords()
+   weights1 = weights(mol1%atoms%elnum)
+   weights2 = weights(mol1%atoms%elnum)
+
    ! Calculate centroids
 
-   travec1 = -centroid(mol1)
-   travec2 = -centroid(mol2)
+   travec1 = -centroid(coords1, weights1)
+   travec2 = -centroid(coords2, weights2)
 
    ! Calculate optimal rotation matrix
 
    rotquat = leastrotquat( &
-      mol1%natom, &
-      weights(mol1%atoms%elnum), &
-      translated(mol1%natom, mol1%get_coords(), travec1), &
-      translated(mol2%natom, mol2%get_coords(), travec2), &
-      identity_perm(mol1%natom) &
+      natom1, &
+      weights1, &
+      translated_coords(coords1, travec1), &
+      translated_coords(coords2, travec2), &
+      identity_perm(natom1) &
    )
 
 end subroutine
-
-function get_rmsd(mol1, mol2, atomperm) result(rmsd)
-   type(mol_type), intent(in) :: mol1, mol2
-   integer :: atomperm(:)
-   real(rk) :: rmsd
-
-   rmsd = rmsdist(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), &
-         mol2%get_coords(), atomperm)
-
-end function
-
-function get_adjd(mol1, mol2, atomperm) result(adjd)
-   type(mol_type), intent(in) :: mol1, mol2
-   integer :: atomperm(:)
-   integer :: adjd
-
-   adjd = adjdiff(mol1%natom, mol1%adjmat, mol2%adjmat, atomperm)
-
-end function
-
-function centroid(mol)
-! Purpose: Get the centroid coordinates
-   type(mol_type), intent(in) :: mol
-   ! Local variables
-   integer :: i
-   real(rk) :: centroid(3)
-   real(rk), allocatable :: coords(:, :)
-
-   coords = mol%get_coords()
-
-! Calculate the coordinates of the center of mass
-
-   centroid(:) = 0
-
-   do i = 1, size(mol%atoms)
-      centroid(:) = centroid(:) + weights(mol%atoms(i)%elnum)*coords(:, i)
-   end do
-
-   centroid(:) = centroid(:)/sum(weights(mol%atoms%elnum))
-
-end function
 
 end module

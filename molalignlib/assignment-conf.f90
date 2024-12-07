@@ -23,7 +23,7 @@ use molecule
 use strutils
 use chemdata
 use permutation
-use translation
+use rigid_body
 use rotation
 use alignment
 use lap_driver
@@ -42,10 +42,10 @@ implicit none
 
 contains
 
-subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
+subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
-   integer, intent(out) :: maplist(:, :)
+   integer, intent(out) :: permlist(:, :)
    integer, intent(out) :: countlist(:)
    integer, intent(out) :: nrec
 
@@ -84,7 +84,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
       ntrial = ntrial + 1
       workcoords = coords2
-      call rotate(natom1, workcoords, randrotquat())
+      call rotate_coords(workcoords, randrotquat())
       submnatypes = mnatypes
       call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
 
@@ -107,7 +107,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, maplist, countlist, nrec)
 
    nrec = 1
    countlist(1) = 1
-   maplist(:, 1) = atomperm
+   permlist(:, 1) = atomperm
 
 end subroutine
 

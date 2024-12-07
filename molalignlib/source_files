@@ -22,7 +22,7 @@ lap_solvers.f90
 chemdata.f90
 chemutils.f90
 rotation.f90
-translation.f90
+rigid_body.f90
 adjacency.f90
 alignment.f90
 molecule.f90
@@ -35,6 +35,6 @@ lap_driver.f90
 #tracking.f90
 #backtracking.f90
 #reactivity.f90
-#assignment-iso.f90
-assignment-conf.f90
+assignment-iso.f90
+#assignment-conf.f90
 molalignlib.f90

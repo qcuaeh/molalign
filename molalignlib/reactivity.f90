@@ -49,8 +49,8 @@ subroutine remove_reactive_bonds(mol1, mol2, atomperm)
 
    ! Initialization
 
-   elnums1 = mol1%get_elnums()
-   elnums2 = mol2%get_elnums()
+   elnums1 = mol1%atoms%elnum
+   elnums2 = mol2%atoms%elnum
    adjlists1 = mol1%get_adjlists()
    adjlists2 = mol2%get_adjlists()
    mnatypes1 = mol1%mnatypes

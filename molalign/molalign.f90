@@ -21,7 +21,7 @@ use bounds
 use molecule
 use printing
 use rotation
-use translation
+use rigid_body
 use strutils
 use chemutils
 use alignment
@@ -37,8 +37,8 @@ implicit none
 
 integer :: i, nrec
 integer :: read_unit1, read_unit2, write_unit
+integer, allocatable :: permlist(:, :)
 integer, allocatable :: countlist(:)
-integer, allocatable :: maplist(:, :)
 integer, allocatable :: atomperm(:)
 character(:), allocatable :: arg, optarg
 character(:), allocatable :: fmtin1, fmtin2, fmtout
@@ -50,7 +50,7 @@ real(rk) :: travec1(3), travec2(3), rotquat(4)
 integer :: adjd, minadjd
 real(rk) :: rmsd, minrmsd
 type(strlist_type) :: posargs(2)
-type(mol_type) :: mol1, mol2, auxmol1
+type(mol_type) :: mol1, mol2, auxmol
 
 integer :: natom1
 real(rk), dimension(:, :), allocatable :: coords1, coords2
@@ -201,7 +201,7 @@ call readfile(read_unit2, fmtin2, mol2)
 
 ! Allocate arrays
 
-allocate (maplist(mol1%natom, maxrec))
+allocate (permlist(mol1%natom, maxrec))
 allocate (countlist(maxrec))
 
 if (pipe_flag) then
@@ -223,47 +223,48 @@ if (remap_flag) then
       mol1, &
       mol2, &
       nrec, &
-      maplist, &
+      permlist, &
       countlist)
 
-   minrmsd = huge(rmsd)
-   minadjd = huge(adjd)
+   minrmsd = huge(minrmsd)
+   minadjd = huge(minadjd)
 
    if (.not. nrec_flag) then
       call writefile(write_unit, fmtout, mol1)
    end if
 
-   natom1 = mol1%natom
+   natom1 = size(mol1%atoms)
    coords1 = mol1%get_coords()
    weights1 = weights(mol1%atoms%elnum)
+   allocate (auxmol%atoms(size(mol2%atoms)))
 
    do i = 1, nrec
+
+      atomperm = permlist(:, i)
 
       call remapped_molecule_align( &
          mol1, &
          mol2, &
-         maplist(:, i), &
+         atomperm, &
          travec1, &
          travec2, &
          rotquat)
 
-      auxmol1 = mol2
       coords2 = mol2%get_coords()
-      atomperm = maplist(:, i)
-
-      call translate(natom1, coords2, travec2)
-      call rotate(natom1, coords2, rotquat)
-      call translate(natom1, coords2, -travec1)
+      call translate_coords(coords2, travec2)
+      call rotate_coords(coords2, rotquat)
+      call translate_coords(coords2, -travec1)
 
       rmsd = rmsdist(natom1, weights1, coords1, coords2, atomperm)
       adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm)
-
       minrmsd = min(minrmsd, rmsd)
       minadjd = min(minadjd, adjd)
 
-      call auxmol1%set_coords(coords2)
-      auxmol1%title = 'Map='//str(i)//' RMSD='//str(rmsd, 4)
-      call writefile(write_unit, fmtout, auxmol1)
+      auxmol%title = 'Map='//str(i)//' RMSD='//str(rmsd, 4)
+      auxmol%atoms%elnum = mol2%atoms%elnum
+      auxmol%atoms%label = mol2%atoms%label
+      call auxmol%set_coords(coords2)
+      call writefile(write_unit, fmtout, auxmol)
 
    end do
 
@@ -278,25 +279,27 @@ else
       travec2, &
       rotquat)
 
-   call mol2%translate_coords(travec2)
-   call mol2%rotate_coords(rotquat)
-   call mol2%translate_coords(-travec1)
+   coords2 = mol2%get_coords()
+   call translate_coords(coords2, travec2)
+   call rotate_coords(coords2, rotquat)
+   call translate_coords(coords2, -travec1)
 
-   atomperm = identity_perm(size(mol1%atoms))
-
-   minrmsd = get_rmsd(mol1, mol2, atomperm)
-   minadjd = get_adjd(mol1, mol2, atomperm)
+   rmsd = rmsdist(natom1, weights1, coords1, coords2, identity_perm(natom1))
+   adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, identity_perm(natom1))
 
    mol2%title = 'RMSD='//str(rmsd, 4)
+   auxmol%atoms%elnum = mol2%atoms%elnum
+   auxmol%atoms%label = mol2%atoms%label
+   call auxmol%set_coords(coords2)
    call writefile(write_unit, fmtout, mol2)
 
 end if
 
 if (print_flag) then
    if (bond_flag) then
-      write (stderr, "(a,1x,i0)") str(minrmsd, 4), minadjd
+      write (stderr, "(a,1x,i0)") str(rmsd, 4), adjd
    else
-      write (stderr, "(a)") str(minrmsd, 4)
+      write (stderr, "(a)") str(rmsd, 4)
    end if
 end if
 

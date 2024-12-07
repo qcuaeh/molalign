@@ -4,8 +4,6 @@ use types
 use bounds
 use setutils
 use permutation
-use translation
-use rotation
 use adjacency
 use alignment
 use strutils
@@ -33,21 +31,11 @@ type, public :: mol_type
    logical, allocatable :: adjmat(:, :)
 !   type(bipartition_type) :: molfrags
 contains
-   procedure :: set_elnums
-   procedure :: set_labels
    procedure :: set_coords
    procedure :: set_adjlists
-   procedure :: get_natom
-   procedure :: get_atoms
-   procedure :: get_elnums
-   procedure :: get_labels
-   procedure :: get_title
    procedure :: get_bonds
    procedure :: get_adjlists
    procedure :: get_coords
-   procedure :: mirror_coords
-   procedure :: translate_coords
-   procedure :: rotate_coords
    procedure :: add_bond
    procedure :: remove_bond
    procedure :: print_atoms
@@ -57,94 +45,6 @@ contains
 end type
 
 contains
-
-function get_title(self) result(title)
-   class(mol_type), intent(in) :: self
-   character(:), allocatable :: title
-
-   title = self%title
-
-end function
-
-function get_natom(self) result(natom)
-   class(mol_type), intent(in) :: self
-   integer :: natom
-
-   natom = size(self%atoms)
-
-end function
-
-function get_atoms(self) result(atoms)
-   class(mol_type), intent(in) :: self
-   type(atom_type), allocatable :: atoms(:)
-
-   atoms = self%atoms
-
-end function
-
-subroutine mirror_coords(self)
-   class(mol_type), intent(inout) :: self
-   ! Local variables
-   real(rk), allocatable :: coords(:, :)
-
-   allocate (coords(3, size(self%atoms)))
-
-   coords = self%get_coords()
-   coords(1, :) = -coords(1, :)
-   call self%set_coords(coords)
-
-end subroutine
-
-subroutine rotate_coords(self, rotquat)
-   class(mol_type), intent(inout) :: self
-   ! Local variables
-   real(rk), intent(in) :: rotquat(4)
-
-   call self%set_coords(rotated(size(self%atoms), self%get_coords(), rotquat))
-
-end subroutine
-
-subroutine translate_coords(self, travec)
-   class(mol_type), intent(inout) :: self
-   ! Local variables
-   real(rk), intent(in) :: travec(3)
-
-   call self%set_coords(translated(size(self%atoms), self%get_coords(), travec))
-
-end subroutine
-
-subroutine set_elnums(self, elnums)
-   class(mol_type), intent(inout) :: self
-   integer, intent(in) :: elnums(:)
-
-   self%atoms%elnum = elnums
-
-end subroutine
-
-function get_elnums(self) result(elnums)
-   class(mol_type), intent(in) :: self
-   integer, allocatable :: elnums(:)
-
-   elnums = self%atoms%elnum
-
-end function
-
-subroutine set_labels(self, labels)
-   class(mol_type), intent(inout) :: self
-   integer, intent(in) :: labels(:)
-
-   self%atoms%label = labels
-
-end subroutine
-
-function get_labels(self) result(labels)
-   class(mol_type), intent(in) :: self
-   ! Local variables
-   integer, allocatable :: labels(:)
-
-   labels = self%atoms%label
-
-end function
 
 subroutine set_coords(self, coords)
    class(mol_type), intent(inout) :: self
