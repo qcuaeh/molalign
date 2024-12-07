@@ -119,7 +119,7 @@ subroutine compute_equivmat(mol1, mol2, eltypes, mnadiffs)
    do
 
 !      write (stderr, *)
-!      write (stderr, '(a)') repeat('-- level '//intstr(level)//' --', 6)
+!      write (stderr, '(a)') repeat('-- level '//str(level)//' --', 6)
 !      call mnatypes%print_parts()
       level = level + 1
 

@@ -102,13 +102,13 @@ function atomtype(atom)
    select case (atom%elnum)
    case (6)
       hybnum = nadj - 1
-      atomtype = trim(elsym)//'.'//intstr(hybnum)
+      atomtype = trim(elsym)//'.'//str(hybnum)
    case (7, 15)
       hybnum = min(nadj, 3)
-      atomtype = trim(elsym)//'.'//intstr(hybnum)
+      atomtype = trim(elsym)//'.'//str(hybnum)
    case (8, 16)
       hybnum = min(nadj + 1, 3)
-      atomtype = trim(elsym)//'.'//intstr(hybnum)
+      atomtype = trim(elsym)//'.'//str(hybnum)
    case default
       atomtype = elsym
    end select

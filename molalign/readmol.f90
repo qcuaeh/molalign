@@ -31,7 +31,8 @@ subroutine readxyz(unit, mol)
    integer, intent(in) :: unit
    type(mol_type), intent(out) :: mol
    character(ll) :: buffer
-   character(wl) :: element
+   character(wl) :: atom_tag
+   character(:), allocatable :: symbol, label
    integer, allocatable :: elnums(:), labels(:)
    real(rk), allocatable :: coords(:, :)
 
@@ -48,8 +49,10 @@ subroutine readxyz(unit, mol)
    mol%title = trim(buffer)
 
    do i = 1, mol%natom
-      read (unit, *, end=99) element, coords(:, i)
-      call readlabel(element, elnums(i), labels(i))
+      read (unit, *, end=99) atom_tag, coords(:, i)
+      call split_tag(atom_tag, symbol, label)
+      elnums(i) = elsym2num(symbol)
+      labels(i) = int(label)
    end do
 
    call mol%set_elnums(elnums)
@@ -70,7 +73,8 @@ subroutine readmol2(unit, mol)
    character(ll) :: buffer
    integer :: i, id
    integer :: atom1, atom2, bondorder, nbond
-   character(wl) :: element
+   character(wl) :: atom_tag
+   character(:), allocatable :: symbol, label
    integer, allocatable :: elnums(:), labels(:)
    real(rk), allocatable :: coords(:, :)
    integer, allocatable :: nadjs(:), adjlists(:, :)
@@ -97,8 +101,10 @@ subroutine readmol2(unit, mol)
    end do
 
    do i = 1, mol%natom
-      read (unit, *, end=99) id, element, coords(:, i)
-      call readlabel(element, elnums(i), labels(i))
+      read (unit, *, end=99) id, atom_tag, coords(:, i)
+      call split_tag(atom_tag, symbol, label)
+      elnums(i) = elsym2num(symbol)
+      labels(i) = int(label)
    end do
 
    do

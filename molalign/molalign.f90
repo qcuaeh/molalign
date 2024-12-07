@@ -262,7 +262,7 @@ if (remap_flag) then
       minadjd = min(minadjd, adjd)
 
       call auxmol1%set_coords(coords2)
-      auxmol1%title = 'Map='//intstr(i)//' RMSD='//realstr(rmsd, 4)
+      auxmol1%title = 'Map='//str(i)//' RMSD='//str(rmsd, 4)
       call writefile(write_unit, fmtout, auxmol1)
 
    end do
@@ -287,16 +287,16 @@ else
    minrmsd = get_rmsd(mol1, mol2, atomperm)
    minadjd = get_adjd(mol1, mol2, atomperm)
 
-   mol2%title = 'RMSD='//realstr(rmsd, 4)
+   mol2%title = 'RMSD='//str(rmsd, 4)
    call writefile(write_unit, fmtout, mol2)
 
 end if
 
 if (print_flag) then
    if (bond_flag) then
-      write (stderr, "(a,1x,i0)") realstr(minrmsd, 4), minadjd
+      write (stderr, "(a,1x,i0)") str(minrmsd, 4), minadjd
    else
-      write (stderr, "(a)") realstr(minrmsd, 4)
+      write (stderr, "(a)") str(minrmsd, 4)
    end if
 end if
 

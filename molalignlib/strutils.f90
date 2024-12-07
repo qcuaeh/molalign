@@ -21,13 +21,50 @@ use stdio
 implicit none
 
 private
+public int
+public str
 public lowercase
 public uppercase
-public intstr
-public realstr
-public get_extension
+
+interface int
+   module procedure str_int
+end interface
+
+interface str
+   module procedure int_str
+   module procedure real_str
+end interface
 
 contains
+
+function str_int(x) result(n)
+   character(*), intent(in) :: x
+   integer :: n
+   read (x, *) n
+end function
+
+function int_str(n) result(str)
+   integer, intent(in) :: n
+   character(:), allocatable :: str
+   integer :: l
+   l = floor(log10(real(max(abs(n), 1)))) + 1
+   if (n < 0) l = l + 1
+   allocate (character(l) :: str)
+   write (str, '(i0)') n
+end function
+
+function real_str(x, n) result(str)
+   real(rk), intent(in) :: x
+   integer, intent(in) :: n
+   integer :: l
+   character(32) format
+   character(:), allocatable :: str
+   l = floor(log10(max(abs(x), 1.0_rk))) + n + 2
+   if (x < 0) l = l + 1
+   allocate (character(l) :: str)
+   write (format, '(a,i0,a,i0,a)') '(f', l, '.', n, ')'
+   write (str, format) x
+end function
 
 function lowercase(str)
    character(*), intent(in) :: str
@@ -53,57 +90,6 @@ function uppercase(str)
       i = index(lowerchars, str(j:j))
       if (i > 0) uppercase(j:j) = upperchars(i:i)
    end do
-end function
-
-function intstr(x) result(str)
-   integer, intent(in) :: x
-   character(:), allocatable :: str
-   integer :: l
-   l = floor(log10(real(max(abs(x), 1)))) + 1
-   if (x < 0) l = l + 1
-   allocate (character(l) :: str)
-   write (str, '(i0)') x
-end function
-
-function realstr(x, n) result(str)
-   real(rk), intent(in) :: x
-   integer, intent(in) :: n
-   integer :: l
-   character(32) format
-   character(:), allocatable :: str
-   l = floor(log10(max(abs(x), 1.0_rk))) + n + 2
-   if (x < 0) l = l + 1
-   allocate (character(l) :: str)
-   write (format, '(a,i0,a,i0,a)') '(f', l, '.', n, ')'
-   write (str, format) x
-end function
-
-function get_extension(filepath) result(extension)
-   character(*), intent(in) :: filepath
-   character(:), allocatable :: filename, basename, extension
-   integer :: pos
-   pos = index(filepath, '/', back=.true.)
-   filename = filepath(pos+1:)
-   if (len(filename) == 0) then
-      write (stderr, '(a,1x,a)') 'Missing file name'
-      stop
-   end if
-   pos = index(filename, '.', back=.true.)
-   if (pos /= 0) then
-      basename = filename(:pos-1)
-      extension = filename(pos+1:)
-   else
-      basename = filename
-      extension = ''
-   end if
-   if (len(basename) == 0) then
-      write (stderr, '(a,1x,a)') 'Missing base name of', filename
-      stop
-   end if
-   if (len(extension) == 0) then
-      write (stderr, '(a,1x,a)') 'Missing extension of', filename
-      stop
-   end if
 end function
 
 end module

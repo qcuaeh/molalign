@@ -95,4 +95,32 @@ subroutine writefile(unit, fmtout, mol)
 
 end subroutine
 
+function get_extension(filepath) result(extension)
+   character(*), intent(in) :: filepath
+   character(:), allocatable :: filename, basename, extension
+   integer :: pos
+   pos = index(filepath, '/', back=.true.)
+   filename = filepath(pos+1:)
+   if (len(filename) == 0) then
+      write (stderr, '(a,1x,a)') 'Missing file name'
+      stop
+   end if
+   pos = index(filename, '.', back=.true.)
+   if (pos /= 0) then
+      basename = filename(:pos-1)
+      extension = filename(pos+1:)
+   else
+      basename = filename
+      extension = ''
+   end if
+   if (len(basename) == 0) then
+      write (stderr, '(a,1x,a)') 'Missing base name of', filename
+      stop
+   end if
+   if (len(extension) == 0) then
+      write (stderr, '(a,1x,a)') 'Missing extension of', filename
+      stop
+   end if
+end function
+
 end module

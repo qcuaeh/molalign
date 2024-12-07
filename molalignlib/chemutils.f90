@@ -15,6 +15,7 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module chemutils
+use stdio
 use kinds
 use chemdata
 use strutils
@@ -22,32 +23,12 @@ use strutils
 implicit none
 
 private
-public readlabel
+public elsym2num
+public split_tag
 
 contains
 
-subroutine readlabel(element, atomelnum, atomlabel)
-   character(*), intent(in) :: element
-   integer, intent(out) :: atomelnum, atomlabel
-   integer :: m, n
-
-   n = len_trim(element)
-   m = verify(uppercase(trim(element)), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-
-   if (m == 0) then
-      atomlabel = 0
-      atomelnum = atomic_number(element)
-   else if (verify(element(m:n), '1234567890') == 0) then
-      read (element(m:n), *) atomlabel
-      atomelnum = atomic_number(element(1:m-1))
-   else
-      atomlabel = -1
-      atomelnum = atomic_number(element(1:m-1))
-   end if
-
-end subroutine
-
-function atomic_number(symbol) result(z)
+function elsym2num(symbol) result(z)
    character(*), intent(in) :: symbol
    integer :: z
 
@@ -65,5 +46,26 @@ function atomic_number(symbol) result(z)
    end select
 
 end function
+
+subroutine split_tag( atom_tag, symbol, label)
+   character(*), intent(in) :: atom_tag
+   character(:), allocatable, intent(out) :: symbol, label
+   integer :: m, n
+
+   n = len_trim(atom_tag)
+   m = verify(uppercase(trim(atom_tag)), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+
+   if (m == 0) then
+      label = '0'
+      symbol = atom_tag
+   else if (verify(atom_tag(m:n), '1234567890') == 0) then
+      read (atom_tag(m:n), *) label
+      symbol = atom_tag(1:m-1)
+   else
+      write (stderr, '(a,1x,a)') 'Invalid atomic symbol/label:', atom_tag
+      stop
+   end if
+
+end subroutine
 
 end module
