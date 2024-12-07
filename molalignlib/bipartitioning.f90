@@ -20,9 +20,8 @@ use kinds
 use flags
 use bounds
 use sorting
-use chemdata
 use molecule
-use multisetdict
+use tupledict
 use bipartition
 use partitiondict
 use permutation
@@ -31,34 +30,40 @@ implicit none
 
 contains
 
-! Partition atoms by atomic number
+! Partition atoms by atomic number and label
 subroutine compute_crosseltypes(mol1, mol2, eltypes)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(out) :: eltypes
    ! Local variables
-   integer :: i, elnum
-   integer :: num_atoms1, num_atoms2
+   integer :: eltype(2)
+   type(tupledict_type) :: typedict
    type(bipartpointer_type), allocatable :: typelist(:)
+   integer :: i, num_atoms1, num_atoms2
 
    num_atoms1 = size(mol1%atoms)
    num_atoms2 = size(mol2%atoms)
    call eltypes%initialize(num_atoms1, num_atoms2)
-   allocate (typelist(nelem))
+   call typedict%initialize(num_atoms1 + num_atoms2, 'ordered')
+   allocate (typelist(typedict%num_slots))
 
    do i = 1, num_atoms1
-      elnum = mol1%atoms(i)%elnum
-      if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%new_part(num_atoms1, num_atoms2)
+      eltype(1) = mol1%atoms(i)%elnum
+      eltype(2) = mol1%atoms(i)%label
+      if (.not. (eltype .in. typedict)) then
+         typelist(typedict%new_index(eltype))%ptr => &
+            eltypes%new_part(num_atoms1, num_atoms2)
       end if
-      call typelist(elnum)%ptr%add1(i)
+      call typelist(typedict%get_index(eltype))%ptr%add1(i)
    end do
 
    do i = 1, num_atoms2
-      elnum = mol2%atoms(i)%elnum
-      if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%new_part(num_atoms1, num_atoms2)
+      eltype(1) = mol2%atoms(i)%elnum
+      eltype(2) = mol2%atoms(i)%label
+      if (.not. (eltype .in. typedict)) then
+         typelist(typedict%new_index(eltype))%ptr => &
+            eltypes%new_part(num_atoms1, num_atoms2)
       end if
-      call typelist(elnum)%ptr%add2(i)
+      call typelist(typedict%get_index(eltype))%ptr%add2(i)
    end do
 
 end subroutine
@@ -70,12 +75,12 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
    type(bipartition_type), intent(out) :: subtypes
    ! Local variables
    integer :: h, i, iatom
-   type(multisetdict_type) :: typedict
+   type(tupledict_type) :: typedict
    type(bipartpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
    call subtypes%initialize(mnatypes%tot_items1, mnatypes%tot_items2)
-   call typedict%initialize(mnatypes%largest_part_size)
+   call typedict%initialize(mnatypes%largest_part_size, 'unordered')
    allocate (typelist(typedict%num_slots))
 
    do h = 1, mnatypes%num_parts

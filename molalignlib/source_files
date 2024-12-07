@@ -5,7 +5,7 @@ flags.f90
 bounds.f90
 strutils.f90
 sorting.f90
-multisetdict.f90
+tupledict.f90
 partition.f90
 bipartition.f90
 metapartition.f90
@@ -35,6 +35,6 @@ lap_driver.f90
 #tracking.f90
 #backtracking.f90
 #reactivity.f90
-assignment-iso.f90
-#assignment-conf.f90
+#assignment-iso.f90
+assignment-conf.f90
 molalignlib.f90

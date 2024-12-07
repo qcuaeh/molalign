@@ -26,11 +26,11 @@ end interface
 
 contains
 
-subroutine initialize( this, min_dict_size)
+subroutine initialize( this, dict_size)
    class(partitiondict_type), intent(inout) :: this
-   integer, intent(in) :: min_dict_size
+   integer, intent(in) :: dict_size
    
-   this%num_slots = int(min_dict_size / MAX_LOAD_FACTOR)
+   this%num_slots = int(dict_size / MAX_LOAD_FACTOR)
    
    allocate (this%occupied(this%num_slots))
    allocate (this%partitions(this%num_slots))

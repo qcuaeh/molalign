@@ -22,7 +22,7 @@ use bounds
 use sorting
 use chemdata
 use molecule
-use multisetdict
+use tupledict
 use partition
 use metapartition
 use partitiondict
@@ -32,24 +32,29 @@ implicit none
 
 contains
 
-! Partition atoms by atomic number
-subroutine compute_eltypes(mol, eltypes)
+! Partition atoms by atomic number and label
+subroutine compute_crosseltypes(mol, eltypes)
    type(mol_type), intent(in) :: mol
    type(partition_type), intent(out) :: eltypes
    ! Local variables
-   integer :: i, elnum, num_atoms
+   integer :: eltype(2)
+   type(tupledict_type) :: typedict
    type(partpointer_type), allocatable :: typelist(:)
+   integer :: i, num_atoms
 
    num_atoms = size(mol%atoms)
    call eltypes%initialize(num_atoms)
-   allocate (typelist(nelem))
+   call typedict%initialize(num_atoms, 'ordered')
+   allocate (typelist(typedict%num_slots))
 
    do i = 1, num_atoms
-      elnum = mol%atoms(i)%elnum
-      if (.not. associated(typelist(elnum)%ptr)) then
-         typelist(elnum)%ptr => eltypes%new_part(num_atoms)
+      eltype(1) = mol%atoms(i)%elnum
+      eltype(2) = mol%atoms(i)%label
+      if (.not. (eltype .in. typedict)) then
+         typelist(typedict%new_index(eltype))%ptr => &
+            eltypes%new_part(num_atoms)
       end if
-      call typelist(elnum)%ptr%add(i)
+      call typelist(typedict%get_index(eltype))%ptr%add(i)
    end do
 
 end subroutine
@@ -61,12 +66,12 @@ subroutine levelup_mnatypes(mol, mnatypes, subtypes)
    type(partition_type), intent(out) :: subtypes
    ! Local variables
    integer :: h, i, iatom
-   type(multisetdict_type) :: typedict
+   type(tupledict_type) :: typedict
    type(partpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
    call subtypes%initialize(mnatypes%tot_items)
-   call typedict%initialize(mnatypes%largest_part_size)
+   call typedict%initialize(mnatypes%largest_part_size, 'unordered')
    allocate (typelist(typedict%num_slots))
 
    do h = 1, mnatypes%num_parts
