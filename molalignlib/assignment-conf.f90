@@ -29,10 +29,10 @@ use alignment
 use lap_driver
 use lap_solvers
 use adjacency
-use bipartition
 use partition
-use bipartitioning
+use bipartition
 use partitioning
+use bipartitioning
 use biasing
 use pruning
 use printing

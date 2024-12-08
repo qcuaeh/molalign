@@ -27,8 +27,8 @@ adjacency.f90
 alignment.f90
 molecule.f90
 printing.f90
-bipartitioning.f90
 partitioning.f90
+bipartitioning.f90
 biasing.f90
 pruning.f90
 lap_driver.f90

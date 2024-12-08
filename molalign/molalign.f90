@@ -258,9 +258,9 @@ if (remap_flag) then
       minadjd = min(minadjd, adjd)
 
       auxmol%title = 'Map='//str(i)//' RMSD='//str(rmsd, 4)
-      auxmol%atoms%elnum = mol2%atoms%elnum
-      auxmol%atoms%label = mol2%atoms%label
-      call auxmol%set_coords(coords2)
+      auxmol%atoms%elnum = mol2%atoms(atomperm)%elnum
+      auxmol%atoms%label = mol2%atoms(atomperm)%label
+      call auxmol%set_coords(coords2(:, atomperm))
       call writefile(write_unit, fmtout, auxmol)
 
    end do

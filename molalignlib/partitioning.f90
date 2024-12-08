@@ -33,7 +33,7 @@ implicit none
 contains
 
 ! Partition atoms by atomic number and label
-subroutine compute_crosseltypes(mol, eltypes)
+subroutine compute_eltypes(mol, eltypes)
    type(mol_type), intent(in) :: mol
    type(partition_type), intent(out) :: eltypes
    ! Local variables
