@@ -32,8 +32,8 @@ function elsym2num(symbol) result(z)
    character(*), intent(in) :: symbol
    integer :: z
 
-   do z = 1, nelem
-      if (uppercase(symbol) == uppercase(elsyms(z))) then
+   do z = 1, num_elems
+      if (uppercase(symbol) == uppercase(element_symbols(z))) then
          return
       end if
    end do

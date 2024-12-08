@@ -65,7 +65,6 @@ test_flag = .false.
 reac_flag = .false.
 print_flag = .true.
 stats_flag = .false.
-trial_flag = .false.
 mirror_flag = .false.
 remap_flag = .false.
 pipe_flag = .false.
@@ -75,14 +74,14 @@ nrec_flag = .false.
 
 maxrec = 1
 maxcount = 10
+maxtrials = huge(maxtrials)
 max_coord_num = 16
 maxlevel = 16
 
 prune_tol = 0.5
 bias_scale = 1.e3
 
-weights => ones
-print_stats => print_stats_dist
+element_weights => ones
 assign_atoms_generic => assign_atoms_pruned
 bias_procedure => bias_none
 prune_procedure => prune_none
@@ -130,19 +129,17 @@ do while (get_arg(arg))
       end select
    case ('-bond')
       bond_flag = .true.
-      print_stats => print_stats_diff
    case ('-back')
       back_flag = .true.
    case ('-reac')
       reac_flag = .true.
    case ('-mass')
-      weights => stdmasses
+      element_weights => atomic_masses
    case ('-mirror')
       mirror_flag = .true.
    case ('-count')
       call read_optarg(arg, maxcount)
    case ('-trials')
-      trial_flag = .true.
       call read_optarg(arg, maxtrials)
    case ('-tol')
       call read_optarg(arg, prune_tol)
@@ -235,7 +232,7 @@ if (remap_flag) then
 
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_coords()
-   weights1 = weights(mol1%atoms%elnum)
+   weights1 = element_weights(mol1%atoms%elnum)
    allocate (auxmol%atoms(size(mol2%atoms)))
 
    do i = 1, nrec

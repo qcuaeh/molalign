@@ -77,18 +77,18 @@ subroutine set_adjlists(self, nadjs, adjlists)
    integer, intent(in) :: nadjs(:)
    integer, intent(in) :: adjlists(:, :)
    ! Local variables
-   integer :: i, k, num_atoms
+   integer :: i, k, natom
 
-   num_atoms = size(self%atoms)
+   natom = size(self%atoms)
 
-   do i = 1, num_atoms
+   do i = 1, natom
       self%atoms(i)%adjlist = adjlists(:nadjs(i), i)
    end do
 
-   allocate (self%adjmat(num_atoms, num_atoms))
+   allocate (self%adjmat(natom, natom))
    self%adjmat(:, :) = .false.
 
-   do i = 1, num_atoms
+   do i = 1, natom
       do k = 1, nadjs(i)
          self%adjmat(i, adjlists(k, i)) = .true.
       end do
@@ -146,7 +146,7 @@ subroutine print_atoms(self)
       atom = self%atoms(i)
       fmtstr = '(i3,": ",a2,1x,i3," {",3(1x,f8.4)," } ["' // &
             repeat(',1x,i3', size(atom%adjlist)) // '," ]")'
-      write (stderr, fmtstr) i, elsyms(atom%elnum), atom%label, &
+      write (stderr, fmtstr) i, element_symbols(atom%elnum), atom%label, &
             atom%coords, atom%adjlist
    end do
 

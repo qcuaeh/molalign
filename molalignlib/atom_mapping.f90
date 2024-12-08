@@ -14,7 +14,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-module assignment
+module atom_mapping
 use kinds
 use flags
 use bounds
@@ -38,7 +38,7 @@ implicit none
 
 contains
 
-subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
+subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
    integer, intent(out) :: permlist(:, :)
@@ -49,12 +49,11 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
    logical :: visited, overflow
    integer :: irec, krec, ntrial, nstep, steps
-   integer :: adjd, recadjd(maxrec)
    integer, dimension(mol1%natom) :: atomperm, newmapping
    real(rk) :: rmsd, totalrot
    real(rk) :: workcoords(3, mol2%natom)
    real(rk), dimension(4) :: rotquat, prodquat
-   real(rk), dimension(maxrec) :: recrmsd, avgsteps, avgtotalrot, avgrealrot
+   real(rk), dimension(maxrec) :: rmsdlist, avgsteps, avgtotalrot, avgrealrot
    type(boolmatrix_type), dimension(:), allocatable :: prunemask
    type(realmatrix_type), dimension(:), allocatable :: mnadists
 
@@ -66,8 +65,8 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   weights1 = weights(mol1%atoms%elnum)
-   weights2 = weights(mol1%atoms%elnum)
+   weights1 = element_weights(mol1%atoms%elnum)
+   weights2 = element_weights(mol1%atoms%elnum)
 
    ! Mirror coordinates
 
@@ -103,7 +102,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
    ! Loop for map searching
 
-   do while (countlist(1) < maxcount .and. (.not. trial_flag .or. ntrial < maxtrials))
+   do while (countlist(1) < maxcount .and. ntrial < maxtrials)
 
       ntrial = ntrial + 1
 
@@ -140,12 +139,6 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
       nstep = nstep + steps
 
-!      if (back_flag) then
-!         call minadjdiff(mol1, mol2, atomperm)
-!         call eqvatomperm(mol1, mol2, workcoords, atomperm)
-!      end if
-
-      adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm)
       rmsd = sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
 
       ! Check for new best permlist
@@ -166,7 +159,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
       if (.not. visited) then
          krec = nrec + 1
          do irec = nrec, 1, -1
-            if (adjd < recadjd(irec) .or. (adjd == recadjd(irec) .and. rmsd < recrmsd(irec))) then
+            if (rmsd < rmsdlist(irec)) then
                krec = irec
             else
                exit
@@ -180,16 +173,14 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
          if (krec <= maxrec) then
             do irec = nrec, krec + 1, -1
                countlist(irec) = countlist(irec - 1)
-               recrmsd(irec) = recrmsd(irec - 1)
-               recadjd(irec) = recadjd(irec - 1)
+               rmsdlist(irec) = rmsdlist(irec - 1)
                avgsteps(irec) = avgsteps(irec - 1)
                avgrealrot(irec) = avgrealrot(irec - 1)
                avgtotalrot(irec) = avgtotalrot(irec - 1)
                permlist(:, irec) = permlist(:, irec - 1)
             end do
             countlist(krec) = 1
-            recrmsd(krec) = rmsd
-            recadjd(krec) = adjd
+            rmsdlist(krec) = rmsd
             avgsteps(krec) = steps
             avgrealrot(krec) = rotangle(prodquat)
             avgtotalrot(krec) = totalrot
@@ -203,7 +194,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
    if (stats_flag) then
       print_flag = .false.
-      call print_stats(nrec, countlist, avgsteps, avgtotalrot, avgrealrot, recadjd, recrmsd)
+      call print_stats(nrec, countlist, avgsteps, avgrealrot, rmsdlist)
       call print_final_stats(overflow, maxrec, nrec, ntrial, nstep)
    end if
 

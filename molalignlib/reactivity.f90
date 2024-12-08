@@ -42,23 +42,18 @@ subroutine remove_reactive_bonds(mol1, mol2, atomperm)
    integer, allocatable, dimension(:) :: unmapping
    real(rk) :: rotquat(4)
 
-   ! Align coordinates
-
-   rotquat = leastrotquat(mol1%natom, weights(mol1%atoms%elnum), mol1%get_coords(), mol2%get_coords(), atomperm)
-   call mol2%rotate_coords(rotquat)
-
    ! Initialization
 
    elnums1 = mol1%atoms%elnum
    elnums2 = mol2%atoms%elnum
    adjlists1 = mol1%get_adjlists()
    adjlists2 = mol2%get_adjlists()
-   mnatypes1 = mol1%mnatypes
-   mnatypes2 = mol2%mnatypes
-   mnatypemap1 = mol1%mnatypes%indices
-   mnatypemap2 = mol2%mnatypes%indices
-   molfragparts1 = mol1%get_molfrags()
-   molfragparts2 = mol2%get_molfrags()
+!   mnatypes1 = mol1%mnatypes
+!   mnatypes2 = mol2%mnatypes
+!   mnatypemap1 = mol1%mnatypes%indices
+!   mnatypemap2 = mol2%mnatypes%indices
+!   molfragparts1 = mol1%get_molfrags()
+!   molfragparts2 = mol2%get_molfrags()
    unmapping = inverse_perm(atomperm)
 
    ! Remove mismatched bonds

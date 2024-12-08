@@ -29,7 +29,7 @@ use bipartition
 use bipartitioning
 use adjacency
 use alignment
-use assignment
+use atom_mapping
 !use reactivity
 
 implicit none
@@ -84,13 +84,13 @@ subroutine molecule_remap( &
 
    ! Optimize assignment to minimize the AdjD and RMSD
 
-   call remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
+   call map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
    ! Remove bonds from reactive sites and reoptimize assignment
 
 !   if (reac_flag) then
 !      call remove_reactive_bonds(mol1, mol2, permlist(:, 1))
-!      call remap_atoms(mol1, mol2, permlist, countlist, nrec)
+!      call map_atoms(mol1, mol2, permlist, countlist, nrec)
 !   end if
 
 end subroutine
@@ -113,8 +113,8 @@ subroutine remapped_molecule_align( &
 
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   weights1 = weights(mol1%atoms%elnum)
-   weights2 = weights(mol1%atoms%elnum)
+   weights1 = element_weights(mol1%atoms%elnum)
+   weights2 = element_weights(mol1%atoms%elnum)
 
    ! Calculate centroids
 
@@ -126,7 +126,7 @@ subroutine remapped_molecule_align( &
 
    rotquat = leastrotquat( &
       size(mol1%atoms), &
-      weights(mol1%atoms%elnum), &
+      element_weights(mol1%atoms%elnum), &
       translated_coords(coords1, travec1), &
       translated_coords(coords2, travec2), &
       atomperm &
@@ -178,7 +178,7 @@ subroutine molecule_align( &
    ! Abort if atoms are not ordered
 
    if (any(mol1%atoms%elnum /= mol2%atoms%elnum)) then
-!   if (any(elnums%indices1 /= elnums%indices2)) then
+!   if (any(atomic_numbers%indices1 /= atomic_numbers%indices2)) then
       write (stderr, '(a)') 'Error: The atoms are not in the same order'
       stop
    end if
@@ -193,8 +193,8 @@ subroutine molecule_align( &
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   weights1 = weights(mol1%atoms%elnum)
-   weights2 = weights(mol1%atoms%elnum)
+   weights1 = element_weights(mol1%atoms%elnum)
+   weights2 = element_weights(mol1%atoms%elnum)
 
    ! Calculate centroids
 

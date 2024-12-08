@@ -40,19 +40,19 @@ subroutine compute_crosseltypes(mol, eltypes)
    integer :: eltype(2)
    type(tupledict_type) :: typedict
    type(partpointer_type), allocatable :: typelist(:)
-   integer :: i, num_atoms
+   integer :: i, natom
 
-   num_atoms = size(mol%atoms)
-   call eltypes%initialize(num_atoms)
-   call typedict%initialize(num_atoms, 'ordered')
+   natom = size(mol%atoms)
+   call eltypes%initialize(natom)
+   call typedict%initialize(natom, 'ordered')
    allocate (typelist(typedict%num_slots))
 
-   do i = 1, num_atoms
+   do i = 1, natom
       eltype(1) = mol%atoms(i)%elnum
       eltype(2) = mol%atoms(i)%label
       if (.not. (eltype .in. typedict)) then
          typelist(typedict%new_index(eltype))%ptr => &
-            eltypes%new_part(num_atoms)
+            eltypes%new_part(natom)
       end if
       call typelist(typedict%get_index(eltype))%ptr%add(i)
    end do

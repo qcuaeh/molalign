@@ -38,30 +38,30 @@ subroutine compute_crosseltypes(mol1, mol2, eltypes)
    integer :: eltype(2)
    type(tupledict_type) :: typedict
    type(bipartpointer_type), allocatable :: typelist(:)
-   integer :: i, num_atoms1, num_atoms2
+   integer :: i, natom1, natom2
 
-   num_atoms1 = size(mol1%atoms)
-   num_atoms2 = size(mol2%atoms)
-   call eltypes%initialize(num_atoms1, num_atoms2)
-   call typedict%initialize(num_atoms1 + num_atoms2, 'ordered')
+   natom1 = size(mol1%atoms)
+   natom2 = size(mol2%atoms)
+   call eltypes%initialize(natom1, natom2)
+   call typedict%initialize(natom1 + natom2, 'ordered')
    allocate (typelist(typedict%num_slots))
 
-   do i = 1, num_atoms1
+   do i = 1, natom1
       eltype(1) = mol1%atoms(i)%elnum
       eltype(2) = mol1%atoms(i)%label
       if (.not. (eltype .in. typedict)) then
          typelist(typedict%new_index(eltype))%ptr => &
-            eltypes%new_part(num_atoms1, num_atoms2)
+            eltypes%new_part(natom1, natom2)
       end if
       call typelist(typedict%get_index(eltype))%ptr%add1(i)
    end do
 
-   do i = 1, num_atoms2
+   do i = 1, natom2
       eltype(1) = mol2%atoms(i)%elnum
       eltype(2) = mol2%atoms(i)%label
       if (.not. (eltype .in. typedict)) then
          typelist(typedict%new_index(eltype))%ptr => &
-            eltypes%new_part(num_atoms1, num_atoms2)
+            eltypes%new_part(natom1, natom2)
       end if
       call typelist(typedict%get_index(eltype))%ptr%add2(i)
    end do

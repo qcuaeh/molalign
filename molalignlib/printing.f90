@@ -21,46 +21,41 @@ use flags
 
 implicit none
 
-abstract interface
-   subroutine printstats_proc(nrec, matches, avgsteps, avgtotalrot, avgrealrot, recadjd, recrmsd)
-      use kinds
-      integer, intent(in) :: nrec
-      integer, dimension(:), intent(in) :: matches, recadjd
-      real(rk), dimension(:), intent(in) :: avgsteps, avgtotalrot, avgrealrot, recrmsd
-   end subroutine
-end interface
-
 character(*), parameter :: line1 = repeat('-', 41)
 character(*), parameter :: line2 = repeat('-', 48)
-procedure(printstats_proc), pointer :: print_stats
+
+interface print_stats
+   module procedure print_stats_rmsd
+   module procedure print_stats_adjd
+end interface
 
 contains
 
-subroutine print_stats_dist(nrec, matches, avgsteps, avgtotalrot, avgrealrot, recadjd, recrmsd)
+subroutine print_stats_rmsd(nrec, matches, avgsteps, avgrot, rmsd)
    integer, intent(in) :: nrec
-   integer, dimension(:), intent(in) :: matches, recadjd
-   real(rk), dimension(:), intent(in) :: avgsteps, avgtotalrot, avgrealrot, recrmsd
+   integer, dimension(:), intent(in) :: matches
+   real(rk), dimension(:), intent(in) :: avgsteps, avgrot, rmsd
    integer :: irec
    write (stderr, '(a,3x,a,4x,a,5x,a,8x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD'
    write (stderr, '(a)') line1
    do irec = 1, nrec
       write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4)') &
-         irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrealrot(irec), recrmsd(irec)
+         irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrot(irec), rmsd(irec)
    end do
    write (stderr, '(a)') line1
    flush(stderr)
 end subroutine
 
-subroutine print_stats_diff(nrec, matches, avgsteps, avgtotalrot, avgrealrot, recadjd, recrmsd)
+subroutine print_stats_adjd(nrec, matches, avgsteps, avgrot, adjd, rmsd)
    integer, intent(in) :: nrec
-   integer, dimension(:), intent(in) :: matches, recadjd
-   real(rk), dimension(:), intent(in) :: avgsteps, avgtotalrot, avgrealrot, recrmsd
+   integer, dimension(:), intent(in) :: matches, adjd
+   real(rk), dimension(:), intent(in) :: avgsteps, avgrot, rmsd
    integer :: irec
-   write (stderr, '(a,3x,a,4x,a,5x,a,6x,a,5x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD', 'Δadj'
+   write (stderr, '(a,3x,a,4x,a,5x,a,6x,a,5x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'Δadj', 'RMSD'
    write (stderr, '(a)') line2
    do irec = 1, nrec
-      write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4,3x,i4)') &
-         irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrealrot(irec), recrmsd(irec), recadjd(irec)
+      write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,i4,3x,f8.4)') &
+         irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrot(irec), adjd(irec), rmsd(irec)
    end do
    write (stderr, '(a)') line2
    flush(stderr)

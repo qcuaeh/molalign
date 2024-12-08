@@ -38,7 +38,7 @@ subroutine writexyz(unit, mol)
    write (unit, '(a)') mol%title
 
    do i = 1, size(atoms)
-      write (unit, '(a,3(2x,f12.6))') elsyms(atoms(i)%elnum), atoms(i)%coords
+      write (unit, '(a,3(2x,f12.6))') element_symbols(atoms(i)%elnum), atoms(i)%coords
    end do
 
 end subroutine
@@ -69,7 +69,7 @@ subroutine writemol2(unit, mol)
 
    do i = 1, size(atoms)
       write (unit, '(i4,2x,a2,3(1x,f12.6),2x,a4,1x,i2,1x,a4,1x,f7.3)') &
-         i, elsyms(atoms(i)%elnum), coords(:, i), atomtype(atoms(i)), 1, 'MOL1', 0.
+         i, element_symbols(atoms(i)%elnum), coords(:, i), atomtype(atoms(i)), 1, 'MOL1', 0.
    end do
 
    write (unit, '(a)') '@<TRIPOS>BOND'
@@ -87,7 +87,7 @@ function atomtype(atom)
    character(4) :: elsym, atomtype
 
    nadj = size(atom%adjlist)
-   elsym = elsyms(atom%elnum)
+   elsym = element_symbols(atom%elnum)
 
    select case (atom%elnum)
    case (6)

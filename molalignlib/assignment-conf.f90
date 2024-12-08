@@ -42,7 +42,7 @@ implicit none
 
 contains
 
-subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
+subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
    integer, intent(out) :: permlist(:, :)
@@ -67,7 +67,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    natom1 = mol1%natom
    coords1 = mol1%get_coords()
    coords2 = mol2%get_coords()
-   weights1 = weights(mol1%atoms%elnum)
+   weights1 = element_weights(mol1%atoms%elnum)
 
    ! Compute mnatypes and metatypes
 

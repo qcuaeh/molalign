@@ -33,14 +33,14 @@ subroutine readxyz(unit, mol)
    character(ll) :: buffer
    character(wl) :: atom_tag
    character(:), allocatable :: symbol, label
-   integer, allocatable :: elnums(:), labels(:)
+   integer, allocatable :: atomic_numbers(:), labels(:)
    real(rk), allocatable :: coords(:, :)
 
    integer :: i
 
    read (unit, *, end=99) mol%natom
 
-   allocate (elnums(mol%natom))
+   allocate (atomic_numbers(mol%natom))
    allocate (labels(mol%natom))
    allocate (coords(3, mol%natom))
    allocate (mol%atoms(mol%natom))
@@ -51,11 +51,11 @@ subroutine readxyz(unit, mol)
    do i = 1, mol%natom
       read (unit, *, end=99) atom_tag, coords(:, i)
       call split_tag(atom_tag, symbol, label)
-      elnums(i) = elsym2num(symbol)
+      atomic_numbers(i) = elsym2num(symbol)
       labels(i) = int(label)
    end do
 
-   mol%atoms%elnum = elnums
+   mol%atoms%elnum = atomic_numbers
    mol%atoms%label = labels
    call mol%set_coords(coords)
 
@@ -75,7 +75,7 @@ subroutine readmol2(unit, mol)
    integer :: atom1, atom2, bondorder, nbond
    character(wl) :: atom_tag
    character(:), allocatable :: symbol, label
-   integer, allocatable :: elnums(:), labels(:)
+   integer, allocatable :: atomic_numbers(:), labels(:)
    real(rk), allocatable :: coords(:, :)
    integer, allocatable :: nadjs(:), adjlists(:, :)
 
@@ -88,7 +88,7 @@ subroutine readmol2(unit, mol)
    mol%title = trim(buffer)
    read (unit, *, end=99) mol%natom, nbond
 
-   allocate (elnums(mol%natom))
+   allocate (atomic_numbers(mol%natom))
    allocate (labels(mol%natom))
    allocate (coords(3, mol%natom))
    allocate (nadjs(mol%natom))
@@ -103,7 +103,7 @@ subroutine readmol2(unit, mol)
    do i = 1, mol%natom
       read (unit, *, end=99) id, atom_tag, coords(:, i)
       call split_tag(atom_tag, symbol, label)
-      elnums(i) = elsym2num(symbol)
+      atomic_numbers(i) = elsym2num(symbol)
       labels(i) = int(label)
    end do
 
@@ -130,7 +130,7 @@ subroutine readmol2(unit, mol)
       adjlists(nadjs(atom2), atom2) = atom1
    end do
 
-   mol%atoms%elnum = elnums
+   mol%atoms%elnum = atomic_numbers
    mol%atoms%label = labels
    call mol%set_coords(coords)
    call mol%set_adjlists(nadjs, adjlists)
@@ -149,7 +149,7 @@ subroutine set_bonds(mol)
    integer :: i, j
    integer :: nadjs(mol%natom)
    integer :: adjlists(max_coord_num, mol%natom)
-   integer, allocatable :: elnums(:)
+   integer, allocatable :: atomic_numbers(:)
    real(rk), allocatable :: coords(:, :)
    real(rk), allocatable :: adjrads(:)
    real(rk) :: atomdist
@@ -163,11 +163,11 @@ subroutine set_bonds(mol)
       return
    end if
 
-   elnums = mol%atoms%elnum
+   atomic_numbers = mol%atoms%elnum
    coords = mol%get_coords()
 
    ! Set adjacency radii
-   adjrads = covradii(elnums) + 0.25*(vdwradii(elnums) - covradii(elnums))
+   adjrads = covalent_radii(atomic_numbers) + 0.25*(vdw_radii(atomic_numbers) - covalent_radii(atomic_numbers))
 
    ! Register adjacency matrix i,j if atoms i and j are closer
    ! than the sum of their adjacency radius

@@ -18,18 +18,18 @@ module chemdata
 ! Purpose: Definition of physical constants
 use kinds
 
-! elsyms: Element symbols
-! covradii: Atomic covalent radii (Angstrom)
-! vdwradii: Atomic van der Waals radii (Angstrom)
-! stdmasses: Standard atomic masses
+! element_symbols: Element symbols
+! covalent_radii: Atomic covalent radii (Angstrom)
+! vdw_radii: Atomic van der Waals radii (Angstrom)
+! atomic_masses: Standard atomic masses
 ! valencies: Element valenc
 
 implicit none
 
-integer, parameter :: nelem = 103
-real(rk), pointer :: weights(:)
+integer, parameter :: num_elems = 103
+real(rk), dimension(:), pointer :: element_weights
 
-character(2), parameter :: elsyms(nelem) = [ &
+character(2), parameter :: element_symbols(num_elems) = [ &
 'H ',                                                                                                 'He', &
 'Li', 'Be',                                                             'B ', 'C ', 'N ', 'O ', 'F ', 'Ne', &
 'Na', 'Mg',                                                             'Al', 'Si', 'P ', 'S ', 'Cl', 'Ar', &
@@ -41,7 +41,7 @@ character(2), parameter :: elsyms(nelem) = [ &
 ]
 
 ! Lit.: R.T. Sanderson, Inorganic Chemistry, Reinhold 1967
-real(rk), parameter :: covradii(nelem) = [ &
+real(rk), parameter :: covalent_radii(num_elems) = [ &
 0.31,                                                                                                 0.28, &
 1.28, 0.96,                                                             0.84, 0.76, 0.71, 0.66, 0.57, 0.58, &
 1.66, 1.41,                                                             1.21, 1.11, 1.07, 1.05, 1.02, 1.06, &
@@ -53,7 +53,7 @@ real(rk), parameter :: covradii(nelem) = [ &
 ]
 
 ! Lit.: A. Bondi, J. Phys. Chem. 68, 441 (1964)         
-real(rk), parameter :: vdwradii(nelem) = [ &
+real(rk), parameter :: vdw_radii(num_elems) = [ &
 1.20,                                                                                                 1.40, &
 1.82, 2.00,                                                             2.00, 1.70, 1.55, 1.52, 1.47, 1.54, &
 2.27, 1.73,                                                             2.00, 2.10, 1.80, 1.80, 1.75, 1.88, &
@@ -65,7 +65,7 @@ real(rk), parameter :: vdwradii(nelem) = [ &
 ]
 
 ! Lit.: CRC Handbook of Chemistry and Physics, 1989
-real(rk), target :: stdmasses(nelem) = [ &
+real(rk), target :: atomic_masses(num_elems) = [ &
 1.0,                                                                                                                     4.0, &
 6.9,     9.0,                                                                        10.8,  12.0,  14.0,  16.0,  19.0,  20.2, &
 23.0,   24.3,                                                                        27.0,  28.1,  31.0,  32.1,  35.5,  39.9, &
@@ -76,7 +76,7 @@ real(rk), target :: stdmasses(nelem) = [ &
 223.0, 226.0, 227.0, 232.0, 231.0, 238.0, 237.0, 244.0, 243.0, 247.0, 247.0, 251.0, 252.0, 257.0, 258.0, 259.0, 262.0         &
 ]
 
-real(rk), target :: ones(nelem) = [ &
+real(rk), target :: ones(num_elems) = [ &
 1,                                                 1, &
 1, 1,                               1, 1, 1, 1, 1, 1, &
 1, 1,                               1, 1, 1, 1, 1, 1, &

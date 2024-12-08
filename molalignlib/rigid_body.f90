@@ -24,6 +24,7 @@ private
 public rotate_coords
 public rotated_coords
 public reflect_coords
+public reflected_coords
 public translate_coords
 public translated_coords
 public centroid
