@@ -39,7 +39,7 @@ subroutine print_stats_rmsd(results)
    do i = 1, results%num_records
       record = results%records(i)
       write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,4x,f8.4)') &
-         i, record%count, record%steps, record%rotang, sqrt(record%msd)
+         i, record%count, record%steps, record%rotang, record%rmsd
    end do
    write (stdout, '(a)') line
    write (stdout, '(a,1x,i0)') 'Random trials =', results%num_trials

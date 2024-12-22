@@ -14,7 +14,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-module assignment
+module atom_mapping
 use parameters
 use globals
 use random
@@ -41,18 +41,15 @@ implicit none
 
 contains
 
-subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
+subroutine map_atoms(mol1, mol2, eltypes, results)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
-   integer, intent(out) :: permlist(:, :)
-   integer, intent(out) :: countlist(:)
-   integer, intent(out) :: nrec
+   type(registry_type), target, intent(inout) :: results
 
    ! Local variables
 
    integer :: trials
    integer, allocatable :: atomperm(:)
-   real(rk), allocatable :: workcoords(:, :)
 
    integer :: natom1
    real(rk), dimension(:, :), allocatable :: coords1, coords2
@@ -60,7 +57,8 @@ subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    type(bipartition_type) :: mnatypes, submnatypes
    type(metapartition_type) :: metatypes
    integer :: h, i
-   real(rk) :: dist
+   integer :: adjd
+   real(rk) :: rmsd, dist
 
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
@@ -81,31 +79,30 @@ subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    do while (trials < max_trials)
 
       trials = trials + 1
-      workcoords = coords2
-      call rotate_coords(workcoords, randrotquat())
+      call rotate_coords(coords2, randrotquat())
       submnatypes = mnatypes
       call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
 
       do while (metatypes%num_parts > 0)
          do i = 1, metatypes%num_parts
             h = random_element(metatypes%parts(i)%items)
-            call minperm(submnatypes%parts(h), coords1, workcoords, atomperm, dist)
+            call minperm(submnatypes%parts(h), coords1, coords2, atomperm, dist)
             call split_crossmnatypes(h, atomperm, submnatypes)
          end do
          call compute_crossmnatypes(mol1, mol2, submnatypes)
          call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
       end do
 !      call submnatypes%print_parts()
-      call assign_atoms(submnatypes, coords1, workcoords, atomperm, dist)
-!      write (stderr, *) &
-!         adjacencydiff(natom1, mol1%adjmat, mol2%adjmat, atomperm), &
-!         sqrt(leastsquaredist(natom1, coords1, coords2, atomperm))
+      call assign_atoms(submnatypes, coords1, coords2, atomperm, dist)
+
+      ! Update results
+      adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
+      rmsd = sqrt(leastsqdistsum(atomperm, coords1, coords2))
+      call results%push(atomperm, num_steps, angle(totquat), adjd, rmsd)
 
    end do
 
-   nrec = 1
-   countlist(1) = 1
-   permlist(:, 1) = atomperm
+   results%num_trials = num_trials
 
 end subroutine
 

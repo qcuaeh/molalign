@@ -16,15 +16,15 @@
 
 module registry
 use parameters
-use alignment
 
 implicit none
 
 type :: record_type
-   real(rk) :: msd
+   integer :: count
+   integer :: adjd
+   real(rk) :: rmsd
    real(rk) :: steps
    real(rk) :: rotang
-   integer :: count
    integer, allocatable :: atomperm(:)
 end type
 
@@ -55,20 +55,20 @@ subroutine registry_initialize(self, max_records)
    self%overflow = .false.
 
    allocate (self%records(max_records))
+
    self%records%count = 0
-   self%records%msd = huge(self%records(1)%msd)
+   self%records%rmsd = huge(self%records(1)%rmsd)
+   self%records%adjd = huge(self%records(1)%adjd)
 
 end subroutine
 
-subroutine registry_push(self, atomperm, steps, rotang, coords1, coords2)
+subroutine registry_push(self, atomperm, steps, rotang, adjd, rmsd)
    class(registry_type), intent(inout) :: self
    integer, intent(in) :: atomperm(:)
-   integer, intent(in) :: steps
-   real(rk), intent(in) :: rotang
-   real(rk), dimension(:,:), intent(in) :: coords1, coords2
+   integer, intent(in) :: steps, adjd
+   real(rk), intent(in) :: rotang, rmsd
    ! Local variables
    integer :: i, j
-   real(rk) :: msd
 
    self%total_steps = self%total_steps + steps
 
@@ -83,15 +83,15 @@ subroutine registry_push(self, atomperm, steps, rotang, coords1, coords2)
       end if
    end do
 
-   msd = squaredist(atomperm, coords1, coords2)
    do i = 1, size(self%records)
-      if (msd < self%records(i)%msd) then
+      if (adjd < self%records(i)%adjd .or. (adjd == self%records(i)%adjd .and. rmsd < self%records(i)%rmsd)) then
          do j = size(self%records), i + 1, -1
             self%records(j) = self%records(j - 1)
          end do
          self%records(i)%atomperm = atomperm
          self%records(i)%count = 1
-         self%records(i)%msd = msd
+         self%records(i)%rmsd = rmsd
+         self%records(i)%adjd = adjd
          self%records(i)%steps = steps
          self%records(i)%rotang = rotang
          exit

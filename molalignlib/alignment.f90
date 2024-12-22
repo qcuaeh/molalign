@@ -22,21 +22,21 @@ use rotation
 implicit none
 
 private
-public squaredist
-public leastsquaredist
+public sqdistsum
+public leastsqdistsum
 public leasteigquat
 
 contains
 
-real(rk) function squaredist(atomperm, coords1, coords2) result(msd)
+real(rk) function sqdistsum(atomperm, coords1, coords2)
    integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:,:), intent(in) :: coords1, coords2
 
-   msd = sum(sum((coords1 - coords2(:, atomperm))**2, dim=1))
+   sqdistsum = sum(sum((coords1 - coords2(:, atomperm))**2, dim=1))
 
 end function
 
-real(rk) function leastsquaredist(atomperm, coords1, coords2)
+real(rk) function leastsqdistsum(atomperm, coords1, coords2)
 ! Purpose: Calculate least square distance from eigenvalues
    integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:,:), intent(in) :: coords1, coords2
@@ -44,7 +44,7 @@ real(rk) function leastsquaredist(atomperm, coords1, coords2)
 
    call kearsley(atomperm, coords1, coords2, residuals)
    ! eigenvalue can be negative due to numerical errors
-   leastsquaredist = max(leasteigval(residuals), 0._rk)
+   leastsqdistsum = max(leasteigval(residuals), 0._rk)
 
 end function
 

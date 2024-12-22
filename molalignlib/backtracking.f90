@@ -415,7 +415,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    end do
 
 !   print '(a,i0)', "Natoms: ", natom
-!   print '(a,f8.4)', "dist: ", sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm))
+!   print '(a,f8.4)', "dist: ", sqrt(leastsqdistsum(natom, weights, coords1, workcoords, atomperm))
 !   print '(a,i0)', "permcount: ", permcount
 !   print '(a,i0)', "fragcount: ", fragcount
 
@@ -470,7 +470,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
-         moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm))
+         moldist = sqrt(leastsqdistsum(natom, weights, coords1, workcoords, atomperm))
          moldiff = adjacencydiff(natom, adjmat1, adjmat2, atomperm)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist

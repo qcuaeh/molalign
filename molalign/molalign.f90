@@ -249,7 +249,7 @@ if (remap_flag) then
       call translate_coords(coords2, -travec1)
 
       adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
-      rmsd = sqrt(squaredist(atomperm, coords1, coords2))
+      rmsd = sqrt(sqdistsum(atomperm, coords1, coords2))
 
       if (bond_flag) then
          write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)
@@ -283,7 +283,7 @@ else
    call translate_coords(coords2, -travec1)
 
    adjd = adjacencydiff(identity_perm(natom1), mol1%adjmat, mol2%adjmat)
-   rmsd = sqrt(squaredist(identity_perm(natom1), coords1, coords2))
+   rmsd = sqrt(sqdistsum(identity_perm(natom1), coords1, coords2))
 
    if (bond_flag) then
       write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)

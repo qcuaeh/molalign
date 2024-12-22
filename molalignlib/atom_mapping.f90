@@ -47,6 +47,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:, :), allocatable :: coords1, coords2
    type(boolmatrix_type), allocatable :: prunemask(:)
+   real(rk) :: rmsd
 
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
@@ -98,7 +99,8 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
       end do
 
       ! Update results
-      call results%push(atomperm, num_steps, angle(totquat), coords1, coords2)
+      rmsd = sqrt(leastsqdistsum(atomperm, coords1, coords2))
+      call results%push(atomperm, num_steps, angle(totquat), 0, rmsd)
 
    end do
 
