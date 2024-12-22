@@ -1,13 +1,12 @@
 module molecule
-use kinds
-use types
-use bounds
+use parameters
 use setutils
 use permutation
 use adjacency
 use alignment
 use strutils
 use chemdata
+use common_types
 
 implicit none
 private
@@ -15,6 +14,7 @@ private
 type, public :: atom_type
    integer :: elnum
    integer :: label
+   integer :: weight
    real(rk) :: coords(3)
    integer, allocatable :: adjlist(:)
 end type
@@ -25,17 +25,18 @@ type, public :: bond_type
 end type
 
 type, public :: mol_type
-   integer :: natom
    character(:), allocatable :: title
    type(atom_type), allocatable :: atoms(:)
    logical, allocatable :: adjmat(:, :)
 !   type(bipartition_type) :: molfrags
 contains
-   procedure :: set_coords
    procedure :: set_adjlists
-   procedure :: get_bonds
    procedure :: get_adjlists
+   procedure :: set_coords
    procedure :: get_coords
+   procedure :: set_weighted_coords
+   procedure :: get_weighted_coords
+   procedure :: get_bonds
    procedure :: add_bond
    procedure :: remove_bond
    procedure :: print_atoms
@@ -48,7 +49,7 @@ contains
 
 subroutine set_coords(self, coords)
    class(mol_type), intent(inout) :: self
-   real(rk), intent(in) :: coords(3, size(self%atoms))
+   real(rk), intent(in) :: coords(:, :)
    ! Local variables
    integer :: i
 
@@ -61,13 +62,44 @@ end subroutine
 function get_coords(self) result(coords)
    class(mol_type), intent(in) :: self
    ! Local variables
-   integer :: i
    real(rk), allocatable :: coords(:, :)
+   integer :: i
 
    allocate (coords(3, size(self%atoms)))
 
    do i = 1, size(self%atoms)
       coords(:, i) = self%atoms(i)%coords
+   end do
+
+end function
+
+subroutine set_weighted_coords(self, coords)
+   class(mol_type), intent(inout) :: self
+   real(rk), intent(in) :: coords(:, :)
+   ! Local variables
+   real(rk) :: total_weight
+   integer :: i
+
+   total_weight = sum(self%atoms%weight)
+
+   do i = 1, size(self%atoms)
+      self%atoms(i)%coords = coords(:, i)*sqrt(total_weight/self%atoms(i)%weight)
+   end do
+
+end subroutine
+
+function get_weighted_coords(self) result(coords)
+   class(mol_type), intent(in) :: self
+   ! Local variables
+   real(rk), allocatable :: coords(:, :)
+   real(rk) :: total_weight
+   integer :: i
+
+   total_weight = sum(self%atoms%weight)
+   allocate (coords(3, size(self%atoms)))
+
+   do i = 1, size(self%atoms)
+      coords(:, i) = self%atoms(i)%coords*sqrt(self%atoms(i)%weight/total_weight)
    end do
 
 end function
@@ -176,7 +208,7 @@ subroutine remove_bond(self, idx1, idx2)
    integer :: i, pos1, pos2, nadj1, nadj2
    integer, allocatable :: adjlist1(:), adjlist2(:)
 
-   allocate (adjlist1(max_coord_num), adjlist2(max_coord_num))
+   allocate (adjlist1(max_coord), adjlist2(max_coord))
 
 ! copy adjlist arrays
    nadj1 = size(self%atoms(idx1)%adjlist)
@@ -228,7 +260,7 @@ subroutine add_bond(self, idx1, idx2)
    integer :: pos1, pos2, nadj1, nadj2
    integer, allocatable :: adjlist1(:), adjlist2(:)
 
-   allocate (adjlist1(max_coord_num), adjlist2(max_coord_num))
+   allocate (adjlist1(max_coord), adjlist2(max_coord))
 
 ! copy array of adjlist
    nadj1 = size(self%atoms(idx1)%adjlist)

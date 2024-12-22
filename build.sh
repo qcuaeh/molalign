@@ -101,10 +101,10 @@ run_tests() {
       name=$(basename "$file" .xyz)_$suffix
       echo -n "Running test $subdir/$name... "
       if $write_test; then
-         "$executable" -pipe -test -stats -N 5 "$@" < "$file" > "$testdir/$subdir/$name.out" 2>&1
+         "$executable" -pipe -test -stats -N 5 "$@" < "$file" > "$testdir/$subdir/$name.out" 2>/dev/null
          echo done
       else
-         if diff -bB "$testdir/$subdir/$name.out" <("$executable" -pipe -test -stats -N 5 "$@" < "$file" 2>&1); then
+         if diff -bB "$testdir/$subdir/$name.out" <("$executable" -pipe -test -stats -N 5 "$@" < "$file" 2>/dev/null); then
             echo ok
          else
             echo failed

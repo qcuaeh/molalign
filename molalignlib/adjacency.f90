@@ -1,8 +1,5 @@
 module adjacency
-use stdio
-use kinds
-use flags
-use bounds
+use parameters
 use sorting
 use chemdata
 
@@ -24,7 +21,7 @@ subroutine adjmat2list(natom, adjmat, nadjs, adjlists)
          if (adjmat(i, j)) then
             nadjs(i) = nadjs(i) + 1
             nadjs(j) = nadjs(j) + 1
-            if (nadjs(i) > max_coord_num .or. nadjs(j) > max_coord_num) then
+            if (nadjs(i) > max_coord .or. nadjs(j) > max_coord) then
                write (stderr, '("Maximum coordination number exceeded!")')
                stop
             end if
@@ -57,10 +54,9 @@ subroutine adjmat2bonds(natom, adjmat, nbond, bonds)
 
 end subroutine
 
-function adjdiff(natom, adjmat1, adjmat2, atomperm) result(diff)
+function adjacencydiff(atomperm, adjmat1, adjmat2) result(diff)
 ! Purpose: Check if two graphs are equal.
 ! Return the number of differences between graphs.
-   integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
    logical, dimension(:, :), intent(in) :: adjmat1, adjmat2
    integer :: diff
@@ -71,11 +67,11 @@ function adjdiff(natom, adjmat1, adjmat2, atomperm) result(diff)
 
 ! Check differences element by element
 
-   do i = 1, natom
-      do j = i + 1, natom
+   do i = 1, size(atomperm)
+      do j = i + 1, size(atomperm)
          if (adjmat1(i, j) .neqv. adjmat2(atomperm(i), atomperm(j))) then
+!            print *, i, j, adjmat1(i, j), adjmat2(atomperm(i), atomperm(j))
             diff = diff + 1
-!                print *, i, j, adjmat1(i, j), adjmat2(atomperm(i), atomperm(j))
          end if
       end do
    end do

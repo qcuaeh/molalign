@@ -1,8 +1,6 @@
-stdio.f90
-kinds.f90
-types.f90
-flags.f90
-bounds.f90
+parameters.f90
+globals.f90
+common_types.f90
 strutils.f90
 sorting.f90
 tupledict.f90
@@ -26,6 +24,7 @@ rigid_body.f90
 adjacency.f90
 alignment.f90
 molecule.f90
+registry.f90
 printing.f90
 partitioning.f90
 bipartitioning.f90

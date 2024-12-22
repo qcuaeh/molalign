@@ -15,7 +15,7 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module sorting
-use kinds
+use parameters
 
 implicit none
 

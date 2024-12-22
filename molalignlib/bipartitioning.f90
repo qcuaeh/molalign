@@ -15,10 +15,8 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module bipartitioning
-use stdio
-use kinds
-use flags
-use bounds
+use parameters
+use globals
 use sorting
 use molecule
 use tupledict

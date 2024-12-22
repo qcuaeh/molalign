@@ -15,7 +15,7 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module rigid_body
-use kinds
+use parameters
 use rotation
 
 implicit none
@@ -99,9 +99,8 @@ function reflected_coords(coords)
 
 end function
 
-function centroid(coords, weights)
+function centroid(coords)
    real(rk), dimension(:, :), intent(in) :: coords
-   real(rk), dimension(:), intent(in) :: weights
    ! Local variables
    integer :: i
    real(rk) :: centroid(3)
@@ -111,10 +110,10 @@ function centroid(coords, weights)
    centroid(:) = 0
 
    do i = 1, size(coords, dim=2)
-      centroid(:) = centroid(:) + weights(i)*coords(:, i)
+      centroid(:) = centroid(:) + coords(:, i)
    end do
 
-   centroid(:) = centroid(:)/sum(weights)
+   centroid(:) = centroid(:) / size(coords, dim=2)
 
 end function
 

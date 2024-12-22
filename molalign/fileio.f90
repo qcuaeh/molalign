@@ -15,11 +15,11 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module fileio
-use stdio
+use parameters
 use molecule
+use adjacency
 use readmol
 use writemol
-use adjacency
 
 implicit none
 

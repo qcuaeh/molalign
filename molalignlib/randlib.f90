@@ -805,7 +805,7 @@
 
       FUNCTION random_standard_uniform()
 ! .. Use Statements ..
-        USE kinds
+        USE parameters
 ! ..
 ! .. Implicit None Statement ..
         IMPLICIT NONE

@@ -15,10 +15,7 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module partitioning
-use stdio
-use kinds
-use flags
-use bounds
+use parameters
 use sorting
 use chemdata
 use molecule

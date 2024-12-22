@@ -15,9 +15,8 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module writemol
-use stdio
+use parameters
 use molecule
-use bounds
 use strutils
 use chemdata
 

@@ -15,188 +15,92 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module atom_mapping
-use kinds
-use flags
-use bounds
+use parameters
+use globals
 use molecule
-use strutils
 use chemdata
-use permutation
-use rigid_body
 use rotation
+use rigid_body
 use alignment
 use lap_driver
-use adjacency
 use bipartition
-use bipartitioning
-use biasing
 use pruning
 use printing
-!use backtracking
+use registry
 
 implicit none
 
 contains
 
-subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
+subroutine map_atoms(mol1, mol2, eltypes, results)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
-   integer, intent(out) :: permlist(:, :)
-   integer, intent(out) :: countlist(:)
-   integer, intent(out) :: nrec
+   type(registry_type), intent(inout) :: results
 
    ! Local variables
 
-   logical :: visited, overflow
-   integer :: irec, krec, ntrial, nstep, steps
-   integer, dimension(mol1%natom) :: atomperm, newmapping
-   real(rk) :: rmsd, totalrot
-   real(rk) :: workcoords(3, mol2%natom)
-   real(rk), dimension(4) :: rotquat, prodquat
-   real(rk), dimension(maxrec) :: rmsdlist, avgsteps, avgtotalrot, avgrealrot
-   type(boolmatrix_type), dimension(:), allocatable :: prunemask
-   type(realmatrix_type), dimension(:), allocatable :: mnadists
-
    integer :: natom1
-   real(rk), dimension(:, :), allocatable :: coords1, coords2
-   real(rk), dimension(:), allocatable :: weights1, weights2
-   real(rk) :: travec1(3), travec2(3)
+   integer :: num_trials, num_steps, lead_count
+   real(rk) :: eigquat(4), totquat(4)
+   integer, dimension(:), allocatable :: atomperm, auxperm
+   real(rk), dimension(:, :), allocatable :: coords1, coords2, initial_coords2
+   type(boolmatrix_type), allocatable :: prunemask(:)
 
    natom1 = size(mol1%atoms)
-   coords1 = mol1%get_coords()
-   coords2 = mol2%get_coords()
-   weights1 = element_weights(mol1%atoms%elnum)
-   weights2 = element_weights(mol1%atoms%elnum)
+   coords1 = mol1%get_weighted_coords()
+   initial_coords2 = mol2%get_weighted_coords()
+   allocate (auxperm(natom1))
+   allocate (atomperm(natom1))
 
-   ! Mirror coordinates
-
+   ! Reflect atoms
    if (mirror_flag) then
-      call reflect_coords(coords2)
+      call reflect_coords(initial_coords2)
    end if
 
-   ! Calculate centroids
+   ! Translate atoms to their centroids
+   call translate_coords(coords1, -centroid(coords1))
+   call translate_coords(initial_coords2, -centroid(initial_coords2))
 
-   travec1 = -centroid(coords1, weights1)
-   travec2 = -centroid(coords2, weights2)
+   ! Find unfeasible assignments
+   call prune_procedure(eltypes, mol1%get_coords(), mol2%get_coords(), prunemask)
 
-   ! Center coordinates at the centroids
-
-   call translate_coords(coords1, travec1)
-   call translate_coords(coords2, travec2)
-
-   ! Calculate prune matrix
-
-   call prune_procedure(eltypes, coords1, coords2, prunemask)
-
-   ! Calculate bias matrix
-
-   call bias_procedure(mol1, mol2, eltypes, mnadists)
-
-   ! Initialize loop variables
-
-   nrec = 0
-   nstep = 0
-   ntrial = 0
-   countlist(1) = 0
-   overflow = .false.
+   lead_count = 0
+   num_trials = 0
 
    ! Loop for map searching
+   do while (lead_count < max_count .and. num_trials < max_trials)
 
-   do while (countlist(1) < maxcount .and. ntrial < maxtrials)
+      num_trials = num_trials + 1
 
-      ntrial = ntrial + 1
+      ! Reset coords2
+      coords2 = initial_coords2
 
-      ! Work with a copy of coords2
+      ! Aply a random rotation to coords2
+      call rotate_coords(coords2, randrotquat())
 
-      workcoords = coords2
-
-      ! Aply a random rotation to workcoords
-
-      call rotate_coords(workcoords, randrotquat())
-
-      ! Minimize the euclidean distance
-
-      call assign_atoms_generic(eltypes, coords1, workcoords, prunemask, mnadists, atomperm)
-      rotquat = leastrotquat(natom1, weights1, coords1, workcoords, atomperm)
-      prodquat = rotquat
-      totalrot = rotangle(rotquat)
-      call rotate_coords(workcoords, rotquat)
-!      print *, sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
-!      stop
-
-      steps = 1
+      ! Assign atoms with current orientation
+      call assign_atoms_pruned(eltypes, coords1, coords2, prunemask, atomperm)
+      totquat = leasteigquat(atomperm, coords1, coords2)
+      call rotate_coords(coords2, totquat)
+      num_steps = 1
 
       do while (iter_flag)
-         call assign_atoms_generic(eltypes, coords1, workcoords, prunemask, mnadists, newmapping)
-         if (all(newmapping == atomperm)) exit
-         rotquat = leastrotquat(natom1, weights1, coords1, workcoords, newmapping)
-         prodquat = quatmul(rotquat, prodquat)
-         call rotate_coords(workcoords, rotquat)
-         totalrot = totalrot + rotangle(rotquat)
-         atomperm = newmapping
-         steps = steps + 1
+         call assign_atoms_pruned(eltypes, coords1, coords2, prunemask, auxperm)
+         if (all(auxperm == atomperm)) exit
+         atomperm = auxperm
+         eigquat = leasteigquat(atomperm, coords1, coords2)
+         call rotate_coords(coords2, eigquat)
+         totquat = quatmul(eigquat, totquat)
+         num_steps = num_steps + 1
       end do
 
-      nstep = nstep + steps
-
-      rmsd = sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
-
-      ! Check for new best permlist
-
-      visited = .false.
-
-      do irec = 1, nrec
-         if (all(atomperm == permlist(:, irec))) then
-            countlist(irec) = countlist(irec) + 1
-            avgsteps(irec) = avgsteps(irec) + (steps - avgsteps(irec))/countlist(irec)
-            avgrealrot(irec) = avgrealrot(irec) + (rotangle(prodquat) - avgrealrot(irec))/countlist(irec)
-            avgtotalrot(irec) = avgtotalrot(irec) + (totalrot - avgtotalrot(irec))/countlist(irec)
-            visited = .true.
-            exit
-         end if
-      end do
-
-      if (.not. visited) then
-         krec = nrec + 1
-         do irec = nrec, 1, -1
-            if (rmsd < rmsdlist(irec)) then
-               krec = irec
-            else
-               exit
-            end if
-         end do
-         if (nrec < maxrec) then
-            nrec = nrec + 1
-         else
-            overflow = .true.
-         end if
-         if (krec <= maxrec) then
-            do irec = nrec, krec + 1, -1
-               countlist(irec) = countlist(irec - 1)
-               rmsdlist(irec) = rmsdlist(irec - 1)
-               avgsteps(irec) = avgsteps(irec - 1)
-               avgrealrot(irec) = avgrealrot(irec - 1)
-               avgtotalrot(irec) = avgtotalrot(irec - 1)
-               permlist(:, irec) = permlist(:, irec - 1)
-            end do
-            countlist(krec) = 1
-            rmsdlist(krec) = rmsd
-            avgsteps(krec) = steps
-            avgrealrot(krec) = rotangle(prodquat)
-            avgtotalrot(krec) = totalrot
-            permlist(:, krec) = atomperm
-         end if
-      end if
+      ! Update results
+      call results%push(atomperm, num_steps, angle(totquat), coords1, coords2)
+      lead_count = results%records(1)%count
 
    end do
 
-   ! Print stats if requested
-
-   if (stats_flag) then
-      print_flag = .false.
-      call print_stats(nrec, countlist, avgsteps, avgrealrot, rmsdlist)
-      call print_final_stats(overflow, maxrec, nrec, ntrial, nstep)
-   end if
+   results%num_trials = num_trials
 
 end subroutine
 

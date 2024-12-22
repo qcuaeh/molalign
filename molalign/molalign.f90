@@ -15,9 +15,8 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 program molalign
-use kinds
-use flags
-use bounds
+use parameters
+use globals
 use molecule
 use printing
 use rotation
@@ -35,10 +34,8 @@ use pruning
 
 implicit none
 
-integer :: i, nrec
+integer :: i
 integer :: read_unit1, read_unit2, write_unit
-integer, allocatable :: permlist(:, :)
-integer, allocatable :: countlist(:)
 integer, allocatable :: atomperm(:)
 character(:), allocatable :: arg, optarg
 character(:), allocatable :: fmtin1, fmtin2, fmtout
@@ -46,15 +43,16 @@ character(:), allocatable :: optfmtin, optfmtout
 character(:), allocatable :: pathout
 logical :: fmtin_flag, fmtout_flag
 logical :: remap_flag, pipe_flag, nrec_flag
+integer :: max_records
 real(rk) :: travec1(3), travec2(3), rotquat(4)
-integer :: adjd, minadjd
-real(rk) :: rmsd, minrmsd
+integer :: adjd
+real(rk) :: rmsd
 type(strlist_type) :: posargs(2)
 type(mol_type) :: mol1, mol2, auxmol
+type(registry_type) :: results
 
 integer :: natom1
 real(rk), dimension(:, :), allocatable :: coords1, coords2
-real(rk), dimension(:), allocatable :: weights1
 
 ! Set default options
 
@@ -63,7 +61,6 @@ bond_flag = .false.
 back_flag = .false.
 test_flag = .false.
 reac_flag = .false.
-print_flag = .true.
 stats_flag = .false.
 mirror_flag = .false.
 remap_flag = .false.
@@ -72,17 +69,14 @@ fmtin_flag = .false.
 fmtout_flag = .false.
 nrec_flag = .false.
 
-maxrec = 1
-maxcount = 10
-maxtrials = huge(maxtrials)
-max_coord_num = 16
-maxlevel = 16
+max_records = 1
+max_count = 10
+max_trials = huge(max_trials)
 
 prune_tol = 0.5
 bias_scale = 1.e3
 
-element_weights => ones
-assign_atoms_generic => assign_atoms_pruned
+atomic_weights => ones
 bias_procedure => bias_none
 prune_procedure => prune_none
 pathout = 'aligned.xyz'
@@ -104,10 +98,8 @@ do while (get_arg(arg))
       iter_flag = .false.
       bias_procedure => bias_none
       prune_procedure => prune_none
-      assign_atoms_generic => assign_atoms_nearest
    case ('-bias')
       iter_flag = .true.
-      assign_atoms_generic => assign_atoms_biased
       call read_optarg(arg, optarg)
       select case (optarg)
       case ('mna')
@@ -118,7 +110,6 @@ do while (get_arg(arg))
       end select
    case ('-prune')
       iter_flag = .true.
-      assign_atoms_generic => assign_atoms_pruned
       call read_optarg(arg, optarg)
       select case (optarg)
       case ('rd')
@@ -134,20 +125,20 @@ do while (get_arg(arg))
    case ('-reac')
       reac_flag = .true.
    case ('-mass')
-      element_weights => atomic_masses
+      atomic_weights => atomic_masses
    case ('-mirror')
       mirror_flag = .true.
    case ('-count')
-      call read_optarg(arg, maxcount)
+      call read_optarg(arg, max_count)
    case ('-trials')
-      call read_optarg(arg, maxtrials)
+      call read_optarg(arg, max_trials)
    case ('-tol')
       call read_optarg(arg, prune_tol)
 !      case ('-scale')
 !         call read_optarg(arg, bias_scale)
    case ('-N')
       nrec_flag = .true.
-      call read_optarg(arg, maxrec)
+      call read_optarg(arg, max_records)
    case ('-out')
       call read_optarg(arg, pathout)
    case ('-fmtin')
@@ -198,9 +189,6 @@ call readfile(read_unit2, fmtin2, mol2)
 
 ! Allocate arrays
 
-allocate (permlist(mol1%natom, maxrec))
-allocate (countlist(maxrec))
-
 if (pipe_flag) then
    write_unit = stdout
    fmtout = 'xyz'
@@ -216,51 +204,64 @@ if (remap_flag) then
 
    ! Remap atoms to minimize the MSD
 
+   call results%initialize(max_records)
+
    call molecule_remap( &
       mol1, &
       mol2, &
-      nrec, &
-      permlist, &
-      countlist)
+      results)
 
-   minrmsd = huge(minrmsd)
-   minadjd = huge(minadjd)
+   ! Print optimization stats
+
+   if (stats_flag) then
+      call print_stats(results)
+   end if
 
    if (.not. nrec_flag) then
       call writefile(write_unit, fmtout, mol1)
    end if
 
    natom1 = size(mol1%atoms)
-   coords1 = mol1%get_coords()
-   weights1 = element_weights(mol1%atoms%elnum)
+   coords1 = mol1%get_weighted_coords()
+   coords2 = mol2%get_weighted_coords()
+
+   ! Calculate centroids
+   travec1 = -centroid(coords1)
+   travec2 = -centroid(coords2)
+
    allocate (auxmol%atoms(size(mol2%atoms)))
 
-   do i = 1, nrec
+   do i = 1, results%num_records
 
-      atomperm = permlist(:, i)
+      atomperm = results%records(i)%atomperm
+      coords2 = mol2%get_weighted_coords()
 
-      call remapped_molecule_align( &
-         mol1, &
-         mol2, &
+      ! Calculate optimal rotation matrix
+      rotquat = leasteigquat( &
          atomperm, &
-         travec1, &
-         travec2, &
-         rotquat)
+         translated_coords(coords1, travec1), &
+         translated_coords(coords2, travec2) &
+      )
 
-      coords2 = mol2%get_coords()
+      coords2 = mol2%get_weighted_coords()
       call translate_coords(coords2, travec2)
       call rotate_coords(coords2, rotquat)
       call translate_coords(coords2, -travec1)
 
-      rmsd = rmsdist(natom1, weights1, coords1, coords2, atomperm)
-      adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm)
-      minrmsd = min(minrmsd, rmsd)
-      minadjd = min(minadjd, adjd)
+      adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
+      rmsd = sqrt(squaredist(atomperm, coords1, coords2))
+
+      if (bond_flag) then
+         write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)
+      else
+         write (stderr, "(a)") str(rmsd, 4)
+      end if
 
       auxmol%title = 'Map='//str(i)//' RMSD='//str(rmsd, 4)
       auxmol%atoms%elnum = mol2%atoms(atomperm)%elnum
       auxmol%atoms%label = mol2%atoms(atomperm)%label
-      call auxmol%set_coords(coords2(:, atomperm))
+      auxmol%atoms%weight = mol2%atoms(atomperm)%weight
+      call auxmol%set_weighted_coords(coords2(:, atomperm))
       call writefile(write_unit, fmtout, auxmol)
 
    end do
@@ -276,28 +277,27 @@ else
       travec2, &
       rotquat)
 
-   coords2 = mol2%get_coords()
+   coords2 = mol2%get_weighted_coords()
    call translate_coords(coords2, travec2)
    call rotate_coords(coords2, rotquat)
    call translate_coords(coords2, -travec1)
 
-   rmsd = rmsdist(natom1, weights1, coords1, coords2, identity_perm(natom1))
-   adjd = adjdiff(natom1, mol1%adjmat, mol2%adjmat, identity_perm(natom1))
+   adjd = adjacencydiff(identity_perm(natom1), mol1%adjmat, mol2%adjmat)
+   rmsd = sqrt(squaredist(identity_perm(natom1), coords1, coords2))
+
+   if (bond_flag) then
+      write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)
+   else
+      write (stderr, "(a)") str(rmsd, 4)
+   end if
 
    mol2%title = 'RMSD='//str(rmsd, 4)
    auxmol%atoms%elnum = mol2%atoms%elnum
    auxmol%atoms%label = mol2%atoms%label
-   call auxmol%set_coords(coords2)
+   auxmol%atoms%weight = mol2%atoms(atomperm)%weight
+   call auxmol%set_weighted_coords(coords2)
    call writefile(write_unit, fmtout, mol2)
 
-end if
-
-if (print_flag) then
-   if (bond_flag) then
-      write (stderr, "(a,1x,i0)") str(rmsd, 4), adjd
-   else
-      write (stderr, "(a)") str(rmsd, 4)
-   end if
 end if
 
 end program

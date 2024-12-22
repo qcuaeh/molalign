@@ -1,6 +1,5 @@
 ! template for module backtracking in molalign program
 module backtracking
-use stdio
 use sorting
 use molecule
 use partition
@@ -50,12 +49,12 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    integer :: nadjs1(mol1%natom)
    integer :: nadjs2(mol2%natom)
-   integer :: adjlists1(max_coord_num, mol1%natom)
-   integer :: adjlists2(max_coord_num, mol2%natom)
+   integer :: adjlists1(max_coord, mol1%natom)
+   integer :: adjlists2(max_coord, mol2%natom)
    integer :: nadjmnatypes1(mol1%natom)
    integer :: nadjmnatypes2(mol2%natom)
-   integer :: adjmnatypepartlens1(max_coord_num, mol1%natom)
-   integer :: adjmnatypepartlens2(max_coord_num, mol2%natom)
+   integer :: adjmnatypepartlens1(max_coord, mol1%natom)
+   integer :: adjmnatypepartlens2(max_coord, mol2%natom)
 
    natom = mol1%get_natom()
 
@@ -111,7 +110,7 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    ntrack = 0
    tracked(:) = .false.
    unmapping = inverse_perm(atomperm)
-   moldiff = adjdiff (natom, adjmat1, adjmat2, atomperm)
+   moldiff = adjacencydiff (natom, adjmat1, adjmat2, atomperm)
    moldist = rmsdist (natom, weights, coords1, coords2, atomperm)
 
    if ( printInfo ) then
@@ -126,12 +125,12 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "countFrag:", size(fragroots1)
-      print '(a,1x,i0,1x,i0)', "moldiff:", adjdiff (natom, adjmat1, adjmat2, atomperm), moldiff
+      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
       print '(a,1x,f0.4,1x,f0.4)', "moldist:", rmsdist (natom, weights, coords1, coords2, atomperm), moldist
    end if
 
-!    if (adjdiff (natom, adjmat1, adjmat2, atomperm) /= moldiff) then
-!        print '(a,x,i0,x,i0)', "moldiff:", adjdiff (natom, adjmat1, adjmat2, atomperm), moldiff
+!    if (adjacencydiff (natom, adjmat1, adjmat2, atomperm) /= moldiff) then
+!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
 !    end if
 
    contains    
@@ -325,12 +324,12 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
 
    integer :: nadjs1(mol1%natom)
    integer :: nadjs2(mol2%natom)
-   integer :: adjlists1(max_coord_num, mol1%natom)
-   integer :: adjlists2(max_coord_num, mol2%natom)
+   integer :: adjlists1(max_coord, mol1%natom)
+   integer :: adjlists2(max_coord, mol2%natom)
    integer :: nadjmnatypes1(mol1%natom)
    integer :: nadjmnatypes2(mol2%natom)
-   integer :: adjmnatypepartlens1(max_coord_num, mol1%natom)
-   integer :: adjmnatypepartlens2(max_coord_num, mol2%natom)
+   integer :: adjmnatypepartlens1(max_coord, mol1%natom)
+   integer :: adjmnatypepartlens2(max_coord, mol2%natom)
 
    natom = mol1%get_natom()
 
@@ -465,14 +464,14 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
       logical :: locked_c(natom)
       integer :: meqvnei, moldiff, track4ind(4), track4ind_c(4)
       integer, dimension(natom) :: mapping_p, mapping_min, equiv, perm, perm_min
-      real(rk) :: moldist, moldist_p, moldist_min, dihed0(max_coord_num), dihed1(max_coord_num)
+      real(rk) :: moldist, moldist_p, moldist_min, dihed0(max_coord), dihed1(max_coord)
       logical :: more, calcd, printInfo = .false.
       integer :: h, i, j, offset, first, last, rank
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
          moldist = sqrt(leastsquaredist(natom, weights, coords1, workcoords, atomperm))
-         moldiff = adjdiff(natom, adjmat1, adjmat2, atomperm)
+         moldiff = adjacencydiff(natom, adjmat1, adjmat2, atomperm)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist
       end if

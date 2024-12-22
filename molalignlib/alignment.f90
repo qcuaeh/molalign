@@ -15,68 +15,64 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module alignment
-use kinds
+use parameters
 use eigen
 use rotation
 
 implicit none
 
 private
+public squaredist
 public leastsquaredist
-public leastrotquat
-public rmsdist
+public leasteigquat
 
 contains
 
-real(rk) function rmsdist(natom, weights, coords1, coords2, atomperm) result(rmsd)
-   integer, intent(in) :: natom
+real(rk) function squaredist(atomperm, coords1, coords2) result(msd)
    integer, dimension(:), intent(in) :: atomperm
-   real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords1, coords2
+   real(rk), dimension(:,:), intent(in) :: coords1, coords2
 
-   rmsd = sqrt(sum(weights(atomperm)*sum((coords1 - coords2(:, atomperm))**2, dim=1))/sum(weights))
+   msd = sum(sum((coords1 - coords2(:, atomperm))**2, dim=1))
 
 end function
 
-real(rk) function leastsquaredist(natom, weights, coords1, coords2, atomperm)
+real(rk) function leastsquaredist(atomperm, coords1, coords2)
 ! Purpose: Calculate least square distance from eigenvalues
-   integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
-   real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords1, coords2
+   real(rk), dimension(:,:), intent(in) :: coords1, coords2
    real(rk) :: residuals(4, 4)
 
-   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
+   call kearsley(atomperm, coords1, coords2, residuals)
    ! eigenvalue can be negative due to numerical errors
-   leastsquaredist = max(leasteigval(residuals), 0._rk)/sum(weights)
+   leastsquaredist = max(leasteigval(residuals), 0._rk)
 
 end function
 
-function leastrotquat(natom, weights, coords1, coords2, atomperm)
+function leasteigquat(atomperm, coords1, coords2)
 ! Purpose: Calculate rotation quaternion which minimzes the square distance
-   integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
-   real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   real(rk) :: leastrotquat(4), residuals(4, 4)
+   real(rk), dimension(:,:), intent(in) :: coords1, coords2
+   real(rk) :: leasteigquat(4), residuals(4, 4)
 
-   call kearsley(natom, weights, coords1, coords2, atomperm, residuals)
-   leastrotquat = leasteigvec(residuals)
+   call kearsley(atomperm, coords1, coords2, residuals)
+   leasteigquat = leasteigvec(residuals)
 
 end function
 
-subroutine kearsley(natom, weights, coords1, coords2, atomperm, residuals)
+subroutine kearsley(atomperm, coords1, coords2, residuals)
 ! Purpose: Find the best orientation by least squares minimization
 ! Reference: Acta Cryst. (1989). A45, 208-210
-   integer, intent(in) :: natom
    integer, dimension(:), intent(in) :: atomperm
-   real(rk), dimension(:), intent(in) :: weights
-   real(rk), dimension(:, :), intent(in) :: coords1, coords2
+   real(rk), dimension(:,:), intent(in) :: coords1, coords2
+   ! Local variables
+   integer :: i, natom
+   real(rk) :: residuals(4, 4)
+   real(rk), dimension(:,:), allocatable :: p, q
 
-   integer :: i
-   real(rk) :: residuals(4, 4), p(3, natom), q(3, natom)
+   natom = size(atomperm)
 
-   residuals = 0
+   allocate (p(3, natom))
+   allocate (q(3, natom))
 
    do i = 1, natom
       p(:, i) = coords1(:, i) + coords2(:, atomperm(i))
@@ -85,17 +81,19 @@ subroutine kearsley(natom, weights, coords1, coords2, atomperm, residuals)
 
    ! Calculate upper matrix elements
 
+   residuals = 0
+
    do i = 1, natom
-      residuals(1, 1) = residuals(1, 1) + weights(i)*(q(1, i)**2 + q(2, i)**2 + q(3, i)**2)
-      residuals(1, 2) = residuals(1, 2) + weights(i)*(p(2, i)*q(3, i) - q(2, i)*p(3, i))
-      residuals(1, 3) = residuals(1, 3) + weights(i)*(q(1, i)*p(3, i) - p(1, i)*q(3, i))
-      residuals(1, 4) = residuals(1, 4) + weights(i)*(p(1, i)*q(2, i) - q(1, i)*p(2, i))
-      residuals(2, 2) = residuals(2, 2) + weights(i)*(p(2, i)**2 + p(3, i)**2 + q(1, i)**2)
-      residuals(2, 3) = residuals(2, 3) + weights(i)*(q(1, i)*q(2, i) - p(1, i)*p(2, i))
-      residuals(2, 4) = residuals(2, 4) + weights(i)*(q(1, i)*q(3, i) - p(1, i)*p(3, i))
-      residuals(3, 3) = residuals(3, 3) + weights(i)*(p(1, i)**2 + p(3, i)**2 + q(2, i)**2)
-      residuals(3, 4) = residuals(3, 4) + weights(i)*(q(2, i)*q(3, i) - p(2, i)*p(3, i))
-      residuals(4, 4) = residuals(4, 4) + weights(i)*(p(1, i)**2 + p(2, i)**2 + q(3, i)**2)
+      residuals(1, 1) = residuals(1, 1) + (q(1, i)**2 + q(2, i)**2 + q(3, i)**2)
+      residuals(1, 2) = residuals(1, 2) + (p(2, i)*q(3, i) - q(2, i)*p(3, i))
+      residuals(1, 3) = residuals(1, 3) + (q(1, i)*p(3, i) - p(1, i)*q(3, i))
+      residuals(1, 4) = residuals(1, 4) + (p(1, i)*q(2, i) - q(1, i)*p(2, i))
+      residuals(2, 2) = residuals(2, 2) + (p(2, i)**2 + p(3, i)**2 + q(1, i)**2)
+      residuals(2, 3) = residuals(2, 3) + (q(1, i)*q(2, i) - p(1, i)*p(2, i))
+      residuals(2, 4) = residuals(2, 4) + (q(1, i)*q(3, i) - p(1, i)*p(3, i))
+      residuals(3, 3) = residuals(3, 3) + (p(1, i)**2 + p(3, i)**2 + q(2, i)**2)
+      residuals(3, 4) = residuals(3, 4) + (q(2, i)*q(3, i) - p(2, i)*p(3, i))
+      residuals(4, 4) = residuals(4, 4) + (p(1, i)**2 + p(2, i)**2 + q(3, i)**2)
    end do
 
    ! Symmetrize matrix

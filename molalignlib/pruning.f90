@@ -15,10 +15,9 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module pruning
-use kinds
-use types
-use flags
-use bounds
+use parameters
+use common_types
+use globals
 use sorting
 use bipartition
 
@@ -29,8 +28,8 @@ procedure(prune_proc), pointer :: prune_procedure
 
 abstract interface
    subroutine prune_proc( eltypes, coords1, coords2, prunemask)
-      use kinds
-      use types
+      use parameters
+      use common_types
       use bipartition
       type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2

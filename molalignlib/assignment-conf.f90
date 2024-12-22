@@ -15,9 +15,8 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module assignment
-use kinds
-use flags
-use bounds
+use parameters
+use globals
 use random
 use molecule
 use strutils
@@ -51,23 +50,22 @@ subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 
    ! Local variables
 
-   integer :: ntrial
-   integer, dimension(mol1%natom) :: atomperm
-   real(rk) :: workcoords(3, mol2%natom)
+   integer :: trials
+   integer, allocatable :: atomperm(:)
+   real(rk), allocatable :: workcoords(:, :)
 
    integer :: natom1
    real(rk), dimension(:, :), allocatable :: coords1, coords2
-   real(rk), dimension(:), allocatable :: weights1
 
    type(bipartition_type) :: mnatypes, submnatypes
    type(metapartition_type) :: metatypes
    integer :: h, i
    real(rk) :: dist
 
-   natom1 = mol1%natom
-   coords1 = mol1%get_coords()
-   coords2 = mol2%get_coords()
-   weights1 = element_weights(mol1%atoms%elnum)
+   natom1 = size(mol1%atoms)
+   coords1 = mol1%get_weighted_coords()
+   coords2 = mol2%get_weighted_coords()
+   allocate (atomperm(natom1))
 
    ! Compute mnatypes and metatypes
 
@@ -75,14 +73,14 @@ subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
    call compute_crossmnatypes(mol1, mol2, mnatypes)
    call mnatypes%print_parts()
 
-   ntrial = 0
-   maxtrials = 100
+   trials = 0
+   max_trials = 100
 
    ! Loop for map searching
 
-   do while (ntrial < maxtrials)
+   do while (trials < max_trials)
 
-      ntrial = ntrial + 1
+      trials = trials + 1
       workcoords = coords2
       call rotate_coords(workcoords, randrotquat())
       submnatypes = mnatypes
@@ -100,8 +98,8 @@ subroutine map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
 !      call submnatypes%print_parts()
       call assign_atoms(submnatypes, coords1, workcoords, atomperm, dist)
 !      write (stderr, *) &
-!         adjdiff(natom1, mol1%adjmat, mol2%adjmat, atomperm), &
-!         sqrt(leastsquaredist(natom1, weights1, coords1, coords2, atomperm))
+!         adjacencydiff(natom1, mol1%adjmat, mol2%adjmat, atomperm), &
+!         sqrt(leastsquaredist(natom1, coords1, coords2, atomperm))
 
    end do
 

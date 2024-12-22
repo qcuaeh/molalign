@@ -1,5 +1,5 @@
-module types
-use kinds
+module common_types
+use parameters
 
 implicit none
 

@@ -1,6 +1,5 @@
 module metapartition
-use stdio
-use kinds
+use parameters
 use partition
 implicit none
 

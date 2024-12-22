@@ -15,7 +15,7 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module reactivity
-use kinds
+use parameters
 use sorting
 use permutation
 use alignment

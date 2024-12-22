@@ -1,6 +1,5 @@
 module eigen
-use stdio
-use kinds
+use parameters
 
 implicit none
 

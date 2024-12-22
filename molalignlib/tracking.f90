@@ -2,9 +2,8 @@
 !          of each fragment in a molecule. (returns nfrag, fragidcs)
 module tracking
 
-use stdio
+use parameters
 use molecule
-use bounds
 use sorting
 
 implicit none

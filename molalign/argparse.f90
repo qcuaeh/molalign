@@ -15,9 +15,7 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module argparse
-use stdio
-use kinds
-use bounds
+use parameters
 
 implicit none
 integer :: iarg, ipos

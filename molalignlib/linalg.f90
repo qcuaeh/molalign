@@ -1,6 +1,5 @@
 module linalg
-use stdio
-use kinds
+use parameters
 
 implicit none
 
@@ -25,7 +24,7 @@ function matinv3(a)
 
    matdet = matdet3(a)
 
-   if (abs(matdet) < epstol) then
+   if (abs(matdet) < eps_tol) then
       write (stderr, '(a)') 'Error: Matrix is not invertible'
       stop
    end if

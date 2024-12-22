@@ -15,14 +15,14 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module rotation
-use kinds
+use parameters
 use random
 
 implicit none
 
 private
 public quatmul
-public rotangle
+public angle
 public quatrotmat
 public randrotquat
 
@@ -59,11 +59,11 @@ function quatmul(p, q) result(pq)
 
 end function
 
-function rotangle(q) result(angle)
+function angle(q)
    real(rk), dimension(4), intent(in) :: q
    real(rk) :: angle
 
-   angle = 2*abs(atan(sqrt(sum(q(2:4)**2))/q(1)))
+   angle = (180./asin(1.))*abs(atan(sqrt(sum(q(2:4)**2))/q(1)))
 
 end function
 

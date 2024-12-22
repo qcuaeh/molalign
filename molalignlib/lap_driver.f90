@@ -15,10 +15,9 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module lap_driver
-use stdio
-use types
-use kinds
-use bounds
+use parameters
+use globals
+use common_types
 use bipartition
 use permutation
 use lap_solvers
@@ -26,27 +25,10 @@ use lap_solvers
 implicit none
 
 private
-public assign_atoms_proc
-public assign_atoms_generic
 public assign_atoms
 public assign_atoms_biased
 public assign_atoms_nearest
 public assign_atoms_pruned
-
-abstract interface
-   subroutine assign_atoms_proc( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
-      use kinds
-      use types
-      use bipartition
-      type(bipartition_type), intent(in) :: eltypes
-      real(rk), dimension(:, :), intent(in) :: coords1, coords2
-      type(boolmatrix_type), dimension(:), intent(in) :: prunemask
-      type(realmatrix_type), dimension(:), intent(in) :: mnadists
-      integer, dimension(:), intent(out) :: atomperm
-   end subroutine
-end interface
-
-procedure(assign_atoms_proc), pointer :: assign_atoms_generic
 
 contains
 
@@ -78,11 +60,10 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists,
 end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
+subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, atomperm)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), intent(in) :: prunemask
-   type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h, part_size1

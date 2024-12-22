@@ -16,7 +16,7 @@
 
 module chemdata
 ! Purpose: Definition of physical constants
-use kinds
+use parameters
 
 ! element_symbols: Element symbols
 ! covalent_radii: Atomic covalent radii (Angstrom)
@@ -27,7 +27,7 @@ use kinds
 implicit none
 
 integer, parameter :: num_elems = 103
-real(rk), dimension(:), pointer :: element_weights
+real(rk), dimension(:), pointer :: atomic_weights
 
 character(2), parameter :: element_symbols(num_elems) = [ &
 'H ',                                                                                                 'He', &

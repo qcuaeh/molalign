@@ -15,9 +15,8 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module molalignlib
-use stdio
-use kinds
-use bounds
+use parameters
+use globals
 use random
 use linalg
 use sorting
@@ -40,17 +39,11 @@ contains
 subroutine molecule_remap( &
    mol1, &
    mol2, &
-   nrec, &
-   permlist, &
-   countlist)
+   results)
 
-   type(mol_type), intent(inout) :: mol1, mol2
-   integer, intent(out) :: nrec
-   integer, dimension(:, :), intent(inout) :: permlist
-   integer, dimension(:), intent(inout) :: countlist
-
+   type(mol_type), intent(in) :: mol1, mol2
+   type(registry_type), intent(inout) :: results
    type(bipartition_type) :: eltypes
-   real(rk) :: travec1(3), travec2(3)
 
    ! Abort if molecules have different number of atoms
 
@@ -84,53 +77,14 @@ subroutine molecule_remap( &
 
    ! Optimize assignment to minimize the AdjD and RMSD
 
-   call map_atoms(mol1, mol2, eltypes, permlist, countlist, nrec)
+   call map_atoms( mol1, mol2, eltypes, results)
 
    ! Remove bonds from reactive sites and reoptimize assignment
 
 !   if (reac_flag) then
 !      call remove_reactive_bonds(mol1, mol2, permlist(:, 1))
-!      call map_atoms(mol1, mol2, permlist, countlist, nrec)
+!      call map_atoms(mol1, mol2, eltypes, results)
 !   end if
-
-end subroutine
-
-! Align atoms
-subroutine remapped_molecule_align( &
-   mol1, &
-   mol2, &
-   atomperm, &
-   travec1, &
-   travec2, &
-   rotquat)
-
-   type(mol_type), intent(in) :: mol1, mol2
-   integer, intent(in) :: atomperm(:)
-   real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
-   ! Local variables
-   real(rk), allocatable, dimension(:, :) :: coords1, coords2
-   real(rk), dimension(:), allocatable :: weights1, weights2
-
-   coords1 = mol1%get_coords()
-   coords2 = mol2%get_coords()
-   weights1 = element_weights(mol1%atoms%elnum)
-   weights2 = element_weights(mol1%atoms%elnum)
-
-   ! Calculate centroids
-
-   travec1 = -centroid(coords1, weights1)
-   travec2 = -centroid(coords2, weights2)
-
-
-   ! Calculate optimal rotation matrix
-
-   rotquat = leastrotquat( &
-      size(mol1%atoms), &
-      element_weights(mol1%atoms%elnum), &
-      translated_coords(coords1, travec1), &
-      translated_coords(coords2, travec2), &
-      atomperm &
-   )
 
 end subroutine
 
@@ -148,7 +102,6 @@ subroutine molecule_align( &
    ! Local variables
    integer :: natom1
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
-   real(rk), dimension(:), allocatable :: weights1, weights2
 
    ! Abort if molecules have different number of atoms
 
@@ -191,24 +144,20 @@ subroutine molecule_align( &
    end if
 
    natom1 = size(mol1%atoms)
-   coords1 = mol1%get_coords()
-   coords2 = mol2%get_coords()
-   weights1 = element_weights(mol1%atoms%elnum)
-   weights2 = element_weights(mol1%atoms%elnum)
+   coords1 = mol1%get_weighted_coords()
+   coords2 = mol2%get_weighted_coords()
 
    ! Calculate centroids
 
-   travec1 = -centroid(coords1, weights1)
-   travec2 = -centroid(coords2, weights2)
+   travec1 = -centroid(coords1)
+   travec2 = -centroid(coords2)
 
    ! Calculate optimal rotation matrix
 
-   rotquat = leastrotquat( &
-      natom1, &
-      weights1, &
+   rotquat = leasteigquat( &
+      identity_perm(natom1), &
       translated_coords(coords1, travec1), &
-      translated_coords(coords2, travec2), &
-      identity_perm(natom1) &
+      translated_coords(coords2, travec2) &
    )
 
 end subroutine

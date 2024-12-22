@@ -1,5 +1,4 @@
-kinds.f90
-flags.f90
-bounds.f90
+parameters.f90
+globals.f90
 biasing.f90
 molalignlib.f90

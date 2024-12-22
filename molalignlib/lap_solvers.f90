@@ -1,7 +1,5 @@
 module lap_solvers
-use iso_fortran_env, only: int64
-use kinds
-use stdio
+use parameters
 use permutation
 use bipartition
 implicit none

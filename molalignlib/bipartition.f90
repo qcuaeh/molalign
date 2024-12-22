@@ -1,7 +1,6 @@
 module bipartition
+use parameters
 use partition
-use stdio
-use kinds
 implicit none
 private
 

@@ -1,6 +1,5 @@
 module partition
-use stdio
-use kinds
+use parameters
 implicit none
 private
 

@@ -15,30 +15,29 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module chemutils
-use stdio
-use kinds
+use parameters
 use chemdata
 use strutils
 
 implicit none
 
 private
-public elsym2num
 public split_tag
+public atomic_number
 
 contains
 
-function elsym2num(symbol) result(z)
-   character(*), intent(in) :: symbol
+function atomic_number(elsym) result(z)
+   character(*), intent(in) :: elsym
    integer :: z
 
    do z = 1, num_elems
-      if (uppercase(symbol) == uppercase(element_symbols(z))) then
+      if (uppercase(elsym) == uppercase(element_symbols(z))) then
          return
       end if
    end do
 
-   select case (uppercase(symbol))
+   select case (uppercase(elsym))
    case ('LJ')
       z = 1001
    case default
@@ -47,22 +46,23 @@ function elsym2num(symbol) result(z)
 
 end function
 
-subroutine split_tag( atom_tag, symbol, label)
-   character(*), intent(in) :: atom_tag
-   character(:), allocatable, intent(out) :: symbol, label
+subroutine split_tag( tag, elnum, label)
+   character(*), intent(in) :: tag
+   integer, intent(out) :: elnum, label
+   ! Local variables
    integer :: m, n
 
-   n = len_trim(atom_tag)
-   m = verify(uppercase(trim(atom_tag)), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+   n = len_trim(tag)
+   m = verify(uppercase(trim(tag)), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
    if (m == 0) then
-      label = '0'
-      symbol = atom_tag
-   else if (verify(atom_tag(m:n), '1234567890') == 0) then
-      read (atom_tag(m:n), *) label
-      symbol = atom_tag(1:m-1)
+      label = 0
+      elnum = atomic_number(tag)
+   else if (verify(tag(m:n), '1234567890') == 0) then
+      read (tag(m:n), *) label
+      elnum = atomic_number(tag(1:m-1))
    else
-      write (stderr, '(a,1x,a)') 'Invalid atomic symbol/label:', atom_tag
+      write (stderr, '(a,1x,a)') 'Invalid atomic elsym/label:', tag
       stop
    end if
 

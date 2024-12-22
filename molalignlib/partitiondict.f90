@@ -1,6 +1,5 @@
 module partitiondict
-use stdio
-use kinds
+use parameters
 use partition
 implicit none
 private

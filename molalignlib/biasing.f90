@@ -15,11 +15,9 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module biasing
-use stdio
-use kinds
-use types
-use flags
-use bounds
+use parameters
+use globals
+use common_types
 use sorting
 use strutils
 use bipartition
@@ -30,8 +28,8 @@ implicit none
 
 abstract interface
    subroutine bias_proc( mol1, mol2, eltypes, mnadists)
-      use kinds
-      use types
+      use parameters
+      use common_types
       use bipartition
       use molecule
       type(mol_type), intent(in) :: mol1, mol2

@@ -1,5 +1,5 @@
 module tupledict
-use stdio
+use parameters
 implicit none
 private
 

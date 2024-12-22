@@ -15,14 +15,10 @@
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 module printing
-use stdio
-use kinds
-use flags
+use parameters
+use registry
 
 implicit none
-
-character(*), parameter :: line1 = repeat('-', 41)
-character(*), parameter :: line2 = repeat('-', 48)
 
 interface print_stats
    module procedure print_stats_rmsd
@@ -31,47 +27,63 @@ end interface
 
 contains
 
-subroutine print_stats_rmsd(nrec, matches, avgsteps, avgrot, rmsd)
-   integer, intent(in) :: nrec
-   integer, dimension(:), intent(in) :: matches
-   real(rk), dimension(:), intent(in) :: avgsteps, avgrot, rmsd
-   integer :: irec
-   write (stderr, '(a,3x,a,4x,a,5x,a,8x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD'
-   write (stderr, '(a)') line1
-   do irec = 1, nrec
-      write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4)') &
-         irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrot(irec), rmsd(irec)
+subroutine print_stats_rmsd(results)
+   type(registry_type), intent(in) :: results
+   character(*), parameter :: line = repeat('-', 41)
+   ! Local variables
+   integer :: i
+   type(record_type) :: record
+
+   write (stdout, '(a,3x,a,4x,a,5x,a,8x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD'
+   write (stdout, '(a)') line
+   do i = 1, results%num_records
+      record = results%records(i)
+      write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4)') &
+         i, record%count, record%steps, record%rotang, sqrt(record%msd)
    end do
-   write (stderr, '(a)') line1
-   flush(stderr)
+   write (stdout, '(a)') line
+   write (stdout, '(a,1x,i0)') 'Random trials =', results%num_trials
+   write (stdout, '(a,1x,i0)') 'Minimization steps =', results%total_steps
+   if (results%overflow) then
+      write (stdout, '(a,1x,i0)') 'Visited local minima >', results%num_records
+   else
+      write (stdout, '(a,1x,i0)') 'Visited local minima =', results%num_records
+   end if
+   flush(stdout)
+
 end subroutine
 
 subroutine print_stats_adjd(nrec, matches, avgsteps, avgrot, adjd, rmsd)
    integer, intent(in) :: nrec
    integer, dimension(:), intent(in) :: matches, adjd
    real(rk), dimension(:), intent(in) :: avgsteps, avgrot, rmsd
+   character(*), parameter :: line = repeat('-', 48)
    integer :: irec
-   write (stderr, '(a,3x,a,4x,a,5x,a,6x,a,5x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'Δadj', 'RMSD'
-   write (stderr, '(a)') line2
+
+   write (stdout, '(a,3x,a,4x,a,5x,a,6x,a,5x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'Δadj', 'RMSD'
+   write (stdout, '(a)') line
    do irec = 1, nrec
-      write (stderr, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,i4,3x,f8.4)') &
+      write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,i4,3x,f8.4)') &
          irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrot(irec), adjd(irec), rmsd(irec)
    end do
-   write (stderr, '(a)') line2
-   flush(stderr)
+   write (stdout, '(a)') line
+   flush(stdout)
+
 end subroutine
 
-subroutine print_final_stats(overflow, maxrec, nrec, ntrial, nstep)
+subroutine print_final_stats(overflow, max_records, nrec, trials, nstep)
    logical, intent(in) :: overflow
-   integer, intent(in) :: maxrec, nrec, ntrial, nstep
-   write (stderr, '(a,1x,i0)') 'Random trials =', ntrial
-   write (stderr, '(a,1x,i0)') 'Minimization steps =', nstep
+   integer, intent(in) :: max_records, nrec, trials, nstep
+
+   write (stdout, '(a,1x,i0)') 'Random trials =', trials
+   write (stdout, '(a,1x,i0)') 'Minimization steps =', nstep
    if (overflow) then
-      write (stderr, '(a,1x,i0)') 'Visited local minima >', maxrec
+      write (stdout, '(a,1x,i0)') 'Visited local minima >', max_records
    else
-      write (stderr, '(a,1x,i0)') 'Visited local minima =', nrec
+      write (stdout, '(a,1x,i0)') 'Visited local minima =', nrec
    end if
-   flush(stderr)
+   flush(stdout)
+
 end subroutine
 
 end module
