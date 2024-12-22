@@ -46,7 +46,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    real(rk) :: eigquat(4), totquat(4)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:, :), allocatable :: coords1, coords2
-   type(boolmatrix_type), allocatable :: prunemask(:)
+   type(boolmatrix_type), allocatable :: pruned(:)
    real(rk) :: rmsd
 
    natom1 = size(mol1%atoms)
@@ -65,7 +65,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    call translate_coords(coords2, -centroid(coords2))
 
    ! Find unfeasible assignments
-   call prune_procedure(eltypes, mol1%get_coords(), mol2%get_coords(), prunemask)
+   call prune_procedure(eltypes, mol1%get_coords(), mol2%get_coords(), pruned)
 
    ! Initialize counters
    num_trials = 0
@@ -83,13 +83,13 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
       call rotate_coords(coords2, randrotquat())
 
       ! Assign atoms with current orientation
-      call assign_atoms_pruned(eltypes, coords1, coords2, prunemask, atomperm)
+      call assign_atoms_pruned(eltypes, coords1, coords2, pruned, atomperm)
       totquat = leasteigquat(atomperm, coords1, coords2)
       call rotate_coords(coords2, totquat)
       num_steps = 1
 
       do while (iter_flag)
-         call assign_atoms_pruned(eltypes, coords1, coords2, prunemask, auxperm)
+         call assign_atoms_pruned(eltypes, coords1, coords2, pruned, auxperm)
          if (all(auxperm == atomperm)) exit
          atomperm = auxperm
          eigquat = leasteigquat(atomperm, coords1, coords2)

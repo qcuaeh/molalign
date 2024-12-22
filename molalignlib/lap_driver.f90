@@ -33,10 +33,10 @@ public assign_atoms_pruned
 contains
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
+subroutine assign_atoms_nearest( eltypes, coords1, coords2, pruned, mnadists, atomperm)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+   type(boolmatrix_type), dimension(:), intent(in) :: pruned
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
@@ -60,10 +60,10 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, prunemask, mnadists,
 end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, atomperm)
+subroutine assign_atoms_pruned( eltypes, coords1, coords2, pruned, atomperm)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+   type(boolmatrix_type), dimension(:), intent(in) :: pruned
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h, part_size1
@@ -78,7 +78,7 @@ subroutine assign_atoms_pruned( eltypes, coords1, coords2, prunemask, atomperm)
       part_size1 = eltypes%parts(h)%size1
       atomidcs1 = eltypes%parts(h)%items1
       atomidcs2 = eltypes%parts(h)%items2
-      call minperm_pruned(part_size1, atomidcs1, atomidcs2, coords1, coords2, prunemask(h)%b, auxmap, dist)
+      call minperm_pruned(part_size1, atomidcs1, atomidcs2, coords1, coords2, pruned(h)%b, auxmap, dist)
       atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
    end do
 
@@ -105,10 +105,10 @@ subroutine assign_atoms( eltypes, coords1, coords2, atomperm, dist)
 end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine assign_atoms_biased( eltypes, coords1, coords2, prunemask, mnadists, atomperm)
+subroutine assign_atoms_biased( eltypes, coords1, coords2, pruned, mnadists, atomperm)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(boolmatrix_type), dimension(:), intent(in) :: prunemask
+   type(boolmatrix_type), dimension(:), intent(in) :: pruned
    type(realmatrix_type), dimension(:), intent(in) :: mnadists
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables

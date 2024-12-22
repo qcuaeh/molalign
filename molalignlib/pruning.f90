@@ -27,50 +27,49 @@ real(rk) :: prune_tol
 procedure(prune_proc), pointer :: prune_procedure
 
 abstract interface
-   subroutine prune_proc( eltypes, coords1, coords2, prunemask)
+   subroutine prune_proc( eltypes, coords1, coords2, pruned)
       use parameters
       use common_types
       use bipartition
       type(bipartition_type), intent(in) :: eltypes
       real(rk), dimension(:, :), intent(in) :: coords1, coords2
-      type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
+      type(boolmatrix_type), dimension(:), allocatable, intent(out) :: pruned
    end subroutine
 end interface
 
 contains
 
-subroutine prune_none( eltypes, coords1, coords2, prunemask)
+subroutine prune_none( eltypes, coords1, coords2, pruned)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
+   type(boolmatrix_type), dimension(:), allocatable, intent(out) :: pruned
    ! Local variables
    integer :: h, i, j
    integer :: part_size1, part_size2
 
-   allocate (prunemask(eltypes%num_parts))
+   allocate (pruned(eltypes%num_parts))
    do h = 1, eltypes%num_parts
       part_size1 = eltypes%parts(h)%size1
       part_size2 = eltypes%parts(h)%size2
-      allocate (prunemask(h)%b(part_size1, part_size2))
+      allocate (pruned(h)%b(part_size1, part_size2))
       do i = 1, part_size1
          do j = 1, part_size2
-            prunemask(h)%b(j, i) = .true.
+            pruned(h)%b(j, i) = .true.
          end do
       end do
    end do
 
 end subroutine
 
-subroutine prune_rd( eltypes, coords1, coords2, prunemask)
+subroutine prune_rd( eltypes, coords1, coords2, pruned)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(boolmatrix_type), dimension(:), allocatable, intent(out) :: prunemask
+   type(boolmatrix_type), dimension(:), allocatable, intent(out) :: pruned
    ! Local variables
    integer :: h, i, j, k
    integer :: iatom, jatom
    integer :: part_size1, part_size2
    type(nested_reallist_type), allocatable, dimension(:) :: dists1, dists2
-   logical :: pruned
 
    allocate (dists1(size(coords1, dim=2)))
    allocate (dists2(size(coords2, dim=2)))
@@ -103,23 +102,22 @@ subroutine prune_rd( eltypes, coords1, coords2, prunemask)
       end do
    end do
 
-   allocate (prunemask(eltypes%num_parts))
+   allocate (pruned(eltypes%num_parts))
    do h = 1, eltypes%num_parts
       part_size1 = eltypes%parts(h)%size1
       part_size2 = eltypes%parts(h)%size2
-      allocate (prunemask(h)%b(part_size1, part_size2))
+      allocate (pruned(h)%b(part_size1, part_size2))
+      pruned(h)%b = .false.
       do i = 1, part_size1
          iatom = eltypes%parts(h)%items1(i)
          do j = 1, part_size2
             jatom = eltypes%parts(h)%items2(j)
-            pruned = .false.
             do k = 1, eltypes%num_parts
                if (any(abs(dists2(jatom)%s(k)%x - dists1(iatom)%s(k)%x) > prune_tol)) then
-                  pruned = .true.
+                  pruned(h)%b(j, i) = .true.
                   exit
                end if
             end do
-            prunemask(h)%b(j, i) = .not. pruned
          end do
       end do
    end do

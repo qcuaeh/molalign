@@ -33,9 +33,9 @@ subroutine minperm_debug(n, bias, perm, dist)
 
 end subroutine
 
-subroutine minperm(part, r1, r2, perm, dist)
+subroutine minperm(part, x1, x2, perm, dist)
    type(bipart_type), intent(in) :: part
-   real(rk), intent(in) :: r1(:, :), r2(:, :)
+   real(rk), intent(in) :: x1(:, :), x2(:, :)
    integer, intent(out) :: perm(:)
    real(rk), intent(out) :: dist
    ! Local variables
@@ -46,7 +46,7 @@ subroutine minperm(part, r1, r2, perm, dist)
 
    do j = 1, part%size2
       do i = 1, part%size1
-         costs(i, j) = sum((r1(:, part%items1(i)) - r2(:, part%items2(j)))**2)
+         costs(i, j) = sum((x1(:, part%items1(i)) - x2(:, part%items2(j)))**2)
       end do
    end do
 
@@ -54,9 +54,9 @@ subroutine minperm(part, r1, r2, perm, dist)
 
 end subroutine
 
-subroutine minperm_biased(part, r1, r2, bias, perm, dist)
+subroutine minperm_biased(part, x1, x2, bias, perm, dist)
    type(bipart_type), intent(in) :: part
-   real(rk), intent(in) :: r1(:, :), r2(:, :)
+   real(rk), intent(in) :: x1(:, :), x2(:, :)
    real(rk), intent(in) :: bias(:, :)
    integer, intent(out) :: perm(:)
    real(rk), intent(out) :: dist
@@ -68,7 +68,7 @@ subroutine minperm_biased(part, r1, r2, bias, perm, dist)
 
    do j = 1, part%size2
       do i = 1, part%size1
-         costs(i, j) = sum((r1(:, part%items1(i)) - r2(:, part%items2(j)))**2) + bias(i, j)
+         costs(i, j) = sum((x1(:, part%items1(i)) - x2(:, part%items2(j)))**2) + bias(i, j)
       end do
    end do
 
@@ -76,7 +76,7 @@ subroutine minperm_biased(part, r1, r2, bias, perm, dist)
 
 end subroutine
 
-subroutine minperm_pruned(n, e1, e2, r1, r2, mask, perm, dist)
+subroutine minperm_pruned(n, s1, s2, x1, x2, prun, perm, dist)
 
 ! Adapted from GMIN: A program for finding global minima
 ! Copyright (C) 1999-2006 David J. Wales
@@ -104,9 +104,9 @@ subroutine minperm_pruned(n, e1, e2, r1, r2, mask, perm, dist)
 !     p,q: Coordinate vectors (n particles)
 
    integer, intent(in) :: n
-   integer, intent(in) :: e1(n), e2(n)
-   real(rk), intent(in) :: r1(3, *), r2(3, *)
-   logical, intent(in) :: mask(n, n)
+   integer, intent(in) :: s1(n), s2(n)
+   real(rk), intent(in) :: x1(3, *), x2(3, *)
+   logical, intent(in) :: prun(n, n)
 
 !   Output
 !     perm: Permutation so that p(i) <--> q(perm(i))
@@ -131,23 +131,23 @@ subroutine minperm_pruned(n, e1, e2, r1, r2, mask, perm, dist)
    integer, allocatable :: kk(:)
    integer(int64), allocatable :: cc(:)
 
-   sz = count(mask)
+   sz = n*n - count(prun)
 
    allocate (kk(sz))
    allocate (cc(sz))
 
    first(1) = 1
    do i = 1, n
-      first(i+1) = first(i) + count(mask(:, i))
+      first(i+1) = first(i) + n - count(prun(:, i))
    end do
 
-!  Compute the pruned cost matrix...
+!  Compute the sparse cost matrix...
 
    do i = 1, n
       k = first(i)
       do j = 1, n
-         if (mask(j, i)) then
-            cc(k) = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
+         if (.not. prun(j, i)) then
+            cc(k) = scale * sum((x1(:, s1(i)) - x2(:, s2(j)))**2)
             kk(k) = j
             k = k + 1
          end if
@@ -184,7 +184,7 @@ subroutine minperm_pruned(n, e1, e2, r1, r2, mask, perm, dist)
 
 end subroutine
 
-subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
+subroutine minperm_nearest(n, s1, s2, x1, x2, perm, dist)
 
 ! Adapted from GMIN: A program for finding global minima
 ! Copyright (C) 1999-2006 David J. Wales
@@ -212,8 +212,8 @@ subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
 !     p,q: Coordinate vectors (n particles)
 
    integer, intent(in) :: n
-   integer, intent(in) :: e1(n), e2(n)
-   real(rk), intent(in) :: r1(3, *), r2(3, *)
+   integer, intent(in) :: s1(n), s2(n)
+   real(rk), intent(in) :: x1(3, *), x2(3, *)
 
 !   Output
 !     perm: Permutation so that p(i) <--> q(perm(i))
@@ -263,7 +263,7 @@ subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
       do i = 1, n
          k = first(i)
          do j = 1, n
-            cc(k) = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
+            cc(k) = scale * sum((x1(:, s1(i)) - x2(:, s2(j)))**2)
             kk(k) = j
             k = k + 1
          end do
@@ -280,7 +280,7 @@ subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
       do i = 1, n
          k = first(i) - 1
          do j = 1, m
-            d = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
+            d = scale * sum((x1(:, s1(i)) - x2(:, s2(j)))**2)
             cc(k+j) = d
             kk(k+j) = j
             l = j
@@ -298,7 +298,7 @@ subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
             end if
 11       end do
          do j = m+1, n
-            d = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
+            d = scale * sum((x1(:, s1(i)) - x2(:, s2(j)))**2)
             if (d < cc(k+1)) then
                cc(k+1) = d
                kk(k+1) = j
@@ -345,7 +345,7 @@ subroutine minperm_nearest(n, e1, e2, r1, r2, perm, dist)
 !      do i = 1, n
 !         k = first(i) - 1
 !         do j = 1, n
-!            d = scale * sum((r1(:, e1(i)) - r2(:, e2(j)))**2)
+!            d = scale * sum((x1(:, s1(i)) - x2(:, s2(j)))**2)
 !            if (d > cc(k+m)) cycle
 !            do l = m, 2, -1
 !               if (d > cc(k+l-1)) exit
