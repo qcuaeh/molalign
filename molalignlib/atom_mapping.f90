@@ -36,12 +36,13 @@ contains
 subroutine map_atoms(mol1, mol2, eltypes, results)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
-   type(registry_type), intent(inout) :: results
+   type(registry_type), target, intent(inout) :: results
 
    ! Local variables
 
    integer :: natom1
-   integer :: num_trials, num_steps, lead_count
+   integer :: num_trials, num_steps
+   integer, pointer :: lead_count
    real(rk) :: eigquat(4), totquat(4)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:, :), allocatable :: coords1, coords2
@@ -66,8 +67,8 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    call prune_procedure(eltypes, mol1%get_coords(), mol2%get_coords(), prunemask)
 
    ! Initialize counters
-   lead_count = 0
    num_trials = 0
+   lead_count => results%records(1)%count
 
    ! Initialize random number generator
    call random_initialize()
@@ -98,7 +99,6 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
 
       ! Update results
       call results%push(atomperm, num_steps, angle(totquat), coords1, coords2)
-      lead_count = results%records(1)%count
 
    end do
 

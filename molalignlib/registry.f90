@@ -55,6 +55,7 @@ subroutine registry_initialize(self, max_records)
    self%overflow = .false.
 
    allocate (self%records(max_records))
+   self%records%count = 0
    self%records%msd = huge(self%records(1)%msd)
 
 end subroutine
