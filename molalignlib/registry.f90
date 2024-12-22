@@ -63,37 +63,40 @@ subroutine registry_initialize(self, max_records)
 end subroutine
 
 subroutine registry_push(self, atomperm, steps, rotang, adjd, rmsd)
-   class(registry_type), intent(inout) :: self
+   class(registry_type), target, intent(inout) :: self
    integer, intent(in) :: atomperm(:)
    integer, intent(in) :: steps, adjd
    real(rk), intent(in) :: rotang, rmsd
    ! Local variables
+   type(record_type), pointer :: record
    integer :: i, j
 
    self%total_steps = self%total_steps + steps
 
    do i = 1, self%num_records
-      if (allocated(self%records(i)%atomperm)) then
-         if (all(atomperm == self%records(i)%atomperm)) then
-            self%records(i)%count = self%records(i)%count + 1
-            self%records(i)%steps = self%records(i)%steps + (steps - self%records(i)%steps) / self%records(i)%count
-            self%records(i)%rotang = self%records(i)%rotang + (rotang - self%records(i)%rotang) / self%records(i)%count
+      record => self%records(i)
+      if (allocated(record%atomperm)) then
+         if (all(atomperm == record%atomperm)) then
+            record%count = record%count + 1
+            record%steps = record%steps + (steps - record%steps) / record%count
+            record%rotang = record%rotang + (rotang - record%rotang) / record%count
             return
          end if
       end if
    end do
 
    do i = 1, size(self%records)
-      if (adjd < self%records(i)%adjd .or. (adjd == self%records(i)%adjd .and. rmsd < self%records(i)%rmsd)) then
+      record => self%records(i)
+      if (adjd < record%adjd .or. (adjd == record%adjd .and. rmsd < record%rmsd)) then
          do j = size(self%records), i + 1, -1
             self%records(j) = self%records(j - 1)
          end do
-         self%records(i)%atomperm = atomperm
-         self%records(i)%count = 1
-         self%records(i)%rmsd = rmsd
-         self%records(i)%adjd = adjd
-         self%records(i)%steps = steps
-         self%records(i)%rotang = rotang
+         record%atomperm = atomperm
+         record%count = 1
+         record%rmsd = rmsd
+         record%adjd = adjd
+         record%steps = steps
+         record%rotang = rotang
          exit
       end if
    end do
