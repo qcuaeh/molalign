@@ -34,6 +34,6 @@ lap_driver.f90
 #tracking.f90
 #backtracking.f90
 #reactivity.f90
-atom_mapping.f90
-#atom_mapping_conf.f90
+#atom_mapping_free.f90
+atom_mapping_conf.f90
 molalignlib.f90

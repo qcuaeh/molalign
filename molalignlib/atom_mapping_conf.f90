@@ -48,7 +48,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
 
    ! Local variables
 
-   integer :: trials
+   integer :: num_trials
    integer, allocatable :: atomperm(:)
 
    integer :: natom1
@@ -71,14 +71,14 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    call compute_crossmnatypes(mol1, mol2, mnatypes)
    call mnatypes%print_parts()
 
-   trials = 0
-   max_trials = 100
+   num_trials = 0
+   max_trials = 1000
 
    ! Loop for map searching
 
-   do while (trials < max_trials)
+   do while (num_trials < max_trials)
 
-      trials = trials + 1
+      num_trials = num_trials + 1
       call rotate_coords(coords2, randrotquat())
       submnatypes = mnatypes
       call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
@@ -98,7 +98,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
       ! Update results
       adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
       rmsd = sqrt(leastsqdistsum(atomperm, coords1, coords2))
-      call results%push(atomperm, num_steps, angle(totquat), adjd, rmsd)
+      call results%push(atomperm, 1, 0._rk, adjd, rmsd)
 
    end do
 
