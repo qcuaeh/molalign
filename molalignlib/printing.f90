@@ -29,16 +29,16 @@ contains
 
 subroutine print_stats_rmsd(results)
    type(registry_type), intent(in) :: results
-   character(*), parameter :: line = repeat('-', 41)
+   character(*), parameter :: line = repeat('-', 42)
    ! Local variables
    integer :: i
    type(record_type) :: record
 
-   write (stdout, '(a,3x,a,4x,a,5x,a,8x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'RMSD'
+   write (stdout, '(2x,a,3x,a,4x,a,5x,a,8x,a)') '#', 'Count', 'Steps', 'Rot-θ', 'RMSD'
    write (stdout, '(a)') line
    do i = 1, results%num_records
       record = results%records(i)
-      write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,f8.4)') &
+      write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,4x,f8.4)') &
          i, record%count, record%steps, record%rotang, sqrt(record%msd)
    end do
    write (stdout, '(a)') line
@@ -57,13 +57,13 @@ subroutine print_stats_adjd(nrec, matches, avgsteps, avgrot, adjd, rmsd)
    integer, intent(in) :: nrec
    integer, dimension(:), intent(in) :: matches, adjd
    real(rk), dimension(:), intent(in) :: avgsteps, avgrot, rmsd
-   character(*), parameter :: line = repeat('-', 48)
+   character(*), parameter :: line = repeat('-', 49)
    integer :: irec
 
-   write (stdout, '(a,3x,a,4x,a,5x,a,6x,a,5x,a)') 'Map', 'Count', 'Steps', 'Rot.', 'Δadj', 'RMSD'
+   write (stdout, '(2x,a,3x,a,4x,a,5x,a,6x,a,6x,a)') '#', 'Count', 'Steps', 'Rot-θ', 'Δadj', 'RMSD'
    write (stdout, '(a)') line
    do irec = 1, nrec
-      write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,3x,i4,3x,f8.4)') &
+      write (stdout, '(i3,4x,i4,4x,f5.1,5x,f5.1,4x,i4,4x,f8.4)') &
          irec, matches(irec), avgsteps(irec), 90./asin(1.)*avgrot(irec), adjd(irec), rmsd(irec)
    end do
    write (stdout, '(a)') line

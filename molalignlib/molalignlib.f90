@@ -17,7 +17,7 @@
 module molalignlib
 use parameters
 use globals
-use random
+!use random
 use linalg
 use sorting
 use molecule
@@ -70,10 +70,6 @@ subroutine molecule_remap( &
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
-
-   ! Initialize random number generator
-
-   call random_initialize()
 
    ! Optimize assignment to minimize the AdjD and RMSD
 

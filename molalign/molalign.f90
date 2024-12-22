@@ -257,7 +257,7 @@ if (remap_flag) then
          write (stderr, "(a)") str(rmsd, 4)
       end if
 
-      auxmol%title = 'Map='//str(i)//' RMSD='//str(rmsd, 4)
+      auxmol%title = 'RMSD='//str(rmsd, 4)
       auxmol%atoms%elnum = mol2%atoms(atomperm)%elnum
       auxmol%atoms%label = mol2%atoms(atomperm)%label
       auxmol%atoms%weight = mol2%atoms(atomperm)%weight

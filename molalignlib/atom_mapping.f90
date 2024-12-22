@@ -17,6 +17,7 @@
 module atom_mapping
 use parameters
 use globals
+use random
 use molecule
 use chemdata
 use rotation
@@ -43,37 +44,38 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    integer :: num_trials, num_steps, lead_count
    real(rk) :: eigquat(4), totquat(4)
    integer, dimension(:), allocatable :: atomperm, auxperm
-   real(rk), dimension(:, :), allocatable :: coords1, coords2, initial_coords2
+   real(rk), dimension(:, :), allocatable :: coords1, coords2
    type(boolmatrix_type), allocatable :: prunemask(:)
 
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
-   initial_coords2 = mol2%get_weighted_coords()
+   coords2 = mol2%get_weighted_coords()
    allocate (auxperm(natom1))
    allocate (atomperm(natom1))
 
    ! Reflect atoms
    if (mirror_flag) then
-      call reflect_coords(initial_coords2)
+      call reflect_coords(coords2)
    end if
 
    ! Translate atoms to their centroids
    call translate_coords(coords1, -centroid(coords1))
-   call translate_coords(initial_coords2, -centroid(initial_coords2))
+   call translate_coords(coords2, -centroid(coords2))
 
    ! Find unfeasible assignments
    call prune_procedure(eltypes, mol1%get_coords(), mol2%get_coords(), prunemask)
 
+   ! Initialize counters
    lead_count = 0
    num_trials = 0
+
+   ! Initialize random number generator
+   call random_initialize()
 
    ! Loop for map searching
    do while (lead_count < max_count .and. num_trials < max_trials)
 
       num_trials = num_trials + 1
-
-      ! Reset coords2
-      coords2 = initial_coords2
 
       ! Aply a random rotation to coords2
       call rotate_coords(coords2, randrotquat())
