@@ -45,15 +45,15 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    integer, pointer :: lead_count
    real(rk) :: eigquat(4), totquat(4)
    integer, dimension(:), allocatable :: atomperm, auxperm
-   real(rk), dimension(:, :), allocatable :: coords1, coords2
+   real(rk), dimension(:,:), allocatable :: coords1, coords2
    type(boolmatrix_type), allocatable :: pruned(:)
    real(rk) :: rmsd
 
    natom1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
-   allocate (auxperm(natom1))
    allocate (atomperm(natom1))
+   allocate (auxperm(natom1))
 
    ! Reflect atoms
    if (mirror_flag) then
@@ -67,14 +67,14 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    ! Find unfeasible assignments
    call prune_procedure(eltypes, mol1%get_coords(), mol2%get_coords(), pruned)
 
-   ! Initialize counters
-   num_trials = 0
-   lead_count => results%records(1)%count
-
    ! Initialize random number generator
    call random_initialize()
 
-   ! Loop for map searching
+   ! Optimize atom permutation
+
+   num_trials = 0
+   lead_count => results%records(1)%count
+
    do while (lead_count < max_count .and. num_trials < max_trials)
 
       num_trials = num_trials + 1
@@ -99,7 +99,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
       end do
 
       ! Update results
-      rmsd = sqrt(leastsqdistsum(atomperm, coords1, coords2))
+      rmsd = sqrt(sqdistsum(atomperm, coords1, coords2))
       call results%push(atomperm, num_steps, angle(totquat), 0, rmsd)
 
    end do

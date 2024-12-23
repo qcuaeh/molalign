@@ -41,11 +41,11 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, pruned, mnadists, at
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h, part_size1
-   integer, allocatable :: auxmap(:)
+   integer, allocatable :: auxperm(:)
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
 
-   allocate (auxmap(eltypes%largest_part_size))
+   allocate (auxperm(eltypes%largest_part_size))
 
    ! Fill distance matrix for each block
 
@@ -53,8 +53,8 @@ subroutine assign_atoms_nearest( eltypes, coords1, coords2, pruned, mnadists, at
       part_size1 = eltypes%parts(h)%size1
       atomidcs1 = eltypes%parts(h)%items1
       atomidcs2 = eltypes%parts(h)%items2
-      call minperm_nearest(part_size1, atomidcs1, atomidcs2, coords1, coords2, auxmap, dist)
-      atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
+      call minperm_nearest(part_size1, atomidcs1, atomidcs2, coords1, coords2, auxperm, dist)
+      atomperm(atomidcs1) = atomidcs2(auxperm(:part_size1))
    end do
 
 end subroutine
@@ -67,19 +67,19 @@ subroutine assign_atoms_pruned( eltypes, coords1, coords2, pruned, atomperm)
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h, part_size1
-   integer, allocatable :: auxmap(:)
+   integer, allocatable :: auxperm(:)
    integer, allocatable, dimension(:) :: atomidcs1, atomidcs2
    real(rk) :: dist
 
-   allocate (auxmap(eltypes%largest_part_size))
+   allocate (auxperm(eltypes%largest_part_size))
 
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
       part_size1 = eltypes%parts(h)%size1
       atomidcs1 = eltypes%parts(h)%items1
       atomidcs2 = eltypes%parts(h)%items2
-      call minperm_pruned(part_size1, atomidcs1, atomidcs2, coords1, coords2, pruned(h)%b, auxmap, dist)
-      atomperm(atomidcs1) = atomidcs2(auxmap(:part_size1))
+      call minperm_pruned(part_size1, atomidcs1, atomidcs2, coords1, coords2, pruned(h)%b, auxperm, dist)
+      atomperm(atomidcs1) = atomidcs2(auxperm(:part_size1))
    end do
 
 end subroutine
@@ -92,14 +92,14 @@ subroutine assign_atoms( eltypes, coords1, coords2, atomperm, dist)
    real(rk), intent(out) :: dist
    ! Local variables
    integer :: h
-   integer, allocatable :: auxmap(:)
+   integer, allocatable :: auxperm(:)
 
-   allocate (auxmap(eltypes%largest_part_size))
+   allocate (auxperm(eltypes%largest_part_size))
 
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
-      call minperm(eltypes%parts(h), coords1, coords2, auxmap, dist)
-      atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxmap(:eltypes%parts(h)%size1))
+      call minperm(eltypes%parts(h), coords1, coords2, auxperm, dist)
+      atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxperm(:eltypes%parts(h)%size1))
    end do
 
 end subroutine
@@ -113,15 +113,15 @@ subroutine assign_atoms_biased( eltypes, coords1, coords2, pruned, mnadists, ato
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h
-   integer, allocatable :: auxmap(:)
+   integer, allocatable :: auxperm(:)
    real(rk) :: dist
 
-   allocate (auxmap(eltypes%largest_part_size))
+   allocate (auxperm(eltypes%largest_part_size))
 
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
-      call minperm_biased(eltypes%parts(h), coords1, coords2, mnadists(h)%x, auxmap, dist)
-      atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxmap(:eltypes%parts(h)%size1))
+      call minperm_biased(eltypes%parts(h), coords1, coords2, mnadists(h)%x, auxperm, dist)
+      atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxperm(:eltypes%parts(h)%size1))
    end do
 
 end subroutine

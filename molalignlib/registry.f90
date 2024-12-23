@@ -44,7 +44,6 @@ contains
 subroutine registry_initialize(self, max_records)
    class(registry_type), intent(inout) :: self
    integer, intent(in) :: max_records
-   integer :: i
 
    if (max_records < 1) then
       error stop 'max_records < 1'
