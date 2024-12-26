@@ -11,9 +11,9 @@ public operator (==)
 public assignment (=)
 
 type :: bipart_type
-   integer :: size1
-   integer :: size2
    integer :: index
+   integer :: part_size1
+   integer :: part_size2
    integer, pointer :: indices1(:)
    integer, pointer :: indices2(:)
    integer, pointer :: largest_part_size
@@ -28,8 +28,8 @@ end type
 
 type :: bipartition_type
    integer :: num_parts
-   integer :: tot_items1
-   integer :: tot_items2
+   integer :: num_items1
+   integer :: num_items2
    integer, pointer :: indices1(:)
    integer, pointer :: indices2(:)
    integer, pointer :: largest_part_size
@@ -64,7 +64,7 @@ subroutine partition_assignment(left, right)
    ! Local variables
    integer :: h
 
-   call left%initialize(right%tot_items1, right%tot_items2)
+   call left%initialize(right%num_items1, right%num_items2)
 
    do h = 1, right%num_parts
       call left%add_part(right%parts(h))
@@ -72,21 +72,21 @@ subroutine partition_assignment(left, right)
 
 end subroutine
 
-subroutine partition_initialize(self, tot_items1, tot_items2)
+subroutine partition_initialize(self, num_items1, num_items2)
    class(bipartition_type), intent(inout) :: self
-   integer, intent(in) :: tot_items1, tot_items2
+   integer, intent(in) :: num_items1, num_items2
 
    if (associated(self%parts)) then
       error stop 'Memory leak'
    end if
 
    allocate (self%largest_part_size)
-   allocate (self%indices1(tot_items1))
-   allocate (self%indices2(tot_items2))
-   allocate (self%parts(tot_items1 + tot_items2))
+   allocate (self%indices1(num_items1))
+   allocate (self%indices2(num_items2))
+   allocate (self%parts(num_items1 + num_items2))
 
-   self%tot_items1 = tot_items1
-   self%tot_items2 = tot_items2
+   self%num_items1 = num_items1
+   self%num_items2 = num_items2
    self%num_parts = 0
    self%largest_part_size = 0
    self%initialized = .true.
@@ -126,8 +126,8 @@ function partition_new_part(self, max_size1, max_size2) result(part)
    self%parts(self%num_parts)%index = self%num_parts
 
    ! Initialize part size
-   self%parts(self%num_parts)%size1 = 0
-   self%parts(self%num_parts)%size2 = 0
+   self%parts(self%num_parts)%part_size1 = 0
+   self%parts(self%num_parts)%part_size2 = 0
 
    ! Allocate list allocation
    allocate (self%parts(self%num_parts)%items1_allocation(max_size1))
@@ -155,13 +155,13 @@ subroutine partition_add_part(self, part)
    type(bipart_type), pointer :: newpart
    integer :: i
 
-   newpart => self%new_part(part%size1, part%size2)
+   newpart => self%new_part(part%part_size1, part%part_size2)
 
-   do i = 1, part%size1
+   do i = 1, part%part_size1
       call newpart%add1(part%items1(i))
    end do
 
-   do i = 1, part%size2
+   do i = 1, part%part_size2
       call newpart%add2(part%items2(i))
    end do
 
@@ -172,20 +172,20 @@ subroutine part_add1(self, element)
    integer, intent(in) :: element
 
    ! Increase part size
-   self%size1 = self%size1 + 1
+   self%part_size1 = self%part_size1 + 1
 
    ! Update list pointers
-   self%items1 => self%items1_allocation(:self%size1)
+   self%items1 => self%items1_allocation(:self%part_size1)
 
    ! Add element to part
-   self%items1(self%size1) = element
+   self%items1(self%part_size1) = element
 
    ! Add index to part map
    self%indices1(element) = self%index
 
    ! Update largest part size
-   if (self%size1 > self%largest_part_size) then
-      self%largest_part_size = self%size1
+   if (self%part_size1 > self%largest_part_size) then
+      self%largest_part_size = self%part_size1
    end if
 
 end subroutine
@@ -195,20 +195,20 @@ subroutine part_add2(self, element)
    integer, intent(in) :: element
 
    ! Increase part size
-   self%size2 = self%size2 + 1
+   self%part_size2 = self%part_size2 + 1
 
    ! Update list pointers
-   self%items2 => self%items2_allocation(:self%size2)
+   self%items2 => self%items2_allocation(:self%part_size2)
 
    ! Add element to part
-   self%items2(self%size2) = element
+   self%items2(self%part_size2) = element
 
    ! Add index to part map
    self%indices2(element) = self%index
 
    ! Update largest part size
-   if (self%size2 > self%largest_part_size) then
-      self%largest_part_size = self%size2
+   if (self%part_size2 > self%largest_part_size) then
+      self%largest_part_size = self%part_size2
    end if
 
 end subroutine
@@ -220,10 +220,10 @@ subroutine partition_print_parts(self)
 
    write (stderr, *)
    do h = 1, self%num_parts
-      fmtstr = "(i3,':',2x,'{'" // repeat(',1x,i3', self%parts(h)%size1) &
-            // ",1x,'}',2x,'{'" // repeat(',1x,i3', self%parts(h)%size2) // ",1x,'}')"
-      write (stderr, fmtstr) h, self%parts(h)%items1(:self%parts(h)%size1), &
-            self%parts(h)%items2(:self%parts(h)%size2)
+      fmtstr = "(i3,':',2x,'{'" // repeat(',1x,i3', self%parts(h)%part_size1) &
+            // ",1x,'}',2x,'{'" // repeat(',1x,i3', self%parts(h)%part_size2) // ",1x,'}')"
+      write (stderr, fmtstr) h, self%parts(h)%items1(:self%parts(h)%part_size1), &
+            self%parts(h)%items2(:self%parts(h)%part_size2)
    end do
 
 end subroutine
@@ -234,12 +234,12 @@ function partition_first_partition(self) result(partition)
    type(partition_type) :: partition
    type(part_type), pointer :: newtype
 
-   call partition%initialize(self%tot_items1)
+   call partition%initialize(self%num_items1)
 
    do h = 1, self%num_parts
-      if (self%parts(h)%size1 > 0) then
-         newtype => partition%new_part(self%parts(h)%size1)
-         do i = 1, self%parts(h)%size1
+      if (self%parts(h)%part_size1 > 0) then
+         newtype => partition%new_part(self%parts(h)%part_size1)
+         do i = 1, self%parts(h)%part_size1
             call newtype%add(self%parts(h)%items1(i))
          end do
       end if
@@ -260,11 +260,11 @@ function bipartition_equality(self, other) result(equality)
    end if
 
    do h = 1, self%num_parts
-      if (self%parts(h)%size1 /= other%parts(h)%size1) then
+      if (self%parts(h)%part_size1 /= other%parts(h)%part_size1) then
          equality = .false.
          return
       end if
-      if (self%parts(h)%size2 /= other%parts(h)%size2) then
+      if (self%parts(h)%part_size2 /= other%parts(h)%part_size2) then
          equality = .false.
          return
       end if

@@ -32,15 +32,15 @@ subroutine readxyz(unit, mol)
    ! Local variables
    character(ll) :: buffer
    character(wl) :: tag
-   integer :: i, natom, elnum, label
+   integer :: i, num_atoms, elnum, label
    real(rk) :: coords(3)
 
-   read (unit, *, end=99) natom
-   allocate (mol%atoms(natom))
+   read (unit, *, end=99) num_atoms
+   allocate (mol%atoms(num_atoms))
    read (unit, '(a)', end=99) buffer
    mol%title = trim(buffer)
 
-   do i = 1, natom
+   do i = 1, num_atoms
       read (unit, *, end=99) tag, coords
       call split_tag(tag, elnum, label)
       mol%atoms(i)%elnum = elnum
@@ -61,7 +61,7 @@ subroutine readmol2(unit, mol)
    integer, intent(in) :: unit
    type(mol_type), intent(out) :: mol
    character(ll) :: buffer
-   integer :: i, id, natom, elnum, label
+   integer :: i, id, num_atoms, elnum, label
    integer :: nbond, atom1, atom2, bondorder
    character(wl) :: tag
    real(rk) :: coords(3)
@@ -74,18 +74,18 @@ subroutine readmol2(unit, mol)
 
    read (unit, '(a)', end=99) buffer
    mol%title = trim(buffer)
-   read (unit, *, end=99) natom, nbond
+   read (unit, *, end=99) num_atoms, nbond
 
-   allocate (mol%atoms(natom))
-   allocate (nadjs(natom))
-   allocate (adjlists(natom, natom))
+   allocate (mol%atoms(num_atoms))
+   allocate (nadjs(num_atoms))
+   allocate (adjlists(num_atoms, num_atoms))
 
    do
       read (unit, '(a)', end=99) buffer
       if (buffer == '@<TRIPOS>ATOM') exit
    end do
 
-   do i = 1, natom
+   do i = 1, num_atoms
       read (unit, *, end=99) id, tag, coords
       call split_tag(tag, elnum, label)
       mol%atoms(i)%elnum = elnum
@@ -130,16 +130,16 @@ end subroutine
 subroutine set_bonds(mol)
    type(mol_type), intent(inout) :: mol
    ! Local variables
-   integer :: i, j, natom
+   integer :: i, j, num_atoms
    integer, allocatable :: nadjs(:), adjlists(:, :)
    integer, allocatable :: elnums(:)
    real(rk), allocatable :: coords(:, :)
    real(rk), allocatable :: adjrads(:)
    real(rk) :: atomdist
 
-   natom = size(mol%atoms)
-   allocate (nadjs(natom))
-   allocate (adjlists(max_coord, natom))
+   num_atoms = size(mol%atoms)
+   allocate (nadjs(num_atoms))
+   allocate (adjlists(max_coord, num_atoms))
 
    ! Bond initialization
    nadjs(:) = 0
@@ -158,8 +158,8 @@ subroutine set_bonds(mol)
 
    ! Register adjacency matrix i,j if atoms i and j are closer
    ! than the sum of their adjacency radius
-   do i = 1, natom
-      do j = i + 1, natom
+   do i = 1, num_atoms
+      do j = i + 1, num_atoms
          atomdist = sqrt(sum((coords(:, i) - coords(:, j))**2))
          if (atomdist < adjrads(i) + adjrads(j)) then
             nadjs(i) = nadjs(i) + 1

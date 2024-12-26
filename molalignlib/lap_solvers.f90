@@ -42,15 +42,15 @@ subroutine minperm(part, x1, x2, perm, dist)
    integer :: i, j
    real(rk), allocatable :: costs(:, :)
 
-   allocate (costs(part%size1, part%size2))
+   allocate (costs(part%part_size1, part%part_size2))
 
-   do j = 1, part%size2
-      do i = 1, part%size1
+   do j = 1, part%part_size2
+      do i = 1, part%part_size1
          costs(i, j) = sum((x1(:, part%items1(i)) - x2(:, part%items2(j)))**2)
       end do
    end do
 
-   call assndx(1, costs, part%size1, part%size2, perm, dist)
+   call assndx(1, costs, part%part_size1, part%part_size2, perm, dist)
 
 end subroutine
 
@@ -64,15 +64,15 @@ subroutine minperm_biased(part, x1, x2, bias, perm, dist)
    integer :: i, j
    real(rk), allocatable :: costs(:, :)
 
-   allocate (costs(part%size1, part%size2))
+   allocate (costs(part%part_size1, part%part_size2))
 
-   do j = 1, part%size2
-      do i = 1, part%size1
+   do j = 1, part%part_size2
+      do i = 1, part%part_size1
          costs(i, j) = sum((x1(:, part%items1(i)) - x2(:, part%items2(j)))**2) + bias(i, j)
       end do
    end do
 
-   call assndx(1, costs, part%size1, part%size2, perm, dist)
+   call assndx(1, costs, part%part_size1, part%part_size2, perm, dist)
 
 end subroutine
 

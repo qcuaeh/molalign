@@ -49,8 +49,8 @@ subroutine prune_none( eltypes, coords1, coords2, pruned)
 
    allocate (pruned(eltypes%num_parts))
    do h = 1, eltypes%num_parts
-      part_size1 = eltypes%parts(h)%size1
-      part_size2 = eltypes%parts(h)%size2
+      part_size1 = eltypes%parts(h)%part_size1
+      part_size2 = eltypes%parts(h)%part_size2
       allocate (pruned(h)%b(part_size1, part_size2))
       do i = 1, part_size1
          do j = 1, part_size2
@@ -77,14 +77,14 @@ subroutine prune_rd( eltypes, coords1, coords2, pruned)
       allocate (dists1(i)%s(eltypes%num_parts))
       allocate (dists2(i)%s(eltypes%num_parts))
       do h = 1, eltypes%num_parts
-         allocate (dists1(i)%s(h)%x(eltypes%parts(h)%size1))
-         allocate (dists2(i)%s(h)%x(eltypes%parts(h)%size2))
+         allocate (dists1(i)%s(h)%x(eltypes%parts(h)%part_size1))
+         allocate (dists2(i)%s(h)%x(eltypes%parts(h)%part_size2))
       end do
    end do
 
    do i = 1, size(coords1, dim=2)
       do h = 1, eltypes%num_parts
-         do j = 1, eltypes%parts(h)%size1
+         do j = 1, eltypes%parts(h)%part_size1
             jatom = eltypes%parts(h)%items1(j)
             dists1(i)%s(h)%x(j) = sqrt(sum((coords1(:, jatom) - coords1(:, i))**2))
          end do
@@ -94,7 +94,7 @@ subroutine prune_rd( eltypes, coords1, coords2, pruned)
 
    do i = 1, size(coords2, dim=2)
       do h = 1, eltypes%num_parts
-         do j = 1, eltypes%parts(h)%size2
+         do j = 1, eltypes%parts(h)%part_size2
             jatom = eltypes%parts(h)%items2(j)
             dists2(i)%s(h)%x(j) = sqrt(sum((coords2(:, jatom) - coords2(:, i))**2))
          end do
@@ -104,8 +104,8 @@ subroutine prune_rd( eltypes, coords1, coords2, pruned)
 
    allocate (pruned(eltypes%num_parts))
    do h = 1, eltypes%num_parts
-      part_size1 = eltypes%parts(h)%size1
-      part_size2 = eltypes%parts(h)%size2
+      part_size1 = eltypes%parts(h)%part_size1
+      part_size2 = eltypes%parts(h)%part_size2
       allocate (pruned(h)%b(part_size1, part_size2))
       pruned(h)%b = .false.
       do i = 1, part_size1

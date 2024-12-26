@@ -109,18 +109,18 @@ subroutine set_adjlists(self, nadjs, adjlists)
    integer, intent(in) :: nadjs(:)
    integer, intent(in) :: adjlists(:, :)
    ! Local variables
-   integer :: i, k, natom
+   integer :: i, k, num_atoms
 
-   natom = size(self%atoms)
+   num_atoms = size(self%atoms)
 
-   do i = 1, natom
+   do i = 1, num_atoms
       self%atoms(i)%adjlist = adjlists(:nadjs(i), i)
    end do
 
-   allocate (self%adjmat(natom, natom))
+   allocate (self%adjmat(num_atoms, num_atoms))
    self%adjmat(:, :) = .false.
 
-   do i = 1, natom
+   do i = 1, num_atoms
       do k = 1, nadjs(i)
          self%adjmat(i, adjlists(k, i)) = .true.
       end do

@@ -37,19 +37,19 @@ subroutine compute_eltypes(mol, eltypes)
    integer :: eltype(2)
    type(tupledict_type) :: typedict
    type(partpointer_type), allocatable :: typelist(:)
-   integer :: i, natom
+   integer :: i, num_atoms
 
-   natom = size(mol%atoms)
-   call eltypes%initialize(natom)
-   call typedict%initialize(natom, 'ordered')
+   num_atoms = size(mol%atoms)
+   call eltypes%initialize(num_atoms)
+   call typedict%initialize(num_atoms, 'ordered')
    allocate (typelist(typedict%num_slots))
 
-   do i = 1, natom
+   do i = 1, num_atoms
       eltype(1) = mol%atoms(i)%elnum
       eltype(2) = mol%atoms(i)%label
       if (.not. (eltype .in. typedict)) then
          typelist(typedict%new_index(eltype))%ptr => &
-            eltypes%new_part(natom)
+            eltypes%new_part(num_atoms)
       end if
       call typelist(typedict%get_index(eltype))%ptr%add(i)
    end do
@@ -67,18 +67,18 @@ subroutine levelup_mnatypes(mol, mnatypes, subtypes)
    type(partpointer_type), allocatable :: typelist(:)
    integer, allocatable :: neighborhood(:)
 
-   call subtypes%initialize(mnatypes%tot_items)
+   call subtypes%initialize(mnatypes%num_items)
    call typedict%initialize(mnatypes%largest_part_size, 'unordered')
    allocate (typelist(typedict%num_slots))
 
    do h = 1, mnatypes%num_parts
 
-      do i = 1, mnatypes%parts(h)%size
+      do i = 1, mnatypes%parts(h)%part_size
          iatom = mnatypes%parts(h)%items(i)
          neighborhood = mnatypes%indices(mol%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
-               subtypes%new_part(mnatypes%parts(h)%size)
+               subtypes%new_part(mnatypes%parts(h)%part_size)
          end if
          call typelist(typedict%get_index(neighborhood))%ptr%add(iatom)
       end do
@@ -127,14 +127,14 @@ subroutine split_mnatypes(h, mol, mnatypes)
    type(part_type), pointer :: newtype
    type(partition_type) :: subtypes
 
-   call subtypes%initialize(mnatypes%tot_items)
+   call subtypes%initialize(mnatypes%num_items)
 
    do k = 1, h - 1
       call subtypes%add_part(mnatypes%parts(k))
    end do
 
-   do i = 1, mnatypes%parts(h)%size
-      newtype => subtypes%new_part(mnatypes%parts(h)%size)
+   do i = 1, mnatypes%parts(h)%part_size
+      newtype => subtypes%new_part(mnatypes%parts(h)%part_size)
       call newtype%add(mnatypes%parts(h)%items(i))
    end do
 
@@ -166,7 +166,7 @@ subroutine collect_degenerated_mnatypes(mol, mnatypes, metatypes)
    allocate (subpartitionlist(mnatypes%num_parts))
 
    do h = 1, mnatypes%num_parts
-      if (mnatypes%parts(h)%size > 1) then
+      if (mnatypes%parts(h)%part_size > 1) then
          subtypes = mnatypes
          call split_mnatypes(h, mol, subtypes)
          call compute_mnatypes(mol, subtypes)

@@ -51,7 +51,7 @@ type(strlist_type) :: posargs(2)
 type(mol_type) :: mol1, mol2, auxmol
 type(registry_type) :: results
 
-integer :: natom1
+integer :: num_atoms1
 real(rk), dimension(:, :), allocatable :: coords1, coords2
 
 ! Set default options
@@ -221,7 +221,7 @@ if (remap_flag) then
       call writefile(write_unit, fmtout, mol1)
    end if
 
-   natom1 = size(mol1%atoms)
+   num_atoms1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
 
@@ -282,8 +282,8 @@ else
    call rotate_coords(coords2, rotquat)
    call translate_coords(coords2, -travec1)
 
-   adjd = adjacencydiff(identity_perm(natom1), mol1%adjmat, mol2%adjmat)
-   rmsd = sqrt(sqdistsum(identity_perm(natom1), coords1, coords2))
+   adjd = adjacencydiff(identity_perm(num_atoms1), mol1%adjmat, mol2%adjmat)
+   rmsd = sqrt(sqdistsum(identity_perm(num_atoms1), coords1, coords2))
 
    if (bond_flag) then
       write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)

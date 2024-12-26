@@ -7,53 +7,6 @@ implicit none
 
 contains
 
-subroutine adjmat2list(natom, adjmat, nadjs, adjlists)
-   integer, intent(in) :: natom
-   logical, dimension(:, :), intent(in) :: adjmat
-   integer, dimension(:), intent(out) :: nadjs
-   integer, dimension(:, :), intent(out) :: adjlists
-   integer :: i, j
-
-   nadjs(:) = 0
-
-   do i = 1, natom
-      do j = i + 1, natom
-         if (adjmat(i, j)) then
-            nadjs(i) = nadjs(i) + 1
-            nadjs(j) = nadjs(j) + 1
-            if (nadjs(i) > max_coord .or. nadjs(j) > max_coord) then
-               write (stderr, '("Maximum coordination number exceeded!")')
-               stop
-            end if
-            adjlists(nadjs(i), i) = j
-            adjlists(nadjs(j), j) = i
-         end if
-      end do
-   end do
-
-end subroutine
-
-subroutine adjmat2bonds(natom, adjmat, nbond, bonds)
-   integer, intent(in) :: natom
-   logical, dimension(:, :), intent(in) :: adjmat
-   integer, intent(out) :: nbond
-   integer, dimension(:, :), intent(out) :: bonds
-   integer :: i, j
-
-   nbond = 0
-
-   do i = 1, natom
-      do j = i + 1, natom
-         if (adjmat(i, j)) then
-            nbond = nbond + 1
-            bonds(1, nbond) = i
-            bonds(2, nbond) = j
-         end if
-      end do
-   end do
-
-end subroutine
-
 function adjacencydiff(atomperm, adjmat1, adjmat2) result(diff)
 ! Purpose: Check if two graphs are equal.
 ! Return the number of differences between graphs.

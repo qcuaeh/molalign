@@ -96,7 +96,7 @@ subroutine molecule_align( &
    real(rk), intent(out) :: travec1(3), travec2(3), rotquat(4)
    type(bipartition_type) :: eltypes
    ! Local variables
-   integer :: natom1
+   integer :: num_atoms1
    real(rk), allocatable, dimension(:, :) :: coords1, coords2
 
    ! Abort if molecules have different number of atoms
@@ -139,7 +139,7 @@ subroutine molecule_align( &
       stop
    end if
 
-   natom1 = size(mol1%atoms)
+   num_atoms1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
 
@@ -151,7 +151,7 @@ subroutine molecule_align( &
    ! Calculate optimal rotation matrix
 
    rotquat = leasteigquat( &
-      identity_perm(natom1), &
+      identity_perm(num_atoms1), &
       translated_coords(coords1, travec1), &
       translated_coords(coords2, travec2) &
    )

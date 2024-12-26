@@ -40,7 +40,7 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
 
    ! Local variables
 
-   integer :: natom1
+   integer :: num_atoms1
    integer :: num_trials, num_steps
    integer, pointer :: lead_count
    real(rk) :: eigquat(4), totquat(4)
@@ -49,11 +49,11 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    type(boolmatrix_type), allocatable :: pruned(:)
    real(rk) :: rmsd
 
-   natom1 = size(mol1%atoms)
+   num_atoms1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
-   allocate (atomperm(natom1))
-   allocate (auxperm(natom1))
+   allocate (atomperm(num_atoms1))
+   allocate (auxperm(num_atoms1))
 
    ! Reflect atoms
    if (mirror_flag) then

@@ -24,15 +24,15 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    ! Local variables
 
-   integer :: eltypemap1(mol1%natom)
+   integer :: eltypemap1(mol1%num_atoms)
    integer :: h, i, moldiff
-   integer :: ntrack, track(mol1%natom)
-   integer :: unmapping(mol1%natom)
-   integer, dimension(mol1%natom) :: mnatypemap1, mnatypemap2
-   logical :: tracked(mol1%natom)
+   integer :: ntrack, track(mol1%num_atoms)
+   integer :: unmapping(mol1%num_atoms)
+   integer, dimension(mol1%num_atoms) :: mnatypemap1, mnatypemap2
+   logical :: tracked(mol1%num_atoms)
    real(rk) moldist
 
-   integer :: natom
+   integer :: num_atoms
    integer :: neltype1
    integer :: nmnatype1, nmnatype2
 
@@ -47,24 +47,24 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights
 
-   integer :: nadjs1(mol1%natom)
-   integer :: nadjs2(mol2%natom)
-   integer :: adjlists1(max_coord, mol1%natom)
-   integer :: adjlists2(max_coord, mol2%natom)
-   integer :: nadjmnatypes1(mol1%natom)
-   integer :: nadjmnatypes2(mol2%natom)
-   integer :: adjmnatypepartlens1(max_coord, mol1%natom)
-   integer :: adjmnatypepartlens2(max_coord, mol2%natom)
+   integer :: nadjs1(mol1%num_atoms)
+   integer :: nadjs2(mol2%num_atoms)
+   integer :: adjlists1(max_coord, mol1%num_atoms)
+   integer :: adjlists2(max_coord, mol2%num_atoms)
+   integer :: nadjmnatypes1(mol1%num_atoms)
+   integer :: nadjmnatypes2(mol2%num_atoms)
+   integer :: adjmnatypepartlens1(max_coord, mol1%num_atoms)
+   integer :: adjmnatypepartlens2(max_coord, mol2%num_atoms)
 
-   natom = mol1%get_natom()
+   num_atoms = mol1%get_natom()
 
    eltypes1 = mol1%gather_eltypes()
    eltypemap1 = eltypes1%indices
 
-   neltype1 = eltypes1%size
+   neltype1 = eltypes1%part_size
    allocate (eltypepartsizes1(neltype1))
    do h = 1, neltype1
-      eltypepartsizes1(h) = eltypes1%parts(h)%size
+      eltypepartsizes1(h) = eltypes1%parts(h)%part_size
    end do
 
    mnatypes1 = mol1%gather_mnatypes()
@@ -77,10 +77,10 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    allocate (mnatypepartsizes1(nmnatype1))
    allocate (mnatypepartsizes2(nmnatype2))
    do h = 1, nmnatype1
-      mnatypepartsizes1(h) = mnatypes1%parts(h)%size
+      mnatypepartsizes1(h) = mnatypes1%parts(h)%part_size
    end do
    do h = 1, nmnatype2
-      mnatypepartsizes2(h) = mnatypes2%parts(h)%size
+      mnatypepartsizes2(h) = mnatypes2%parts(h)%part_size
    end do
 
 !   adjlists1 = mol1%gather_adjlists()
@@ -110,8 +110,8 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    ntrack = 0
    tracked(:) = .false.
    unmapping = inverse_perm(atomperm)
-   moldiff = adjacencydiff (natom, adjmat1, adjmat2, atomperm)
-   moldist = rmsdist (natom, weights, coords1, coords2, atomperm)
+   moldiff = adjacencydiff (num_atoms, adjmat1, adjmat2, atomperm)
+   moldist = rmsdist (num_atoms, weights, coords1, coords2, atomperm)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "moldiff:", moldiff
@@ -125,12 +125,12 @@ subroutine minadjdiff (mol1, mol2, atomperm)
 
    if ( printInfo ) then
       print '(a,1x,i0)', "countFrag:", size(fragroots1)
-      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
-      print '(a,1x,f0.4,1x,f0.4)', "moldist:", rmsdist (natom, weights, coords1, coords2, atomperm), moldist
+      print '(a,1x,i0,1x,i0)', "moldiff:", adjacencydiff (num_atoms, adjmat1, adjmat2, atomperm), moldiff
+      print '(a,1x,f0.4,1x,f0.4)', "moldist:", rmsdist (num_atoms, weights, coords1, coords2, atomperm), moldist
    end if
 
-!    if (adjacencydiff (natom, adjmat1, adjmat2, atomperm) /= moldiff) then
-!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (natom, adjmat1, adjmat2, atomperm), moldiff
+!    if (adjacencydiff (num_atoms, adjmat1, adjmat2, atomperm) /= moldiff) then
+!        print '(a,x,i0,x,i0)', "moldiff:", adjacencydiff (num_atoms, adjmat1, adjmat2, atomperm), moldiff
 !    end if
 
    contains    
@@ -140,10 +140,10 @@ subroutine minadjdiff (mol1, mol2, atomperm)
                    nmismatch0, mismatches0, nmismatch1, mismatches1)
       integer, intent(in) :: node, atomperm(:)
       logical, intent(in) :: tracked(:)
-      integer, intent(out) :: nmatch, matches(natom)
-      integer, intent(out) :: nmismatch0, mismatches0(natom)
-      integer, intent(out) :: nmismatch1, mismatches1(natom)
-      integer :: i, adj0(natom), adj1(natom)
+      integer, intent(out) :: nmatch, matches(num_atoms)
+      integer, intent(out) :: nmismatch0, mismatches0(num_atoms)
+      integer, intent(out) :: nmismatch1, mismatches1(num_atoms)
+      integer :: i, adj0(num_atoms), adj1(num_atoms)
 
       adj0(:nadjs1(node)) = adjlists1(:nadjs1(node), node)
       adj1(:nadjs2(atomperm(node))) = adjlists2(:nadjs2(atomperm(node)), atomperm(node))
@@ -170,22 +170,22 @@ subroutine minadjdiff (mol1, mol2, atomperm)
    recursive subroutine recursive_backtrack (node, atomperm, unmapping, tracked, moldiff, moldist, &
                                   ntrack, track)
       integer, intent(in) :: node
-      integer, intent(inout) :: atomperm(natom), unmapping(natom)
-      logical, intent(inout) :: tracked(natom)
-      integer, intent(inout) :: moldiff, ntrack, track(natom)
+      integer, intent(inout) :: atomperm(num_atoms), unmapping(num_atoms)
+      logical, intent(inout) :: tracked(num_atoms)
+      integer, intent(inout) :: moldiff, ntrack, track(num_atoms)
       real(rk), intent(inout) :: moldist
 
       logical, parameter :: printInfo = .false.
 
-      integer :: nmatch, matches(natom)
-      integer :: nmismatch0, mismatches0(natom)
-      integer :: nmismatch1, mismatches1(natom)
-      integer :: mapping_branch(natom), moldiff_branch, unmapping_branch(natom)
-      integer :: ntrack_branch, track_branch(natom)
-      logical :: tracked_branch(natom)
+      integer :: nmatch, matches(num_atoms)
+      integer :: nmismatch0, mismatches0(num_atoms)
+      integer :: nmismatch1, mismatches1(num_atoms)
+      integer :: mapping_branch(num_atoms), moldiff_branch, unmapping_branch(num_atoms)
+      integer :: ntrack_branch, track_branch(num_atoms)
+      logical :: tracked_branch(num_atoms)
       integer :: i, j
-      logical :: matched0(natom), matched1(natom)
-      real(rk) :: moldist_branch, mol0local(3,natom), mol1local(3,natom)
+      logical :: matched0(num_atoms), matched1(num_atoms)
+      real(rk) :: moldist_branch, mol0local(3,num_atoms), mol1local(3,num_atoms)
 
       ! reserve node node as tracked
       ntrack = ntrack + 1
@@ -301,13 +301,13 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
 
    ! Local variables
 
-   integer :: unmap(mol1%natom), track(mol1%natom)
-   integer, dimension(mol1%natom) :: eqvos, eqvidx
+   integer :: unmap(mol1%num_atoms), track(mol1%num_atoms)
+   integer, dimension(mol1%num_atoms) :: eqvos, eqvidx
    integer :: permcount, h, i, n, diff, fragcount, ntrack
-   logical :: tracked(mol1%natom), held(mol1%natom)
+   logical :: tracked(mol1%num_atoms), held(mol1%num_atoms)
    real(rk) :: dist
 
-   integer :: natom
+   integer :: num_atoms
    integer :: neltype1
    integer :: nmnatype1, nmnatype2
 
@@ -322,23 +322,23 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    real(rk), dimension(:, :), allocatable :: coords1, coords2
    real(rk), dimension(:), allocatable :: weights
 
-   integer :: nadjs1(mol1%natom)
-   integer :: nadjs2(mol2%natom)
-   integer :: adjlists1(max_coord, mol1%natom)
-   integer :: adjlists2(max_coord, mol2%natom)
-   integer :: nadjmnatypes1(mol1%natom)
-   integer :: nadjmnatypes2(mol2%natom)
-   integer :: adjmnatypepartlens1(max_coord, mol1%natom)
-   integer :: adjmnatypepartlens2(max_coord, mol2%natom)
+   integer :: nadjs1(mol1%num_atoms)
+   integer :: nadjs2(mol2%num_atoms)
+   integer :: adjlists1(max_coord, mol1%num_atoms)
+   integer :: adjlists2(max_coord, mol2%num_atoms)
+   integer :: nadjmnatypes1(mol1%num_atoms)
+   integer :: nadjmnatypes2(mol2%num_atoms)
+   integer :: adjmnatypepartlens1(max_coord, mol1%num_atoms)
+   integer :: adjmnatypepartlens2(max_coord, mol2%num_atoms)
 
-   natom = mol1%get_natom()
+   num_atoms = mol1%get_natom()
 
    eltypes1 = mol1%gather_eltypes()
 
-   neltype1 = eltypes1%size
+   neltype1 = eltypes1%part_size
    allocate (eltypepartsizes1(neltype1))
    do h = 1, neltype1
-      eltypepartsizes1(h) = eltypes1%parts(h)%size
+      eltypepartsizes1(h) = eltypes1%parts(h)%part_size
    end do
 
    mnatypes1 = mol1%gather_mnatypes()
@@ -349,10 +349,10 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    allocate (mnatypepartsizes1(nmnatype1))
    allocate (mnatypepartsizes2(nmnatype2))
    do h = 1, nmnatype1
-      mnatypepartsizes1(h) = mnatypes1%parts(h)%size
+      mnatypepartsizes1(h) = mnatypes1%parts(h)%part_size
    end do
    do h = 1, nmnatype2
-      mnatypepartsizes2(h) = mnatypes2%parts(h)%size
+      mnatypepartsizes2(h) = mnatypes2%parts(h)%part_size
    end do
 
 !   adjlists1 = mol1%gather_adjlists()
@@ -399,7 +399,7 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    ntrack = 0
 
 !    i = 1
-!    do while ( i <= natom )
+!    do while ( i <= num_atoms )
 !        if ( tracked(i) ) then
 !            i = i + 1
 !        else
@@ -414,19 +414,19 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
 !        print *, ntrack
    end do
 
-!   print '(a,i0)', "Natoms: ", natom
-!   print '(a,f8.4)', "dist: ", sqrt(leastsqdistsum(natom, weights, coords1, workcoords, atomperm))
+!   print '(a,i0)', "Natoms: ", num_atoms
+!   print '(a,f8.4)', "dist: ", sqrt(leastsqdistsum(num_atoms, weights, coords1, workcoords, atomperm))
 !   print '(a,i0)', "permcount: ", permcount
 !   print '(a,i0)', "fragcount: ", fragcount
 
    contains    
 
    recursive subroutine recursive_remap (nodea, nodeb, mapping_ref, atomperm, held)
-      integer, intent(in) :: nodea, nodeb, mapping_ref(natom)
-      integer, intent(inout) :: atomperm(natom)
-      logical, dimension(natom), intent(inout) :: held
-      logical, dimension(natom) :: locked_c
-      integer :: meqvnei, equiva(natom), equivb(natom)
+      integer, intent(in) :: nodea, nodeb, mapping_ref(num_atoms)
+      integer, intent(inout) :: atomperm(num_atoms)
+      logical, dimension(num_atoms), intent(inout) :: held
+      logical, dimension(num_atoms) :: locked_c
+      integer :: meqvnei, equiva(num_atoms), equivb(num_atoms)
       integer :: h, i, offset, first, last
 
       first = eqvos(eqvidx(nodea)) + 1
@@ -458,20 +458,20 @@ subroutine eqvatomperm (mol1, mol2, workcoords, atomperm)
    recursive subroutine recursive_permut (node, atomperm, tracked, held, ntrack, track)
       integer, intent(in) :: node
       integer, intent(inout) :: ntrack
-      logical, dimension(natom), intent(inout) :: tracked, held
-      integer, dimension(natom), intent(inout) :: atomperm, track
+      logical, dimension(num_atoms), intent(inout) :: tracked, held
+      integer, dimension(num_atoms), intent(inout) :: atomperm, track
 
-      logical :: locked_c(natom)
+      logical :: locked_c(num_atoms)
       integer :: meqvnei, moldiff, track4ind(4), track4ind_c(4)
-      integer, dimension(natom) :: mapping_p, mapping_min, equiv, perm, perm_min
+      integer, dimension(num_atoms) :: mapping_p, mapping_min, equiv, perm, perm_min
       real(rk) :: moldist, moldist_p, moldist_min, dihed0(max_coord), dihed1(max_coord)
       logical :: more, calcd, printInfo = .false.
       integer :: h, i, j, offset, first, last, rank
       character(len=80) :: strfmt
 
       if ( printInfo ) then   ! print debugging info
-         moldist = sqrt(leastsqdistsum(natom, weights, coords1, workcoords, atomperm))
-         moldiff = adjacencydiff(natom, adjmat1, adjmat2, atomperm)
+         moldist = sqrt(leastsqdistsum(num_atoms, weights, coords1, workcoords, atomperm))
+         moldiff = adjacencydiff(num_atoms, adjmat1, adjmat2, atomperm)
          write (strfmt, '(a,i0,a)') '(',1,'(2x),i0,a,i0,f8.4)'
          print strfmt, node,": ",moldiff,moldist
       end if

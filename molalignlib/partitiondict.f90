@@ -118,7 +118,7 @@ integer function hash( partition)
    do h = 1, partition%num_parts
       ! DJB2 part hashing
       part_hash = 5381
-      do i = 1, partition%parts(h)%size
+      do i = 1, partition%parts(h)%part_size
          ! Update part hash
          part_hash = iand(part_hash * 33 + partition%parts(h)%items(i), 2**16 - 1)
       end do

@@ -8,8 +8,8 @@ public metapartition_type
 public metapartpointer_type
 
 type :: metapart_type
-   integer :: size
    integer :: index
+   integer :: part_size
    type(partition_type) :: subpartition
    integer, pointer :: largest_part_size
    integer, pointer :: items_allocation(:)
@@ -82,7 +82,7 @@ function partition_new_part(self, max_size) result(part)
    self%num_parts = self%num_parts + 1
 
    ! Initialize part size
-   self%parts(self%num_parts)%size = 0
+   self%parts(self%num_parts)%part_size = 0
 
    ! Set index to current partition size
    self%parts(self%num_parts)%index = self%num_parts
@@ -107,9 +107,9 @@ subroutine partition_add_part(self, part)
    type(metapart_type), pointer :: newpart
    integer :: i
 
-   newpart => self%new_part(part%size)
+   newpart => self%new_part(part%part_size)
 
-   do i = 1, part%size
+   do i = 1, part%part_size
       call newpart%add(part%items(i))
    end do
 
@@ -120,17 +120,17 @@ subroutine part_add(self, element)
    integer, intent(in) :: element
 
    ! Increase part size
-   self%size = self%size + 1
+   self%part_size = self%part_size + 1
 
    ! Update list pointer
-   self%items => self%items_allocation(:self%size)
+   self%items => self%items_allocation(:self%part_size)
 
    ! Add element to part
-   self%items(self%size) = element
+   self%items(self%part_size) = element
 
    ! Update largest part size
-   if (self%size > self%largest_part_size) then
-      self%largest_part_size = self%size
+   if (self%part_size > self%largest_part_size) then
+      self%largest_part_size = self%part_size
    end if
 
 end subroutine
@@ -142,8 +142,8 @@ subroutine partition_print_parts(self)
 
    write (stderr, *)
    do h = 1, self%num_parts
-      fmtstr = "('{'" // repeat(',1x,i3', self%parts(h)%size) // ",' }')"
-      write (stderr, fmtstr) self%parts(h)%items(:self%parts(h)%size)
+      fmtstr = "('{'" // repeat(',1x,i3', self%parts(h)%part_size) // ",' }')"
+      write (stderr, fmtstr) self%parts(h)%items(:self%parts(h)%part_size)
    end do
 
 end subroutine

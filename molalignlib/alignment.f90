@@ -65,16 +65,16 @@ subroutine kearsley(atomperm, coords1, coords2, residuals)
    integer, dimension(:), intent(in) :: atomperm
    real(rk), dimension(:,:), intent(in) :: coords1, coords2
    ! Local variables
-   integer :: i, natom
+   integer :: i, num_atoms
    real(rk) :: residuals(4, 4)
    real(rk), dimension(:,:), allocatable :: p, q
 
-   natom = size(atomperm)
+   num_atoms = size(atomperm)
 
-   allocate (p(3, natom))
-   allocate (q(3, natom))
+   allocate (p(3, num_atoms))
+   allocate (q(3, num_atoms))
 
-   do i = 1, natom
+   do i = 1, num_atoms
       p(:, i) = coords1(:, i) + coords2(:, atomperm(i))
       q(:, i) = coords1(:, i) - coords2(:, atomperm(i))
    end do
@@ -83,7 +83,7 @@ subroutine kearsley(atomperm, coords1, coords2, residuals)
 
    residuals = 0
 
-   do i = 1, natom
+   do i = 1, num_atoms
       residuals(1, 1) = residuals(1, 1) + (q(1, i)**2 + q(2, i)**2 + q(3, i)**2)
       residuals(1, 2) = residuals(1, 2) + (p(2, i)*q(3, i) - q(2, i)*p(3, i))
       residuals(1, 3) = residuals(1, 3) + (q(1, i)*p(3, i) - p(1, i)*q(3, i))

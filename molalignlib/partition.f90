@@ -11,8 +11,8 @@ public operator (<)
 public assignment (=)
 
 type :: part_type
-   integer :: size
    integer :: index
+   integer :: part_size
    integer, pointer :: indices(:)
    integer, pointer :: largest_part_size
    integer, pointer :: items_allocation(:)
@@ -23,7 +23,7 @@ end type
 
 type :: partition_type
    integer :: num_parts
-   integer :: tot_items
+   integer :: num_items
    integer, pointer :: indices(:)
    integer, pointer :: largest_part_size
    logical :: initialized = .false.
@@ -60,7 +60,7 @@ subroutine partition_assignment(left, right)
    ! Local variables
    integer :: h
 
-   call left%initialize(right%tot_items)
+   call left%initialize(right%num_items)
 
    do h = 1, right%num_parts
       call left%add_part(right%parts(h))
@@ -68,21 +68,21 @@ subroutine partition_assignment(left, right)
 
 end subroutine
 
-subroutine partition_initialize(self, tot_items)
+subroutine partition_initialize(self, num_items)
    class(partition_type), intent(inout) :: self
-   integer, intent(in) :: tot_items
+   integer, intent(in) :: num_items
 
    if (associated(self%parts)) then
       error stop 'Memory leak'
    end if
 
    allocate (self%largest_part_size)
-   allocate (self%indices(tot_items))
-   allocate (self%parts(tot_items))
+   allocate (self%indices(num_items))
+   allocate (self%parts(num_items))
 
    self%num_parts = 0
    self%largest_part_size = 0
-   self%tot_items = tot_items
+   self%num_items = num_items
    self%initialized = .true.
 
 end subroutine
@@ -118,7 +118,7 @@ function partition_new_part(self, max_size) result(part)
    self%parts(self%num_parts)%index = self%num_parts
 
    ! Initialize part size
-   self%parts(self%num_parts)%size = 0
+   self%parts(self%num_parts)%part_size = 0
 
    ! Allocate list allocation
    allocate (self%parts(self%num_parts)%items_allocation(max_size))
@@ -143,9 +143,9 @@ subroutine partition_add_part(self, part)
    type(part_type), pointer :: newpart
    integer :: i
 
-   newpart => self%new_part(part%size)
+   newpart => self%new_part(part%part_size)
 
-   do i = 1, part%size
+   do i = 1, part%part_size
       call newpart%add(part%items(i))
    end do
 
@@ -156,20 +156,20 @@ subroutine part_add(self, element)
    integer, intent(in) :: element
 
    ! Increase part size
-   self%size = self%size + 1
+   self%part_size = self%part_size + 1
 
    ! Update list pointer
-   self%items => self%items_allocation(:self%size)
+   self%items => self%items_allocation(:self%part_size)
 
    ! Add element to part
-   self%items(self%size) = element
+   self%items(self%part_size) = element
 
    ! Add index to part map
    self%indices(element) = self%index
 
    ! Update largest part size
-   if (self%size > self%largest_part_size) then
-      self%largest_part_size = self%size
+   if (self%part_size > self%largest_part_size) then
+      self%largest_part_size = self%part_size
    end if
 
 end subroutine
@@ -181,8 +181,8 @@ subroutine partition_print_parts(self)
 
    write (stderr, *)
    do h = 1, self%num_parts
-      fmtstr = "(i3,':',2x,'{'" // repeat(',1x,i3', self%parts(h)%size) // ",1x,'}')"
-      write (stderr, fmtstr) h, self%parts(h)%items(:self%parts(h)%size)
+      fmtstr = "(i3,':',2x,'{'" // repeat(',1x,i3', self%parts(h)%part_size) // ",1x,'}')"
+      write (stderr, fmtstr) h, self%parts(h)%items(:self%parts(h)%part_size)
    end do
 
 end subroutine
@@ -201,12 +201,12 @@ function partition_equality(left, right) result(equality)
 
    do h = 1, left%num_parts
 
-      if (left%parts(h)%size /= right%parts(h)%size) then
+      if (left%parts(h)%part_size /= right%parts(h)%part_size) then
          equality = .false.
          return
       end if
 
-      do i = 1, left%parts(h)%size
+      do i = 1, left%parts(h)%part_size
          if (left%parts(h)%items(i) /= right%parts(h)%items(i)) then
             equality = .false.
             return
@@ -235,30 +235,30 @@ function partition_precedence(left, right) result(priority)
    k = 1
    do h = 1, left%num_parts
 
-      if (left%parts(h)%size >= right%parts(k)%size) then
+      if (left%parts(h)%part_size >= right%parts(k)%part_size) then
 
          offset = 0
-         do while (offset < left%parts(h)%size)
-            do i = 1, right%parts(k)%size
+         do while (offset < left%parts(h)%part_size)
+            do i = 1, right%parts(k)%part_size
                if (left%parts(h)%items(offset+i) /= right%parts(k)%items(i)) then
 !                  write (stderr, *) 'left%parts(h)%items(offset+i) /= right%parts(k)%items(i)'
-!                  write (stderr, *) left%parts(h)%items(:left%parts(h)%size)
-!                  write (stderr, *) right%parts(k)%items(:right%parts(k)%size)
+!                  write (stderr, *) left%parts(h)%items(:left%parts(h)%part_size)
+!                  write (stderr, *) right%parts(k)%items(:right%parts(k)%part_size)
                   priority = .false.
                   return
                end if
             end do
-            offset = offset + right%parts(k)%size
+            offset = offset + right%parts(k)%part_size
             k = k + 1
          end do
 
-         if (offset /= left%parts(h)%size) then
-            error stop 'offset /= left%parts(h)%size'
+         if (offset /= left%parts(h)%part_size) then
+            error stop 'offset /= left%parts(h)%part_size'
          end if
 
       else
 
-!         write (stderr, *) 'left%parts(h)%size < right%parts(k)%size'
+!         write (stderr, *) 'left%parts(h)%part_size < right%parts(k)%part_size'
          priority = .false.
          return
 
