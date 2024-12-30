@@ -54,10 +54,10 @@ subroutine minperm(part, x1, x2, perm, dist)
 
 end subroutine
 
-subroutine minperm_biased(part, x1, x2, bias, perm, dist)
+subroutine minperm_biased(part, x1, x2, diffs, perm, dist)
    type(bipart_type), intent(in) :: part
    real(rk), intent(in) :: x1(:, :), x2(:, :)
-   real(rk), intent(in) :: bias(:, :)
+   integer, intent(in) :: diffs(:, :)
    integer, intent(out) :: perm(:)
    real(rk), intent(out) :: dist
    ! Local variables
@@ -68,7 +68,7 @@ subroutine minperm_biased(part, x1, x2, bias, perm, dist)
 
    do j = 1, part%part_size2
       do i = 1, part%part_size1
-         costs(i, j) = sum((x1(:, part%items1(i)) - x2(:, part%items2(j)))**2) + bias(i, j)
+         costs(i, j) = diffs(i, j) + 0.001*sum((x1(:, part%items1(i)) - x2(:, part%items2(j)))**2)
       end do
    end do
 

@@ -27,14 +27,14 @@ use molecule
 implicit none
 
 abstract interface
-   subroutine bias_proc( mol1, mol2, eltypes, mnadists)
+   subroutine bias_proc( eltypes, mol1, mol2, mnadiffs)
       use parameters
       use common_types
       use bipartition
       use molecule
-      type(mol_type), intent(in) :: mol1, mol2
       type(bipartition_type), intent(in) :: eltypes
-      type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
+      type(mol_type), intent(in) :: mol1, mol2
+      type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    end subroutine
 end interface
 
@@ -43,48 +43,22 @@ procedure(bias_proc), pointer :: bias_procedure
 
 contains
 
-subroutine bias_none( mol1, mol2, eltypes, mnadists)
-   type(mol_type), intent(in) :: mol1, mol2
+subroutine bias_none( eltypes, mol1, mol2, mnadiffs)
    type(bipartition_type), intent(in) :: eltypes
-   type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
+   type(mol_type), intent(in) :: mol1, mol2
+   type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    ! Local variables
    integer :: h, i, j
    integer :: part_size1, part_size2
 
-   allocate (mnadists(eltypes%num_parts))
+   allocate (mnadiffs(eltypes%num_parts))
    do h = 1, eltypes%num_parts
       part_size1 = eltypes%parts(h)%part_size1
       part_size2 = eltypes%parts(h)%part_size2
-      allocate (mnadists(h)%x(part_size1, part_size2))
+      allocate (mnadiffs(h)%n(part_size1, part_size2))
       do i = 1, part_size1
          do j = 1, part_size2
-            mnadists(h)%x(j, i) = 0
-         end do
-      end do
-   end do
-
-end subroutine
-
-subroutine bias_mna( mol1, mol2, eltypes, mnadists)
-   type(mol_type), intent(in) :: mol1, mol2
-   type(bipartition_type), intent(in) :: eltypes
-   type(realmatrix_type), dimension(:), allocatable, intent(out) :: mnadists
-   ! Local variables
-   integer :: h, i, j
-   integer :: part_size1, part_size2
-   type(intmatrix_type), dimension(:), allocatable :: mnadiffs
-
-   ! Calculate MNA equivalence matrix
-   call compute_equivmat(mol1, mol2, eltypes, mnadiffs)
-
-   allocate (mnadists(eltypes%num_parts))
-   do h = 1, eltypes%num_parts
-      part_size1 = eltypes%parts(h)%part_size1
-      part_size2 = eltypes%parts(h)%part_size2
-      allocate (mnadists(h)%x(part_size1, part_size2))
-      do j = 1, part_size2
-         do i = 1, part_size1
-            mnadists(h)%x(i, j) = mnadiffs(h)%n(i, j)*bias_scale**2
+            mnadiffs(h)%n(j, i) = 0
          end do
       end do
    end do
@@ -92,9 +66,9 @@ subroutine bias_mna( mol1, mol2, eltypes, mnadists)
 end subroutine
 
 ! Iteratively compute MNA types
-subroutine compute_equivmat(mol1, mol2, eltypes, mnadiffs)
-   type(mol_type), intent(in) :: mol1, mol2
+subroutine bias_mna( eltypes, mol1, mol2, mnadiffs)
    type(bipartition_type), intent(in) :: eltypes
+   type(mol_type), intent(in) :: mol1, mol2
    type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    ! Local variables
    integer :: h, i, j, level

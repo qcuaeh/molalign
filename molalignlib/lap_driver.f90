@@ -33,11 +33,11 @@ public assign_atoms_pruned
 contains
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine assign_atoms_nearest( eltypes, coords1, coords2, pruned, mnadists, atomperm)
+subroutine assign_atoms_nearest( eltypes, coords1, coords2, pruned, mnadiffs, atomperm)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
    type(boolmatrix_type), dimension(:), intent(in) :: pruned
-   type(realmatrix_type), dimension(:), intent(in) :: mnadists
+   type(realmatrix_type), dimension(:), intent(in) :: mnadiffs
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h, part_size1
@@ -105,11 +105,10 @@ subroutine assign_atoms( eltypes, coords1, coords2, atomperm, dist)
 end subroutine
 
 ! Find best correspondence between points sets with fixed orientation
-subroutine assign_atoms_biased( eltypes, coords1, coords2, pruned, mnadists, atomperm)
+subroutine assign_atoms_biased( eltypes, coords1, coords2, mnadiffs, atomperm)
    type(bipartition_type), intent(in) :: eltypes
    real(rk), dimension(:, :), intent(in) :: coords1, coords2
-   type(boolmatrix_type), dimension(:), intent(in) :: pruned
-   type(realmatrix_type), dimension(:), intent(in) :: mnadists
+   type(intmatrix_type), dimension(:), intent(in) :: mnadiffs
    integer, dimension(:), intent(out) :: atomperm
    ! Local variables
    integer :: h
@@ -120,7 +119,7 @@ subroutine assign_atoms_biased( eltypes, coords1, coords2, pruned, mnadists, ato
 
    ! Optimize atomperm for each block
    do h = 1, eltypes%num_parts
-      call minperm_biased(eltypes%parts(h), coords1, coords2, mnadists(h)%x, auxperm, dist)
+      call minperm_biased(eltypes%parts(h), coords1, coords2, mnadiffs(h)%n, auxperm, dist)
       atomperm(eltypes%parts(h)%items1) = eltypes%parts(h)%items2(auxperm(:eltypes%parts(h)%part_size1))
    end do
 

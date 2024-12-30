@@ -155,8 +155,6 @@ end subroutine
 !   real(rk), intent(out) :: dist
 !   ! Local variables
 !   type(bipartition_type) :: submnatypes
-!   type(metapartition_type) :: metatypes
-!   integer :: h, i
 !
 !   submnatypes = mnatypes
 !   call assign_atoms_conf_rec(submnatypes, mol1, mol2, coords1, coords2, atomperm, dist)

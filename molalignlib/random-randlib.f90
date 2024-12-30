@@ -33,11 +33,11 @@ subroutine random_initialize()
 
 end subroutine
 
-function randvec() result(r)
-   real(rk) :: r(3)
-   r(1) = random_standard_uniform()
-   r(2) = random_standard_uniform()
-   r(3) = random_standard_uniform()
+function randvec() result(x)
+   real(rk) :: x(3)
+   x(1) = random_standard_uniform()
+   x(2) = random_standard_uniform()
+   x(3) = random_standard_uniform()
 end function
 
 subroutine shuffle(a)
