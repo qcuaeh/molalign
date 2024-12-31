@@ -214,7 +214,12 @@ if (remap_flag) then
    ! Print optimization stats
 
    if (stats_flag) then
-      call print_stats(results)
+      if (bond_flag) then
+         call print_stats_adjd(results)
+      else
+         call print_stats_rmsd(results)
+      end if
+      call print_final_stats(results)
    end if
 
    if (.not. nrec_flag) then

@@ -27,13 +27,13 @@ use molecule
 implicit none
 
 abstract interface
-   subroutine bias_proc( eltypes, mol1, mol2, mnadiffs)
+   subroutine bias_proc( mol1, mol2, eltypes, mnadiffs)
       use parameters
       use common_types
       use bipartition
       use molecule
-      type(bipartition_type), intent(in) :: eltypes
       type(mol_type), intent(in) :: mol1, mol2
+      type(bipartition_type), intent(in) :: eltypes
       type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    end subroutine
 end interface
@@ -43,9 +43,9 @@ procedure(bias_proc), pointer :: bias_procedure
 
 contains
 
-subroutine bias_none( eltypes, mol1, mol2, mnadiffs)
-   type(bipartition_type), intent(in) :: eltypes
+subroutine bias_none( mol1, mol2, eltypes, mnadiffs)
    type(mol_type), intent(in) :: mol1, mol2
+   type(bipartition_type), intent(in) :: eltypes
    type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    ! Local variables
    integer :: h, i, j
@@ -66,9 +66,9 @@ subroutine bias_none( eltypes, mol1, mol2, mnadiffs)
 end subroutine
 
 ! Iteratively compute MNA types
-subroutine bias_mna( eltypes, mol1, mol2, mnadiffs)
-   type(bipartition_type), intent(in) :: eltypes
+subroutine bias_mna( mol1, mol2, eltypes, mnadiffs)
    type(mol_type), intent(in) :: mol1, mol2
+   type(bipartition_type), intent(in) :: eltypes
    type(intmatrix_type), dimension(:), allocatable, intent(out) :: mnadiffs
    ! Local variables
    integer :: h, i, j, level

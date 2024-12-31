@@ -29,6 +29,8 @@ use bipartition
 use biasing
 use printing
 use registry
+use tracking
+use backtracking
 
 implicit none
 
@@ -45,9 +47,11 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    integer :: num_trials, num_steps
    integer, pointer :: lead_count
    real(rk) :: eigquat(4), totquat(4)
+   type(intlist_type), allocatable :: molfrags(:)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:,:), allocatable :: coords1, coords2
    type(intmatrix_type), allocatable :: mnadiffs(:)
+   type(bipartition_type) :: mnatypes
    real(rk) :: rmsd
    integer :: adjd
 
@@ -57,17 +61,25 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    allocate (atomperm(num_atoms1))
    allocate (auxperm(num_atoms1))
 
+   ! Compute MNA types
+   mnatypes = eltypes
+   call compute_crossmnatypes( mol1, mol2, mnatypes)
+!   call mnatypes%print_parts()
+
    ! Reflect atoms
    if (mirror_flag) then
-      call reflect_coords(coords2)
+      call reflect_coords( coords2)
    end if
 
    ! Translate atoms to their centroids
-   call translate_coords(coords1, -centroid(coords1))
-   call translate_coords(coords2, -centroid(coords2))
+   call translate_coords( coords1, -centroid(coords1))
+   call translate_coords( coords2, -centroid(coords2))
+
+   ! Find molecular fragments
+   call find_molfrags( mol1, eltypes%first_partition(), molfrags)
 
    ! Find unfeasible assignments
-   call bias_procedure(eltypes, mol1, mol2, mnadiffs)
+   call bias_procedure( mol1, mol2, eltypes, mnadiffs)
 
    ! Initialize random number generator
    call random_initialize()
@@ -100,9 +112,11 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
          num_steps = num_steps + 1
       end do
 
+      call minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, coords2, atomperm)
+
       ! Update results
       adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
-      rmsd = sqrt(sqdistsum(atomperm, coords1, coords2))
+      rmsd = sqrt(leastsqdistsum(atomperm, coords1, coords2))
       call results%push(atomperm, num_steps, angle(totquat), adjd, rmsd)
 
    end do
