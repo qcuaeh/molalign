@@ -17,7 +17,6 @@
 module molalignlib
 use parameters
 use globals
-!use random
 use linalg
 use sorting
 use molecule
@@ -29,58 +28,71 @@ use bipartitioning
 use adjacency
 use alignment
 use atom_mapping
-!use reactivity
+use reactivity
 
 implicit none
 
 contains
 
 ! Assign atoms0 and atoms1
-subroutine molecule_remap( &
-   mol1, &
-   mol2, &
-   results)
+subroutine molecule_remap( mol1, mol2, results)
+!
+! Find best atom mapping
+!
 
-   type(mol_type), intent(in) :: mol1, mol2
+   ! Arguments
+   type(mol_type), intent(inout) :: mol1, mol2
    type(registry_type), intent(inout) :: results
-   type(bipartition_type) :: eltypes
+
+   ! Local variables
+   type(bipartition_type) :: eltypes, mnatypes
+   type(intlist_type), dimension(:), allocatable :: molfrags1, molfrags2
+   integer, allocatable :: atomperm(:)
 
    ! Abort if molecules have different number of atoms
-
    if (size(mol1%atoms) /= size(mol2%atoms)) then
       write (stderr, '(a)') 'Error: These molecules are not isomers'
       stop
    end if
 
    ! Abort if molecules are not isomers
-
    if (any(sorted(mol1%atoms%elnum) /= sorted(mol2%atoms%elnum))) then
       write (stderr, '(a)') 'Error: These molecules are not isomers'
       stop
    end if
 
    ! Compute atomic types
-
    call compute_crosseltypes(mol1, mol2, eltypes)
 !   call eltypes%print_parts()
 
    ! Abort if there are conflicting atomic types
-
    if (any(sorted(eltypes%indices1) /= sorted(eltypes%indices2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
 
-   ! Optimize assignment to minimize the AdjD and RMSD
+   ! Compute MNA types
+   mnatypes = eltypes
+   call compute_crossmnatypes( mol1, mol2, mnatypes)
+!   call mnatypes%print_parts()
 
-   call map_atoms( mol1, mol2, eltypes, results)
+   ! Search molecular fragments
+   call find_molfrags( mol1, eltypes%first_partition(), molfrags1)
+   call find_molfrags( mol2, eltypes%second_partition(), molfrags2)
+
+   ! Optimize assignment to minimize the AdjD and RMSD
+   call map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
+   atomperm = results%records(1)%atomperm
 
    ! Remove bonds from reactive sites and reoptimize assignment
+   call remove_reactive_bonds( mol1, mol2, molfrags1, molfrags2, mnatypes, atomperm)
 
-!   if (reac_flag) then
-!      call remove_reactive_bonds(mol1, mol2, permlist(:, 1))
-!      call map_atoms(mol1, mol2, eltypes, results)
-!   end if
+   ! Update molecular fragments
+   call find_molfrags( mol1, eltypes%first_partition(), molfrags1)
+   call find_molfrags( mol2, eltypes%second_partition(), molfrags2)
+
+   ! Optimize assignment to minimize the AdjD and RMSD
+   call map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
 
 end subroutine
 

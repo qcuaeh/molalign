@@ -33,7 +33,7 @@ pruning.f90
 lap_driver.f90
 tracking.f90
 backtracking.f90
-#reactivity.f90
+reactivity.f90
 #atom_mapping_free.f90
 atom_mapping_bond.f90
 #atom_mapping_conf.f90

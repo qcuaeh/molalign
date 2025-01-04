@@ -41,6 +41,7 @@ contains
    procedure :: new_part => partition_new_part
    procedure :: add_part => partition_add_part
    procedure :: first_partition => partition_first_partition
+   procedure :: second_partition => partition_second_partition
    procedure :: print_parts => partition_print_parts
 end type
 
@@ -241,6 +242,25 @@ function partition_first_partition(self) result(partition)
          newtype => partition%new_part(self%parts(h)%part_size1)
          do i = 1, self%parts(h)%part_size1
             call newtype%add(self%parts(h)%items1(i))
+         end do
+      end if
+   end do
+
+end function
+
+function partition_second_partition(self) result(partition)
+   class(bipartition_type), intent(in) :: self
+   integer :: h, i
+   type(partition_type) :: partition
+   type(part_type), pointer :: newtype
+
+   call partition%initialize(self%num_items2)
+
+   do h = 1, self%num_parts
+      if (self%parts(h)%part_size2 > 0) then
+         newtype => partition%new_part(self%parts(h)%part_size2)
+         do i = 1, self%parts(h)%part_size2
+            call newtype%add(self%parts(h)%items2(i))
          end do
       end if
    end do

@@ -208,6 +208,9 @@ subroutine remove_bond(self, idx1, idx2)
    integer :: i, pos1, pos2, nadj1, nadj2
    integer, allocatable :: adjlist1(:), adjlist2(:)
 
+   self%adjmat(idx1, idx2) = .false.
+   self%adjmat(idx2, idx1) = .false.
+
    allocate (adjlist1(max_coord), adjlist2(max_coord))
 
 ! copy adjlist arrays
