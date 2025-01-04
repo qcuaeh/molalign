@@ -66,7 +66,7 @@ subroutine molecule_remap( mol1, mol2, results)
 !   call eltypes%print_parts()
 
    ! Abort if there are conflicting atomic types
-   if (any(sorted(eltypes%indices1) /= sorted(eltypes%indices2))) then
+   if (any(sorted(eltypes%idcs1) /= sorted(eltypes%idcs2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
@@ -77,8 +77,8 @@ subroutine molecule_remap( mol1, mol2, results)
 !   call mnatypes%print_parts()
 
    ! Search molecular fragments
-   call find_molfrags( mol1, eltypes%first_partition(), molfrags1)
-   call find_molfrags( mol2, eltypes%second_partition(), molfrags2)
+   call find_molfrags( mol1, eltypes%partition1(), molfrags1)
+   call find_molfrags( mol2, eltypes%partition2(), molfrags2)
 
    ! Optimize assignment to minimize the AdjD and RMSD
    call map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
@@ -88,8 +88,8 @@ subroutine molecule_remap( mol1, mol2, results)
    call remove_reactive_bonds( mol1, mol2, molfrags1, molfrags2, mnatypes, atomperm)
 
    ! Update molecular fragments
-   call find_molfrags( mol1, eltypes%first_partition(), molfrags1)
-   call find_molfrags( mol2, eltypes%second_partition(), molfrags2)
+   call find_molfrags( mol1, eltypes%partition1(), molfrags1)
+   call find_molfrags( mol2, eltypes%partition2(), molfrags2)
 
    ! Optimize assignment to minimize the AdjD and RMSD
    call map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
@@ -131,7 +131,7 @@ subroutine molecule_align( &
 
    ! Abort if there are conflicting atomic types
 
-   if (any(sorted(eltypes%indices1) /= sorted(eltypes%indices2))) then
+   if (any(sorted(eltypes%idcs1) /= sorted(eltypes%idcs2))) then
       write (stderr, '(a)') 'Error: There are conflicting atomic types'
       stop
    end if
@@ -139,14 +139,14 @@ subroutine molecule_align( &
    ! Abort if atoms are not ordered
 
    if (any(mol1%atoms%elnum /= mol2%atoms%elnum)) then
-!   if (any(atomic_numbers%indices1 /= atomic_numbers%indices2)) then
+!   if (any(atomic_numbers%idcs1 /= atomic_numbers%idcs2)) then
       write (stderr, '(a)') 'Error: The atoms are not in the same order'
       stop
    end if
 
    ! Abort if atomic types are not ordered
 
-   if (any(eltypes%indices1 /= eltypes%indices2)) then
+   if (any(eltypes%idcs1 /= eltypes%idcs2)) then
       write (stderr, '(a)') 'Error: Atomic types are not in the same order'
       stop
    end if

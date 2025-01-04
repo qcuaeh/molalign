@@ -50,7 +50,7 @@ subroutine find_molfrags( mol, eltypes, molfrags)
 
    ! Order molecular fragments
    do i = 1, nfrag
-      order = sorted_order(eltypes%parts(eltypes%indices(fragidcs(:fragszs(i), i)))%part_size)
+      order = sorted_order(eltypes%parts(eltypes%idcs(fragidcs(:fragszs(i), i)))%part_size)
       fragidcs(:fragszs(i), i) = fragidcs(order, i)
 !      write (stderr, *) fragidcs1(:fragszs1(i), i)
 !      write (stderr, *)
@@ -119,7 +119,7 @@ end subroutine
 !
 !   allocate (fragroots(size(self%molfrags)))
 !
-!   atomeltypes = self%eltypes%indices
+!   atomeltypes = self%eltypes%idcs
 !   do h = 1, size(self%molfrags)
 !      eltypepop_min = huge(eltypepop_min)
 !      do i = 1, size(self%molfrags(h)%atomidcs)

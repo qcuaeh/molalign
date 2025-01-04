@@ -85,7 +85,7 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
 
       do i = 1, mnatypes%parts(h)%part_size1
          iatom = mnatypes%parts(h)%items1(i)
-         neighborhood = mnatypes%indices1(mol1%atoms(iatom)%adjlist)
+         neighborhood = mnatypes%idcs1(mol1%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
                subtypes%new_part(mnatypes%parts(h)%part_size1, mnatypes%parts(h)%part_size2)
@@ -95,7 +95,7 @@ subroutine levelup_crossmnatypes(mol1, mol2, mnatypes, subtypes)
 
       do i = 1, mnatypes%parts(h)%part_size2
          iatom = mnatypes%parts(h)%items2(i)
-         neighborhood = mnatypes%indices2(mol2%atoms(iatom)%adjlist)
+         neighborhood = mnatypes%idcs2(mol2%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
                subtypes%new_part(mnatypes%parts(h)%part_size1, mnatypes%parts(h)%part_size2)

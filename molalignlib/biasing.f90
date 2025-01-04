@@ -100,7 +100,7 @@ subroutine bias_mna( mol1, mol2, eltypes, mnadiffs)
             jatom = eltypes%parts(h)%items2(j)
             do i = 1, eltypes%parts(h)%part_size1
                iatom = eltypes%parts(h)%items1(i)
-               if (mnatypes%indices1(iatom) /= mnatypes%indices2(jatom)) then
+               if (mnatypes%idcs1(iatom) /= mnatypes%idcs2(jatom)) then
                   mnadiffs(h)%n(i, j) = mnadiffs(h)%n(i, j) + 1
                end if
             end do

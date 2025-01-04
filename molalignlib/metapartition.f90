@@ -12,7 +12,7 @@ type :: metapart_type
    integer :: part_size
    type(partition_type) :: subpartition
    integer, pointer :: largest_part_size
-   integer, pointer :: items_allocation(:)
+   integer, pointer :: allocation(:)
    integer, pointer :: items(:)
 contains
    procedure :: add => part_add
@@ -65,7 +65,7 @@ subroutine partition_finalize(self)
    end if
 
    do h = 1, self%num_parts
-      deallocate (self%parts(h)%items_allocation)
+      deallocate (self%parts(h)%allocation)
    end do
 
    deallocate (self%parts)
@@ -88,10 +88,10 @@ function partition_new_part(self, max_size) result(part)
    self%parts(self%num_parts)%index = self%num_parts
 
    ! Allocate list allocation
-   allocate (self%parts(self%num_parts)%items_allocation(max_size))
+   allocate (self%parts(self%num_parts)%allocation(max_size))
 
    ! Point list pointer to list allocation with null size
-   self%parts(self%num_parts)%items => self%parts(self%num_parts)%items_allocation(:0)
+   self%parts(self%num_parts)%items => self%parts(self%num_parts)%allocation(:0)
 
    ! Point largest part size pointer to partition largest part size
    self%parts(self%num_parts)%largest_part_size => self%largest_part_size
@@ -123,7 +123,7 @@ subroutine part_add(self, element)
    self%part_size = self%part_size + 1
 
    ! Update list pointer
-   self%items => self%items_allocation(:self%part_size)
+   self%items => self%allocation(:self%part_size)
 
    ! Add element to part
    self%items(self%part_size) = element

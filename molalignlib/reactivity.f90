@@ -41,44 +41,44 @@ subroutine remove_reactive_bonds(mol1, mol2, molfrags1, molfrags2, mnatypes, ato
    integer, dimension(:), intent(in) :: atomperm
 
    ! Local variables
-   integer :: i, j, k, j_, k_
 !   integer, allocatable, dimension(:) :: adjidcs1, adjidcs2
-   integer, allocatable, dimension(:) :: unmapping
-   real(rk) :: rotquat(4)
+   integer, allocatable, dimension(:) :: invatomperm
+   integer :: iatom, jatom, katom
+   integer :: j, k
 
    ! Initialization
 
-   unmapping = inverse_perm(atomperm)
+   invatomperm = inverse_perm(atomperm)
 
    ! Remove mismatched bonds
 
-   do i = 1, size(mol1%atoms)
-      do j_ = 1, size(mol1%atoms(i)%adjlist)
-         j = mol1%atoms(i)%adjlist(j_)
-         if (.not. mol2%adjmat(atomperm(i), atomperm(j))) then
-!            write (stderr, *) 'remove mol1 bond:', i, j
-            call mol1%remove_bond(i, j)
-!            adjidcs1 = mnatypes%parts(mnatypes%indices1(j))%items1
-!            do k_ = 1, size(adjidcs1)
-!               k = adjidcs1(k_)
-!               call mol1%remove_bond(i, k)
-!               call mol2%remove_bond(atomperm(i), atomperm(k))
+   do iatom = 1, size(mol1%atoms)
+      do j = 1, size(mol1%atoms(iatom)%adjlist)
+         jatom = mol1%atoms(iatom)%adjlist(j)
+         if (.not. mol2%adjmat(atomperm(iatom), atomperm(jatom))) then
+!            write (stderr, *) 'remove mol1 bond:', iatom, jatom
+            call mol1%remove_bond(iatom, jatom)
+!            adjidcs1 = mnatypes%parts(mnatypes%idcs1(jatom))%items1
+!            do k = 1, size(adjidcs1)
+!               katom = adjidcs1(k)
+!               call mol1%remove_bond(iatom, katom)
+!               call mol2%remove_bond(atomperm(iatom), atomperm(katom))
 !            end do
          end if
       end do
    end do
 
-   do i = 1, size(mol2%atoms)
-      do j_ = 1, size(mol2%atoms(i)%adjlist)
-         j = mol2%atoms(i)%adjlist(j_)
-         if (.not. mol1%adjmat(unmapping(i), unmapping(j))) then
-!            write (stderr, *) 'remove mol2 bond:', i, j
-            call mol2%remove_bond(i, j)
-!            adjidcs2 = mnatypes%parts(mnatypes%indices2(j))%items2
-!            do k_ = 1, size(adjidcs2)
-!               k = adjidcs2(k_)
-!               call mol2%remove_bond(i, k)
-!               call mol1%remove_bond(unmapping(i), unmapping(k))
+   do iatom = 1, size(mol2%atoms)
+      do j = 1, size(mol2%atoms(iatom)%adjlist)
+         jatom = mol2%atoms(iatom)%adjlist(j)
+         if (.not. mol1%adjmat(invatomperm(iatom), invatomperm(jatom))) then
+!            write (stderr, *) 'remove mol2 bond:', iatom, jatom
+            call mol2%remove_bond(iatom, jatom)
+!            adjidcs2 = mnatypes%parts(mnatypes%idcs2(jatom))%items2
+!            do k = 1, size(adjidcs2)
+!               katom = adjidcs2(k)
+!               call mol2%remove_bond(iatom, katom)
+!               call mol1%remove_bond(invatomperm(iatom), invatomperm(katom))
 !            end do
          end if
       end do

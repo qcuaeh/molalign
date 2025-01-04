@@ -39,7 +39,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
    integer :: ntrack, moldiff
    integer, allocatable :: track(:)
    logical, allocatable :: tracked(:)
-   integer, allocatable :: unmapping(:)
+   integer, allocatable :: invatomperm(:)
    logical, parameter :: print_info = .false.
    real(rk) :: moldist
    integer :: i
@@ -53,7 +53,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
    allocate (adjlists2(num_atoms2, num_atoms1))
    allocate (track(num_atoms1))
    allocate (tracked(num_atoms1))
-   allocate (unmapping(num_atoms1))
+   allocate (invatomperm(num_atoms1))
 
    do i = 1, num_atoms1
       nadjs1(i) = size(mol1%atoms(i)%adjlist)
@@ -70,19 +70,19 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
 
    ! set atoms block indices
 
-   blkidx1 = eltypes%indices1
-   blkidx2 = eltypes%indices2
+   blkidx1 = eltypes%idcs1
+   blkidx2 = eltypes%idcs2
 
    ! set atoms equivalence indices
 
-   eqvidx1 = mnatypes%indices1
-   eqvidx2 = mnatypes%indices2
+   eqvidx1 = mnatypes%idcs1
+   eqvidx2 = mnatypes%idcs2
 
    !  initialization
 
    ntrack = 0
    tracked(:) = .false.
-   unmapping = inverse_perm( atomperm)
+   invatomperm = inverse_perm( atomperm)
    moldiff = adjacencydiff( atomperm, adjmat1, adjmat2)
    moldist = sqdistsum( atomperm, coords1, coords2)
 
@@ -92,7 +92,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
    end if
 
    do i = 1, size(molfrags)
-      call recursive_backtrack( molfrags(i)%n(1), atomperm, unmapping, tracked, &
+      call recursive_backtrack( molfrags(i)%n(1), atomperm, invatomperm, tracked, &
          moldiff, moldist, ntrack, track)
 !        print *, ntrack
    end do
@@ -141,10 +141,10 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
    end subroutine nodematch
 
 ! backtracks structure to find assignments that minimize moldiff
-   recursive subroutine recursive_backtrack( node, atomperm, unmapping, tracked, moldiff, moldist, &
+   recursive subroutine recursive_backtrack( node, atomperm, invatomperm, tracked, moldiff, moldist, &
                                   ntrack, track)
       integer, intent(in) :: node
-      integer, intent(inout) :: atomperm(num_atoms1), unmapping(num_atoms1)
+      integer, intent(inout) :: atomperm(num_atoms1), invatomperm(num_atoms1)
       logical, intent(inout) :: tracked(num_atoms1)
       integer, intent(inout) :: moldiff, ntrack, track(num_atoms1)
       real(rk), intent(inout) :: moldist
@@ -185,7 +185,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
       ! run over matches neighbors
       do i = 1, nmatch
          if (.not. tracked(matches(i))) then
-            call recursive_backtrack(matches(i), atomperm, unmapping, tracked, moldiff, &
+            call recursive_backtrack(matches(i), atomperm, invatomperm, tracked, moldiff, &
                             moldist, ntrack, track)
          end if
       end do
@@ -204,26 +204,26 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
                      track_branch(:) = track(:)
                      tracked_branch(:) = tracked(:)
                      mapping_branch(:) = atomperm(:)
-                     unmapping_branch(:) = unmapping(:)
+                     unmapping_branch(:) = invatomperm(:)
 
                      ! Apply swap to atomperm branch 
                      mapping_branch(mismatches1(i)) = mismatches2(j)
-                     mapping_branch(unmapping(mismatches2(j))) = atomperm(mismatches1(i))
+                     mapping_branch(invatomperm(mismatches2(j))) = atomperm(mismatches1(i))
 
-                     ! Apply swap to unmapping branch 
+                     ! Apply swap to invatomperm branch 
                      unmapping_branch(mismatches2(j)) = mismatches1(i)
-                     unmapping_branch(atomperm(mismatches1(i))) = unmapping(mismatches2(j))
+                     unmapping_branch(atomperm(mismatches1(i))) = invatomperm(mismatches2(j))
 
                      ! Update ssd with swap
                      moldist_branch = moldist + ( &
                         - sum((coords2(:, atomperm(mismatches1(i))) - coords1(:, mismatches1(i)))**2) &
-                        - sum((coords2(:, mismatches2(j)) - coords1(:, unmapping(mismatches2(j))))**2) &
+                        - sum((coords2(:, mismatches2(j)) - coords1(:, invatomperm(mismatches2(j))))**2) &
                         + sum((coords2(:, mismatches2(j)) - coords1(:, mismatches1(i)))**2) &
-                        + sum((coords2(:, atomperm(mismatches1(i))) - coords1(:, unmapping(mismatches2(j))))**2))
+                        + sum((coords2(:, atomperm(mismatches1(i))) - coords1(:, invatomperm(mismatches2(j))))**2))
 
                      ! Update adjd with swap
                      moldiff_branch = moldiff + adjacencydelta(nadjs1, adjlists1, adjmat2, &
-                                   atomperm, mismatches1(i), unmapping(mismatches2(j)))
+                                   atomperm, mismatches1(i), invatomperm(mismatches2(j)))
 
                      ! backtrack swapped index
                      call recursive_backtrack(mismatches1(i), mapping_branch, unmapping_branch, &
@@ -232,7 +232,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
                      if ( &
                         moldiff_branch < moldiff &
                         .and. ( &
-                           eqvidx1(mismatches1(i)) == eqvidx1(unmapping(mismatches2(j))) &
+                           eqvidx1(mismatches1(i)) == eqvidx1(invatomperm(mismatches2(j))) &
                            .and. eqvidx2(atomperm(mismatches1(i))) == eqvidx2(mismatches2(j)) &
                         ) &
                      ) then
@@ -240,7 +240,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
                         track(:) = track_branch(:)
                         tracked(:) = tracked_branch(:)
                         atomperm(:) = mapping_branch(:)
-                        unmapping(:) = unmapping_branch(:)
+                        invatomperm(:) = unmapping_branch(:)
                         moldiff = moldiff_branch
                         moldist = moldist_branch
                         matched1(i) = .true.
@@ -257,7 +257,7 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
       do i = 1, nmismatch1
          if (.not. matched1(i)) then
             if (.not. tracked(mismatches1(i))) then
-               call recursive_backtrack(mismatches1(i), atomperm, unmapping, &
+               call recursive_backtrack(mismatches1(i), atomperm, invatomperm, &
                  tracked, moldiff, moldist, ntrack, track)
             end if
          end if
@@ -268,36 +268,36 @@ subroutine minadjdiff( eltypes, mnatypes, molfrags, mol1, mol2, coords1, &
 end subroutine
 
 ! Adds a new element to a list of indices in growing order, no repeats
-subroutine add_index( idx, nidx, idcs)
-   integer, intent(in) :: idx
-   integer, intent(inout) :: nidx, idcs(:)
+subroutine add_index( index, nind, indices)
+   integer, intent(in) :: index
+   integer, intent(inout) :: nind, indices(:)
    integer :: p, e
    p = 1
-   do while (p <= nidx)   ! find position for growing order
-      if (idx == idcs(p)) return
-      if (idx < idcs(p)) then
+   do while (p <= nind)   ! find position for growing order
+      if (index == indices(p)) return
+      if (index < indices(p)) then
          exit
       else
          p = p + 1
       end if
    end do
-   nidx = nidx + 1
-   e = nidx
+   nind = nind + 1
+   e = nind
    do while (e > p)
-      idcs(e) = idcs(e - 1)   ! shifts one position from the end
+      indices(e) = indices(e - 1)   ! shifts one position from the end
       e = e - 1
    end do
-   idcs(p) = idx
+   indices(p) = index
 end subroutine add_index
 
-! Returns the position in idcs where the element idx is found or 0 otherwise
-function find_index( idx, nidx, idcs) result(pos)
-   integer, intent(in) :: idx, nidx, idcs(nidx)
+! Returns the position in indices where the element index is found or 0 otherwise
+function find_index( index, nind, indices) result(pos)
+   integer, intent(in) :: index, nind, indices(nind)
    integer :: pos
    integer :: i
    pos = 0
-   do i = 1, nidx
-      if (idx == idcs(i)) then
+   do i = 1, nind
+      if (index == indices(i)) then
          pos = i
          return
       end if

@@ -75,7 +75,7 @@ subroutine levelup_mnatypes(mol, mnatypes, subtypes)
 
       do i = 1, mnatypes%parts(h)%part_size
          iatom = mnatypes%parts(h)%items(i)
-         neighborhood = mnatypes%indices(mol%atoms(iatom)%adjlist)
+         neighborhood = mnatypes%idcs(mol%atoms(iatom)%adjlist)
          if (.not. (neighborhood .in. typedict)) then
             typelist(typedict%new_index(neighborhood))%ptr => &
                subtypes%new_part(mnatypes%parts(h)%part_size)

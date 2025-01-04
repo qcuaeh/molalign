@@ -133,7 +133,7 @@ subroutine assign_atoms_conf( mnatypes, mol1, mol2, coords1, coords2, atomperm, 
    integer :: h, i
 
    submnatypes = mnatypes
-   call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
+   call collect_degenerated_mnatypes(mol1, submnatypes%partition1(), metatypes)
    do while (metatypes%num_parts > 0)
       do i = 1, metatypes%num_parts
          h = random_element(metatypes%parts(i)%items)
@@ -141,7 +141,7 @@ subroutine assign_atoms_conf( mnatypes, mol1, mol2, coords1, coords2, atomperm, 
          call split_crossmnatypes(h, atomperm, submnatypes)
       end do
       call compute_crossmnatypes(mol1, mol2, submnatypes)
-      call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
+      call collect_degenerated_mnatypes(mol1, submnatypes%partition1(), metatypes)
    end do
    call assign_atoms(submnatypes, coords1, coords2, atomperm, dist)
 
@@ -172,7 +172,7 @@ recursive subroutine assign_atoms_conf_rec( submnatypes, mol1, mol2, coords1, co
    type(metapartition_type) :: metatypes
    integer :: h, i
 
-   call collect_degenerated_mnatypes(mol1, submnatypes%first_partition(), metatypes)
+   call collect_degenerated_mnatypes(mol1, submnatypes%partition1(), metatypes)
 !   call metatypes%print_parts()
 !   call submnatypes%print_parts()
 
