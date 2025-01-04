@@ -86,25 +86,25 @@ subroutine remove_reactive_bonds(mol1, mol2, molfrags1, molfrags2, mnatypes, ato
 
    ! Dissociate water molecules
 !
-!   do i = 1, size(molfrags1)
-!      if (all(sorted(mol1%atoms(molfrags1(i)%n)%elnum) == [1, 1, 8])) then
-!         do j_ = 1, size(molfrags1(i)%n)
-!            j = molfrags1(i)%n(j_)
-!            do k_ = 1, size(mol1%atoms(j)%adjlist)
-!               k = mol1%atoms(j)%adjlist(k_)
-!               call mol1%remove_bond(j, k)
+!   do iatom = 1, size(molfrags1)
+!      if (all(sorted(mol1%atoms(molfrags1(iatom)%n)%elnum) == [1, 1, 8])) then
+!         do j = 1, size(molfrags1(iatom)%n)
+!            jatom = molfrags1(iatom)%n(j)
+!            do k = 1, size(mol1%atoms(jatom)%adjlist)
+!               katom = mol1%atoms(jatom)%adjlist(k)
+!               call mol1%remove_bond(jatom, katom)
 !            end do
 !         end do
 !      end if
 !   end do
 !
-!   do i = 1, size(molfrags2)
-!      if (all(sorted(mol2%atoms(molfrags2(i)%n)%elnum) == [1, 1, 8])) then
-!         do j_ = 1, size(molfrags2(i)%n)
-!            j = molfrags2(i)%n(j_)
-!            do k_ = 1, size(mol2%atoms(j)%adjlist)
-!               k = mol2%atoms(j)%adjlist(k_)
-!               call mol2%remove_bond(j, k)
+!   do iatom = 1, size(molfrags2)
+!      if (all(sorted(mol2%atoms(molfrags2(iatom)%n)%elnum) == [1, 1, 8])) then
+!         do j = 1, size(molfrags2(iatom)%n)
+!            jatom = molfrags2(iatom)%n(j)
+!            do k = 1, size(mol2%atoms(jatom)%adjlist)
+!               katom = mol2%atoms(jatom)%adjlist(k)
+!               call mol2%remove_bond(jatom, katom)
 !            end do
 !         end do
 !      end if

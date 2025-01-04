@@ -14,7 +14,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-module atom_mapping
+module atom_mapping_reac
 use parameters
 use globals
 use random
@@ -31,16 +31,16 @@ use printing
 use registry
 use tracking
 use backtracking
+use reactivity
 
 implicit none
 
 contains
 
-subroutine map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
-   type(mol_type), intent(in) :: mol1, mol2
-   type(intlist_type), dimension(:), intent(in) :: molfrags1
+subroutine remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
+   type(mol_type), intent(inout) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes, mnatypes
-   type(registry_type), target, intent(inout) :: results
+   type(registry_type), target, intent(out) :: results
 
    ! Local variables
    integer :: num_atoms1
@@ -49,6 +49,7 @@ subroutine map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
    real(rk) :: eigquat(4), totquat(4)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:,:), allocatable :: coords1, coords2
+   type(intlist_type), dimension(:), allocatable :: molfrags1, molfrags2
    type(intmatrix_type), allocatable :: mnadiffs(:)
    real(rk) :: rmsd
    integer :: adjd
@@ -56,8 +57,14 @@ subroutine map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
    num_atoms1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
+   call results%initialize(max_records)
+
    allocate (atomperm(num_atoms1))
    allocate (auxperm(num_atoms1))
+
+   ! Find molecular fragments
+   call find_molfrags( mol1, eltypes%partition1(), molfrags1)
+   call find_molfrags( mol2, eltypes%partition2(), molfrags2)
 
    ! Reflect atoms
    if (mirror_flag) then
@@ -112,6 +119,10 @@ subroutine map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
    end do
 
    results%num_trials = num_trials
+
+   ! Remove bonds from reactive sites and reoptimize assignment
+   atomperm = results%records(1)%atomperm
+   call remove_reactive_bonds( mol1, mol2, molfrags1, molfrags2, mnatypes, atomperm)
 
 end subroutine
 

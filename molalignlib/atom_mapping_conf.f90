@@ -14,7 +14,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-module atom_mapping
+module atom_mapping_conf
 use parameters
 use globals
 use random
@@ -41,10 +41,10 @@ implicit none
 
 contains
 
-subroutine map_atoms(mol1, mol2, eltypes, results)
+subroutine remap_conformations(mol1, mol2, eltypes, mnatypes, results)
    type(mol_type), intent(in) :: mol1, mol2
-   type(bipartition_type), intent(in) :: eltypes
-   type(registry_type), target, intent(inout) :: results
+   type(bipartition_type), intent(in) :: eltypes, mnatypes
+   type(registry_type), target, intent(out) :: results
 
    ! Local variables
    integer :: num_atoms1
@@ -53,7 +53,6 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    real(rk) :: eigquat(4), totquat(4)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:,:), allocatable :: coords1, coords2
-   type(bipartition_type) :: mnatypes
    type(metapartition_type) :: metatypes
    integer :: adjd
    real(rk) :: rmsd, dist
@@ -62,13 +61,10 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    num_atoms1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
+   call results%initialize(max_records)
+
    allocate (atomperm(num_atoms1))
    allocate (auxperm(num_atoms1))
-
-   ! Compute MNA types
-   mnatypes = eltypes
-   call compute_crossmnatypes(mol1, mol2, mnatypes)
-!   call mnatypes%print_parts()
 
    ! Reflect atoms
    if (mirror_flag) then

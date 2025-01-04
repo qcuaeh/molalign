@@ -33,10 +33,10 @@ implicit none
 
 contains
 
-subroutine map_atoms(mol1, mol2, eltypes, results)
+subroutine remap_atoms(mol1, mol2, eltypes, results)
    type(mol_type), intent(in) :: mol1, mol2
    type(bipartition_type), intent(in) :: eltypes
-   type(registry_type), target, intent(inout) :: results
+   type(registry_type), target, intent(out) :: results
 
    ! Local variables
 
@@ -52,6 +52,8 @@ subroutine map_atoms(mol1, mol2, eltypes, results)
    num_atoms1 = size(mol1%atoms)
    coords1 = mol1%get_weighted_coords()
    coords2 = mol2%get_weighted_coords()
+   call results%initialize(max_records)
+
    allocate (atomperm(num_atoms1))
    allocate (auxperm(num_atoms1))
 

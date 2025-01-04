@@ -43,7 +43,6 @@ character(:), allocatable :: optfmtin, optfmtout
 character(:), allocatable :: pathout
 logical :: fmtin_flag, fmtout_flag
 logical :: remap_flag, pipe_flag, nrec_flag
-integer :: max_records
 real(rk) :: travec1(3), travec2(3), rotquat(4)
 integer :: adjd
 real(rk) :: rmsd
@@ -203,8 +202,6 @@ end if
 if (remap_flag) then
 
    ! Remap atoms to minimize the MSD
-
-   call results%initialize(max_records)
 
    call molecule_remap( &
       mol1, &

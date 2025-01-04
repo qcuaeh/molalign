@@ -27,8 +27,8 @@ use bipartition
 use bipartitioning
 use adjacency
 use alignment
-use atom_mapping
-use reactivity
+use atom_mapping_reac
+use atom_mapping_conf
 
 implicit none
 
@@ -42,12 +42,10 @@ subroutine molecule_remap( mol1, mol2, results)
 
    ! Arguments
    type(mol_type), intent(inout) :: mol1, mol2
-   type(registry_type), intent(inout) :: results
+   type(registry_type), intent(out) :: results
 
    ! Local variables
    type(bipartition_type) :: eltypes, mnatypes
-   type(intlist_type), dimension(:), allocatable :: molfrags1, molfrags2
-   integer, allocatable :: atomperm(:)
 
    ! Abort if molecules have different number of atoms
    if (size(mol1%atoms) /= size(mol2%atoms)) then
@@ -76,23 +74,16 @@ subroutine molecule_remap( mol1, mol2, results)
    call compute_crossmnatypes( mol1, mol2, mnatypes)
 !   call mnatypes%print_parts()
 
-   ! Search molecular fragments
-   call find_molfrags( mol1, eltypes%partition1(), molfrags1)
-   call find_molfrags( mol2, eltypes%partition2(), molfrags2)
+   ! Optimize assignment to minimize the AdjD and RMSD
+   call remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
+
+   ! Update MNA types
+   mnatypes = eltypes
+   call compute_crossmnatypes( mol1, mol2, mnatypes)
+!   call mnatypes%print_parts()
 
    ! Optimize assignment to minimize the AdjD and RMSD
-   call map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
-   atomperm = results%records(1)%atomperm
-
-   ! Remove bonds from reactive sites and reoptimize assignment
-   call remove_reactive_bonds( mol1, mol2, molfrags1, molfrags2, mnatypes, atomperm)
-
-   ! Update molecular fragments
-   call find_molfrags( mol1, eltypes%partition1(), molfrags1)
-   call find_molfrags( mol2, eltypes%partition2(), molfrags2)
-
-   ! Optimize assignment to minimize the AdjD and RMSD
-   call map_atoms( mol1, mol2, molfrags1, eltypes, mnatypes, results)
+   call remap_conformations( mol1, mol2, eltypes, mnatypes, results)
 
 end subroutine
 
