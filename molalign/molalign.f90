@@ -182,17 +182,15 @@ if (fmtin_flag) then
 end if
 
 ! Read coordinates
-
-call readfile(read_unit1, fmtin1, mol1)
-call readfile(read_unit2, fmtin2, mol2)
+call readfile( read_unit1, fmtin1, mol1)
+call readfile( read_unit2, fmtin2, mol2)
 
 ! Allocate arrays
-
 if (pipe_flag) then
    write_unit = stdout
    fmtout = 'xyz'
 else
-   call open2write(pathout, write_unit, fmtout)
+   call open2write( pathout, write_unit, fmtout)
 end if
 
 if (fmtout_flag) then
@@ -202,25 +200,23 @@ end if
 if (remap_flag) then
 
    ! Remap atoms to minimize the MSD
-
    call molecule_remap( &
       mol1, &
       mol2, &
       results)
 
    ! Print optimization stats
-
    if (stats_flag) then
       if (bond_flag) then
-         call print_stats_adjd(results)
+         call print_stats_adjd( results)
       else
-         call print_stats_rmsd(results)
+         call print_stats_rmsd( results)
       end if
-      call print_final_stats(results)
+      call print_final_stats( results)
    end if
 
    if (.not. nrec_flag) then
-      call writefile(write_unit, fmtout, mol1)
+      call writefile( write_unit, fmtout, mol1)
    end if
 
    num_atoms1 = size(mol1%atoms)
@@ -228,8 +224,8 @@ if (remap_flag) then
    coords2 = mol2%get_weighted_coords()
 
    ! Calculate centroids
-   travec1 = -centroid(coords1)
-   travec2 = -centroid(coords2)
+   travec1 = -centroid( coords1)
+   travec2 = -centroid( coords2)
 
    allocate (auxmol%atoms(size(mol2%atoms)))
 
@@ -241,17 +237,17 @@ if (remap_flag) then
       ! Calculate optimal rotation matrix
       rotquat = leasteigquat( &
          atomperm, &
-         translated_coords(coords1, travec1), &
-         translated_coords(coords2, travec2) &
+         translated_coords( coords1, travec1), &
+         translated_coords( coords2, travec2) &
       )
 
       coords2 = mol2%get_weighted_coords()
-      call translate_coords(coords2, travec2)
-      call rotate_coords(coords2, rotquat)
-      call translate_coords(coords2, -travec1)
+      call translate_coords( coords2, travec2)
+      call rotate_coords( coords2, rotquat)
+      call translate_coords( coords2, -travec1)
 
-      adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
-      rmsd = sqrt(sqdistsum(atomperm, coords1, coords2))
+      adjd = adjacencydiff( atomperm, mol1%adjmat, mol2%adjmat)
+      rmsd = sqrt(sqdistsum( atomperm, coords1, coords2))
 
       if (bond_flag) then
          write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)
@@ -264,14 +260,13 @@ if (remap_flag) then
       auxmol%atoms%label = mol2%atoms(atomperm)%label
       auxmol%atoms%weight = mol2%atoms(atomperm)%weight
       call auxmol%set_weighted_coords(coords2(:, atomperm))
-      call writefile(write_unit, fmtout, auxmol)
+      call writefile( write_unit, fmtout, auxmol)
 
    end do
 
 else
 
    ! Align atoms to minimize RMSD
-
    call molecule_align( &
       mol1, &
       mol2, &
@@ -280,12 +275,12 @@ else
       rotquat)
 
    coords2 = mol2%get_weighted_coords()
-   call translate_coords(coords2, travec2)
-   call rotate_coords(coords2, rotquat)
-   call translate_coords(coords2, -travec1)
+   call translate_coords( coords2, travec2)
+   call rotate_coords( coords2, rotquat)
+   call translate_coords( coords2, -travec1)
 
-   adjd = adjacencydiff(identity_perm(num_atoms1), mol1%adjmat, mol2%adjmat)
-   rmsd = sqrt(sqdistsum(identity_perm(num_atoms1), coords1, coords2))
+   adjd = adjacencydiff( identity_perm(num_atoms1), mol1%adjmat, mol2%adjmat)
+   rmsd = sqrt( sqdistsum( identity_perm(num_atoms1), coords1, coords2))
 
    if (bond_flag) then
       write (stderr, "(a,',',a)") str(adjd), str(rmsd, 4)
@@ -298,7 +293,7 @@ else
    auxmol%atoms%label = mol2%atoms%label
    auxmol%atoms%weight = mol2%atoms(atomperm)%weight
    call auxmol%set_weighted_coords(coords2)
-   call writefile(write_unit, fmtout, mol2)
+   call writefile( write_unit, fmtout, mol2)
 
 end if
 

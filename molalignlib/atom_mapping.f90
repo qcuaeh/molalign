@@ -102,7 +102,7 @@ subroutine remap_atoms(mol1, mol2, eltypes, results)
 
       ! Update results
       rmsd = sqrt(sqdistsum(atomperm, coords1, coords2))
-      call results%push(atomperm, num_steps, angle(totquat), 0, rmsd)
+      call results%push_rmsd(atomperm, num_steps, angle(totquat), rmsd)
 
    end do
 

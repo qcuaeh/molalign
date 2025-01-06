@@ -54,7 +54,6 @@ subroutine remap_conformations(mol1, mol2, eltypes, mnatypes, results)
    integer, dimension(:), allocatable :: atomperm, auxperm
    real(rk), dimension(:,:), allocatable :: coords1, coords2
    type(metapartition_type) :: metatypes
-   integer :: adjd
    real(rk) :: rmsd, dist
    integer :: h, i
 
@@ -107,9 +106,8 @@ subroutine remap_conformations(mol1, mol2, eltypes, mnatypes, results)
       end do
 
       ! Update results
-      adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
       rmsd = sqrt(sqdistsum(atomperm, coords1, coords2))
-      call results%push(atomperm, num_steps, angle(totquat), adjd, rmsd)
+      call results%push_rmsd(atomperm, num_steps, angle(totquat), rmsd)
 
    end do
 

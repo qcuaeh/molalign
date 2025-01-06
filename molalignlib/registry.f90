@@ -36,7 +36,8 @@ type :: registry_type
    type(record_type), allocatable :: records(:)
 contains
    procedure :: initialize => registry_initialize
-   procedure :: push => registry_push
+   procedure :: push_adjd => registry_push_adjd
+   procedure :: push_rmsd => registry_push_rmsd
 end type
 
 contains
@@ -61,10 +62,10 @@ subroutine registry_initialize(self, max_records)
 
 end subroutine
 
-subroutine registry_push(self, atomperm, steps, rotang, adjd, rmsd)
+subroutine registry_push_rmsd(self, atomperm, steps, rotang, rmsd)
    class(registry_type), target, intent(inout) :: self
    integer, intent(in) :: atomperm(:)
-   integer, intent(in) :: steps, adjd
+   integer, intent(in) :: steps
    real(rk), intent(in) :: rotang, rmsd
    ! Local variables
    type(record_type), pointer :: record
@@ -86,13 +87,60 @@ subroutine registry_push(self, atomperm, steps, rotang, adjd, rmsd)
 
    do i = 1, size(self%records)
       record => self%records(i)
-      if (adjd < record%adjd .or. (adjd == record%adjd .and. rmsd < record%rmsd)) then
+      if (rmsd < record%rmsd) then
          do j = size(self%records), i + 1, -1
             self%records(j) = self%records(j - 1)
          end do
          record%atomperm = atomperm
          record%count = 1
          record%rmsd = rmsd
+         record%steps = steps
+         record%rotang = rotang
+         exit
+      end if
+   end do
+
+   if (.not. self%overflow) then
+      if (self%num_records < size(self%records)) then
+         self%num_records = self%num_records + 1
+      else
+         self%overflow = .true.
+      end if
+   end if
+
+end subroutine
+
+subroutine registry_push_adjd(self, atomperm, steps, rotang, adjd)
+   class(registry_type), target, intent(inout) :: self
+   integer, intent(in) :: atomperm(:)
+   integer, intent(in) :: steps, adjd
+   real(rk), intent(in) :: rotang
+   ! Local variables
+   type(record_type), pointer :: record
+   integer :: i, j
+
+   self%total_steps = self%total_steps + steps
+
+   do i = 1, self%num_records
+      record => self%records(i)
+      if (allocated(record%atomperm)) then
+         if (adjd == record%adjd) then
+            record%count = record%count + 1
+            record%steps = record%steps + (steps - record%steps) / record%count
+            record%rotang = record%rotang + (rotang - record%rotang) / record%count
+            return
+         end if
+      end if
+   end do
+
+   do i = 1, size(self%records)
+      record => self%records(i)
+      if (adjd < record%adjd) then
+         do j = size(self%records), i + 1, -1
+            self%records(j) = self%records(j - 1)
+         end do
+         record%atomperm = atomperm
+         record%count = 1
          record%adjd = adjd
          record%steps = steps
          record%rotang = rotang

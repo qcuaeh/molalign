@@ -51,7 +51,6 @@ subroutine remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
    real(rk), dimension(:,:), allocatable :: coords1, coords2
    type(intlist_type), dimension(:), allocatable :: molfrags1, molfrags2
    type(intmatrix_type), allocatable :: mnadiffs(:)
-   real(rk) :: rmsd
    integer :: adjd
 
    num_atoms1 = size(mol1%atoms)
@@ -113,8 +112,7 @@ subroutine remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
 
       ! Update results
       adjd = adjacencydiff(atomperm, mol1%adjmat, mol2%adjmat)
-      rmsd = sqrt(leastsqdistsum(atomperm, coords1, coords2))
-      call results%push(atomperm, num_steps, angle(totquat), adjd, rmsd)
+      call results%push_adjd(atomperm, num_steps, angle(totquat), adjd)
 
    end do
 
