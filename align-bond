@@ -1,0 +1,2 @@
+#!/bin/sh
+./build/molalign -bond -remap -bond -bias mna -pipe -stats -N 5 < "$1" > log

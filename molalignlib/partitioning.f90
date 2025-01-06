@@ -118,9 +118,8 @@ subroutine compute_mnatypes(mol, mnatypes)
 end subroutine
 
 ! Split MNA types
-subroutine split_mnatypes(h, mol, mnatypes)
+subroutine split_mnatypes(h, mnatypes)
    integer, intent(in) :: h
-   type(mol_type), intent(in) :: mol
    type(partition_type), intent(inout) :: mnatypes
    ! Local variables
    integer :: k, i
@@ -168,7 +167,7 @@ subroutine collect_degenerated_mnatypes(mol, mnatypes, metatypes)
    do h = 1, mnatypes%num_parts
       if (mnatypes%parts(h)%part_size > 1) then
          subtypes = mnatypes
-         call split_mnatypes(h, mol, subtypes)
+         call split_mnatypes(h, subtypes)
          call compute_mnatypes(mol, subtypes)
          if (.not. (subtypes .in. partitiondict)) then
 !            call subtypes%print_parts()
