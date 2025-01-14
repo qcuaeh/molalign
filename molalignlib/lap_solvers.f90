@@ -697,7 +697,7 @@ integer, allocatable  :: iw(:,:)
 
 if (n < 1 .or. m < 1) then
    write(stderr, '(a, 2i8)') ' ** error in call to assndx; m, n = ', m, n
-   return
+   error stop
 end if
 
 imax = max(n,m)

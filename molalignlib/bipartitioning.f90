@@ -143,6 +143,8 @@ subroutine split_crossmnatypes(h, perm, mnatypes)
    type(bipartition_type) :: subtypes
 
    if (mnatypes%parts(h)%part_size1 /= mnatypes%parts(h)%part_size2) then
+      call mnatypes%print_parts()
+      write (stderr, *) mnatypes%parts(h)%part_size1, mnatypes%parts(h)%part_size2
       error stop 'part_size1 /= part_size2'
    end if
 
