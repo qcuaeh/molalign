@@ -93,8 +93,8 @@ function new_index( this, tuple) result(index)
       index = modulo(index, this%num_slots) + 1
    end do
 
-   if (this%num_occupied >= this%num_slots*MAX_LOAD_FACTOR) then
-      error stop "Hash table too full"
+   if (this%num_occupied >= this%num_slots) then
+      error stop "Hash table is full"
    end if
 
    this%tuples(index)%items = tuple

@@ -80,7 +80,7 @@ subroutine molecule_remap( mol1, mol2, results)
    ! Update MNA types
    mnatypes = eltypes
    call compute_crossmnatypes( mol1, mol2, mnatypes)
-   call mnatypes%print_parts()
+!   call mnatypes%print_parts()
 !   stop
 
    ! Optimize assignment to minimize the AdjD and RMSD

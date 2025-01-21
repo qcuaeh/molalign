@@ -122,25 +122,23 @@ subroutine assign_atoms_conf( mnatypes, mol1, mol2, coords1, coords2, atomperm, 
    ! Local variables
    type(bipartition_type) :: submnatypes
    type(metapartition_type) :: metatypes
-   integer :: h, i
+   integer :: h
 
    submnatypes = mnatypes
+!   call submnatypes%print_parts()
    call collect_degenerated_mnatypes(mol1, submnatypes%partition1(), metatypes)
-   call metatypes%print_parts()
+!   call metatypes%print_parts()
    do while (metatypes%num_parts > 0)
-      write (stderr, *)
-      do i = 1, metatypes%num_parts
-         h = random_element(metatypes%parts(i)%items)
-         call minperm(submnatypes%parts(h), coords1, coords2, atomperm, dist)
-         call split_crossmnatypes(h, atomperm, submnatypes)
-         write (stderr, *)
-         write (stderr, *) 'loop', repeat('   '//str(h), 8)
-         call submnatypes%print_parts()
-      end do
+      h = random_element(metatypes%parts(1)%items)
+!      write (stderr, *)
+!      write (stderr, *) repeat('   '//str(h), 8)
+      call minperm(submnatypes%parts(h), coords1, coords2, atomperm, dist)
+      call split_crossmnatypes(h, atomperm, submnatypes)
+!      call submnatypes%print_parts()
       call compute_crossmnatypes(mol1, mol2, submnatypes)
-      call submnatypes%print_parts()
+!      call submnatypes%print_parts()
       call collect_degenerated_mnatypes(mol1, submnatypes%partition1(), metatypes)
-      call metatypes%print_parts()
+!      call metatypes%print_parts()
    end do
    call assign_atoms(submnatypes, coords1, coords2, atomperm, dist)
 
