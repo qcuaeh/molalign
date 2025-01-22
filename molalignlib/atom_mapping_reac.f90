@@ -120,6 +120,7 @@ subroutine remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
 
    ! Remove bonds from reactive sites and reoptimize assignment
    atomperm = results%records(1)%atomperm
+   write (stderr, '(i0)') adjacencydiff( atomperm, mol1%adjmat, mol2%adjmat)
    call remove_reactive_bonds( mol1, mol2, molfrags1, molfrags2, mnatypes, atomperm)
 
 end subroutine
