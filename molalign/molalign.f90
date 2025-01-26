@@ -216,7 +216,7 @@ if (remap_flag) then
    end if
 
    if (.not. nrec_flag) then
-      call writefile( write_unit, fmtout, mol1)
+!      call writefile( write_unit, fmtout, mol1)
    end if
 
    num_atoms1 = size(mol1%atoms)
@@ -228,6 +228,7 @@ if (remap_flag) then
    travec2 = -centroid( coords2)
 
    allocate (auxmol%atoms(size(mol2%atoms)))
+   allocate (auxmol%adjmat(size(mol2%adjmat, 1), size(mol2%adjmat, 2)))
 
    do i = 1, results%num_records
 
@@ -259,8 +260,9 @@ if (remap_flag) then
       auxmol%atoms%elnum = mol2%atoms(atomperm)%elnum
       auxmol%atoms%label = mol2%atoms(atomperm)%label
       auxmol%atoms%weight = mol2%atoms(atomperm)%weight
+      auxmol%adjmat = mol2%adjmat(atomperm, atomperm)
       call auxmol%set_weighted_coords(coords2(:, atomperm))
-      call writefile( write_unit, fmtout, auxmol)
+!      call writefile( write_unit, fmtout, auxmol)
 
    end do
 
@@ -291,7 +293,8 @@ else
    mol2%title = 'RMSD='//str(rmsd, 4)
    auxmol%atoms%elnum = mol2%atoms%elnum
    auxmol%atoms%label = mol2%atoms%label
-   auxmol%atoms%weight = mol2%atoms(atomperm)%weight
+   auxmol%atoms%weight = mol2%atoms%weight
+   auxmol%adjmat = mol2%adjmat
    call auxmol%set_weighted_coords(coords2)
    call writefile( write_unit, fmtout, mol2)
 

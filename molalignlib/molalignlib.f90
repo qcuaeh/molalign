@@ -29,6 +29,7 @@ use adjacency
 use alignment
 use atom_mapping_reac
 use atom_mapping_conf
+use writemol
 
 implicit none
 
@@ -76,6 +77,8 @@ subroutine molecule_remap( mol1, mol2, results)
 
    ! Optimize assignment to minimize the AdjD and RMSD
    call remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
+   call writemol2( stdout, mol1)
+   call writemol2( stdout, mol2)
 
    ! Update MNA types
    mnatypes = eltypes
