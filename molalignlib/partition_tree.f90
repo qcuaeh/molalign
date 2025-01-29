@@ -1,5 +1,5 @@
-module lcrs_tree
-use iso_fortran_env, only: stdout => output_unit
+module partition_tree
+use iso_fortran_env, only: stdout => error_unit
 implicit none
 private
 
@@ -215,48 +215,4 @@ recursive subroutine delete_tree(node)
    node => null()
 end subroutine delete_tree
 
-end module lcrs_tree
-
-program test_lcrs_tree
-use lcrs_tree
-implicit none
-
-type(tree_node), pointer :: root, node1, node2, node3
-type(tree_node), pointer :: delete_target
-
-root => new_tree()
-call add_item(root, 1)
-
-! Test new_child and new_sibling
-node1 => new_child(root)
-call add_item(node1, 10)
-call add_item(node1, 11)
-
-node2 => new_child(node1)
-call add_item(node2, 100)
-
-node2 => new_sibling(node2)
-call add_item(node2, 200)
-
-node1 => new_sibling(node1)
-call add_item(node1, 20)
-call add_item(node1, 21)
-call add_item(node1, 22)
-
-node2 => new_child(node1)
-call add_item(node2, 300)
-
-node3 => new_child(node2)
-call add_item(node3, 400)
-
-write(*, '(A)') "Initial Tree:"
-call print_tree(root)
-
-write(*, '(/,A)') "After deleting first branch (10):"
-delete_target => root%first_child
-call delete_branch(delete_target)
-call print_tree(root)
-
-call delete_tree(root)
-
-end program test_lcrs_tree
+end module
