@@ -5,9 +5,10 @@ strutils.f90
 sorting.f90
 tupledict.f90
 partition.f90
+lcrs_tree.f90
 bipartition.f90
 metapartition.f90
-metapartition_tree.f90
+#metapartition_tree.f90
 partitiondict.f90
 permutation.f90
 setutils.f90

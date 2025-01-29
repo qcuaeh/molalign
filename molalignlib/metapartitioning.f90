@@ -3,7 +3,6 @@ use molecule
 use partition
 use partitioning
 use metapartition
-use metapartition_tree
 use partitiondict
 implicit none
 
@@ -95,53 +94,6 @@ subroutine collect_mnatypes(mol, mnatypes, metatypes)
          call metatypes%add_part(mnametatypes%parts(h))
       end if
    end do
-
-end subroutine
-
-subroutine collect_mnatypes_tree(mol, mnatypes, metatypes)
-   type(mol_type), intent(in) :: mol
-   type(partition_type), intent(in) :: mnatypes
-   type(tree_node), pointer, intent(out) :: metatypes
-   ! Local variables
-   type(partition_type) :: subtypes
-   type(partitiondict_type) :: partitiondict
-   type(nodepointer_type), allocatable :: partlist(:)
-   type(tree_node), pointer :: inode, jnode
-   integer :: h
-
-   metatypes => new_tree()
-   call partitiondict%initialize(mnatypes%num_parts)
-   allocate (partlist(partitiondict%num_slots))
-
-   do h = 1, mnatypes%num_parts
-      if (mnatypes%parts(h)%part_size > 1) then
-         subtypes = mnatypes
-         call split_mnatypes(h, subtypes)
-         call compute_mnatypes(mol, subtypes)
-         if (.not. (subtypes .in. partitiondict)) then
-!            call subtypes%print_parts()
-            partlist(partitiondict%new_index(subtypes))%ptr => &
-               metatypes%new_leaf(subtypes)
-         end if
-         call partlist(partitiondict%get_index(subtypes))%ptr%add_item(h)
-      end if
-   end do
-
-   inode => metatypes%first_child
-   loop1: do while (associated(inode))
-      jnode => inode%next_sibling
-      do while (associated(jnode))
-         if (inode%subtypes < jnode%subtypes) then
-            call delete_branch(jnode)
-         else if (jnode%subtypes < inode%subtypes) then
-            call delete_branch(inode)
-            cycle loop1
-         else
-            jnode => jnode%next_sibling
-         end if
-      end do
-      inode => inode%next_sibling
-   end do loop1
 
 end subroutine
 

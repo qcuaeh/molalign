@@ -30,6 +30,8 @@ use alignment
 use atom_mapping_reac
 use atom_mapping_conf
 use writemol
+use lcrs_tree
+use partitioning
 
 implicit none
 
@@ -47,6 +49,7 @@ subroutine molecule_remap( mol1, mol2, results)
 
    ! Local variables
    type(bipartition_type) :: eltypes, mnatypes
+   type(tree_type) :: tree1
 
    ! Abort if molecules have different number of atoms
    if (size(mol1%atoms) /= size(mol2%atoms)) then
@@ -59,6 +62,24 @@ subroutine molecule_remap( mol1, mol2, results)
       write (stderr, '(a)') 'Error: These molecules are not isomers'
       stop
    end if
+
+   call compute_eltypes_tree(mol1, tree1)
+   call print_tree(tree1%tree)
+   call compute_mnatypes_tree(mol1, tree1)
+   call print_tree(tree1%tree)
+   call flatten_tree(tree1)
+   call print_tree(tree1%tree)
+   call unfold_leaves(tree1)
+   call print_tree(tree1%tree)
+   call compute_mnatypes_tree(mol1, tree1)
+   call print_tree(tree1%tree)
+   call flatten_tree(tree1)
+   call print_tree(tree1%tree)
+   call unfold_leaves(tree1)
+   call print_tree(tree1%tree)
+   call compute_mnatypes_tree(mol1, tree1)
+   call print_tree(tree1%tree)
+   stop
 
    ! Compute atomic types
    call compute_crosseltypes(mol1, mol2, eltypes)
