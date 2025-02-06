@@ -63,24 +63,6 @@ subroutine molecule_remap( mol1, mol2, results)
       stop
    end if
 
-   call compute_eltypes_tree(mol1, tree1)
-   call print_tree(tree1%tree)
-   call compute_mnatypes_tree(mol1, tree1)
-   call print_tree(tree1%tree)
-   call flatten_tree(tree1)
-   call print_tree(tree1%tree)
-   call unfold_leaves(tree1)
-   call print_tree(tree1%tree)
-   call compute_mnatypes_tree(mol1, tree1)
-   call print_tree(tree1%tree)
-   call flatten_tree(tree1)
-   call print_tree(tree1%tree)
-   call unfold_leaves(tree1)
-   call print_tree(tree1%tree)
-   call compute_mnatypes_tree(mol1, tree1)
-   call print_tree(tree1%tree)
-   stop
-
    ! Compute atomic types
    call compute_crosseltypes(mol1, mol2, eltypes)
 !   call eltypes%print_parts()
@@ -98,8 +80,27 @@ subroutine molecule_remap( mol1, mol2, results)
 
    ! Optimize assignment to minimize the AdjD and RMSD
    call remap_reactive_bonds( mol1, mol2, eltypes, mnatypes, results)
-   call writemol2( stdout, mol1)
-   call writemol2( stdout, mol2)
+
+   call writemol2(stdout, mol1)
+   call writemol2(stdout, mol2)
+
+   call compute_eltypes_tree(mol1, mol2, tree1)
+   call print_tree(tree1%tree)
+   call compute_mnatypes_tree(mol1, mol2, tree1)
+   call print_tree(tree1%tree)
+   call flatten_tree(tree1)
+   call print_tree(tree1%tree)
+   call unfold_leaves(tree1)
+   call print_tree(tree1%tree)
+   call compute_mnatypes_tree(mol1, mol2, tree1)
+   call print_tree(tree1%tree)
+   call flatten_tree(tree1)
+   call print_tree(tree1%tree)
+   call unfold_leaves(tree1)
+   call print_tree(tree1%tree)
+   call compute_mnatypes_tree(mol1, mol2, tree1)
+   call print_tree(tree1%tree)
+   stop
 
    ! Update MNA types
    mnatypes = eltypes

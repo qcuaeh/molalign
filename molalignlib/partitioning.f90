@@ -185,7 +185,7 @@ end function
 subroutine unfold_leaves(partition)
    type(tree_type), intent(inout) :: partition
    type(tree_node), pointer :: current, child_node
-   type(item_node), pointer :: curr_item, next_item
+   type(item_node), pointer :: curr_item1, curr_item2, next_item1, next_item2
 
    if (.not. associated(partition%tree%first_child)) return
 
@@ -197,19 +197,27 @@ subroutine unfold_leaves(partition)
       end if
 
       ! Process leaf node with multiple items
-      curr_item => current%first_item1
+      curr_item1 => current%first_item1
+      curr_item2 => current%first_item2
       current%first_item1 => null()
+      current%first_item2 => null()
       current%item_count1 = 0
+      current%item_count2 = 0
 
-      do while (associated(curr_item))
-         next_item => curr_item%next_item
-         curr_item%next_item => null()
+      do while (associated(curr_item1))
+         next_item1 => curr_item1%next_item
+         next_item2 => curr_item2%next_item
+         curr_item1%next_item => null()
+         curr_item2%next_item => null()
 
          child_node => new_child(current)
-         call add_item1(child_node, curr_item)
-         partition%itemdir1(curr_item%idx)%ptr => child_node
+         call add_item1(child_node, curr_item1)
+         call add_item2(child_node, curr_item2)
+         partition%itemdir1(curr_item1%idx)%ptr => child_node
+         partition%itemdir2(curr_item2%idx)%ptr => child_node
 
-         curr_item => next_item
+         curr_item1 => next_item1
+         curr_item2 => next_item2
       end do
 
       return
@@ -217,22 +225,26 @@ subroutine unfold_leaves(partition)
 end subroutine
 
 ! Partition atoms by atomic number and label
-subroutine compute_eltypes_tree(mol, eltypes)
-   type(mol_type), intent(in) :: mol
+subroutine compute_eltypes_tree(mol1, mol2, eltypes)
+   type(mol_type), intent(in) :: mol1, mol2
    type(tree_type), intent(out) :: eltypes
    ! Local variables
    type(tree_node), pointer :: inode
    type(atomtype_table) :: atomtypetable
-   integer :: i, elnum, label
+   integer :: i, elnum, label, num_atoms1, num_atoms2
 
-   eltypes%tree => new_tree()
-   allocate (eltypes%itemdir1(size(mol%atoms)))
-   allocate (atomtypetable%items(size(mol%atoms)))
+   num_atoms1 = size(mol1%atoms) 
+   num_atoms2 = size(mol2%atoms) 
+   allocate (eltypes%itemdir1(num_atoms1))
+   allocate (eltypes%itemdir2(num_atoms2))
+   allocate (atomtypetable%items(num_atoms1 + num_atoms2))
    atomtypetable%num_items = 0
+   eltypes%tree => new_tree()
 
-   do i = 1, size(mol%atoms)
-      elnum = mol%atoms(i)%elnum
-      label = mol%atoms(i)%label
+   ! First molecule
+   do i = 1, num_atoms1
+      elnum = mol1%atoms(i)%elnum
+      label = mol1%atoms(i)%label
       inode => find_node(atomtypetable, elnum, label)
       if (.not. associated(inode)) then
          inode => new_child(eltypes%tree)
@@ -242,11 +254,24 @@ subroutine compute_eltypes_tree(mol, eltypes)
       eltypes%itemdir1(i)%ptr => inode
    end do
 
+   ! Second molecule
+   do i = 1, num_atoms2
+      elnum = mol2%atoms(i)%elnum
+      label = mol2%atoms(i)%label
+      inode => find_node(atomtypetable, elnum, label)
+      if (.not. associated(inode)) then
+         inode => new_child(eltypes%tree)
+         call add_node(atomtypetable, elnum, label, inode)
+      end if
+      call add_new_item2(inode, i)
+      eltypes%itemdir2(i)%ptr => inode
+   end do
+
 end subroutine
 
 ! Compute Next Level MNA Types
-subroutine nextlevel_mnatypes(mol, mnatypes)
-   type(mol_type), intent(in) :: mol
+subroutine nextlevel_mnatypes(mol1, mol2, mnatypes)
+   type(mol_type), intent(in) :: mol1, mol2
    type(tree_type), intent(inout) :: mnatypes
    ! Local variables
    type(tree_node), pointer :: subtree
@@ -259,7 +284,7 @@ subroutine nextlevel_mnatypes(mol, mnatypes)
 !   end block
 
    subtree => new_tree()
-   allocate (typehoodtable%items(size(mol%atoms)))
+   allocate (typehoodtable%items(size(mol1%atoms) + size(mol2%atoms)))
    call traverse_tree(mnatypes%tree)
    call delete_tree(subtree)
 
@@ -280,13 +305,14 @@ subroutine nextlevel_mnatypes(mol, mnatypes)
          end do
       end if
 
-      ! Single item leaf node, do nothing
-      if (inode%item_count1 <= 1) then
+      ! Unique or empty leaf node, do nothing
+      if (inode%item_count1 <= 1 .and. inode%item_count2 <= 1) then
          return
       end if
 
+      typehoodtable%num_items = 0
+
 !      item => inode%first_item1
-!      typehoodtable%num_items = 0
 !      do while (associated(item))
 !         typehood = itemdir1(mol%atoms(item%idx)%adjlist)
 !         child => find_node(typehoodtable, typehood)
@@ -299,11 +325,11 @@ subroutine nextlevel_mnatypes(mol, mnatypes)
 !         item => item%next_item
 !      end do
 
-      typehoodtable%num_items = 0
+      ! First molecule
       item => inode%first_item1
       do while (associated(item))
          next_item => item%next_item
-         typehood = mnatypes%itemdir1(mol%atoms(item%idx)%adjlist)
+         typehood = mnatypes%itemdir1(mol1%atoms(item%idx)%adjlist)
          child => find_node(typehoodtable, typehood)
          if (.not. associated(child)) then
             child => new_child(subtree)
@@ -312,14 +338,31 @@ subroutine nextlevel_mnatypes(mol, mnatypes)
          call add_item1(child, item)
          item => next_item
       end do
+
+      ! Second molecule
+      item => inode%first_item2
+      do while (associated(item))
+         next_item => item%next_item
+         typehood = mnatypes%itemdir2(mol2%atoms(item%idx)%adjlist)
+         child => find_node(typehoodtable, typehood)
+         if (.not. associated(child)) then
+            child => new_child(subtree)
+            call add_node(typehoodtable, typehood, child)
+         end if
+         call add_item2(child, item)
+         item => next_item
+      end do
+
       ! Attach subtree to tree if leaf is branched
       if (associated(subtree%first_child%next_sibling)) then
          call update_itemdir(mnatypes%itemdir1, mnatypes%itemdir2, subtree)
-         inode%first_child => subtree%first_child
          inode%first_item1 => null()
+         inode%first_item2 => null()
+         inode%first_child => subtree%first_child
          subtree%first_child => null()
       else
          subtree%first_child%first_item1 => null()
+         subtree%first_child%first_item2 => null()
          call delete_tree(subtree%first_child)
       end if
 
@@ -328,24 +371,27 @@ subroutine nextlevel_mnatypes(mol, mnatypes)
 end subroutine
 
 ! Iteratively compute MNA types
-subroutine compute_mnatypes_tree(mol, mnatypes)
-   type(mol_type), intent(in) :: mol
+subroutine compute_mnatypes_tree(mol1, mol2, mnatypes)
+   type(mol_type), intent(in) :: mol1, mol2
    type(tree_type), intent(inout) :: mnatypes
    ! Local variables
-   type(treenode_ptr), allocatable :: prev_typemap(:)
+   type(treenode_ptr), dimension(:), allocatable :: itemdir1, itemdir2
 
-   allocate (prev_typemap(size(mol%atoms)))
+   allocate (itemdir1(size(mol1%atoms)))
+   allocate (itemdir2(size(mol2%atoms)))
 
    do
 
 !      call mnatypes%print_tree()
-      prev_typemap = mnatypes%itemdir1
+      itemdir1 = mnatypes%itemdir1
+      itemdir2 = mnatypes%itemdir2
 
       ! Compute MNA upper level types
-      call nextlevel_mnatypes(mol, mnatypes)
+      call nextlevel_mnatypes(mol1, mol2, mnatypes)
 
       ! Exit loop if types did not change
-      if (mnatypes%itemdir1 .equal. prev_typemap) exit
+      if ((mnatypes%itemdir1 .equal. itemdir1) .and. &
+          (mnatypes%itemdir2 .equal. itemdir2)) exit
 
    end do
 
